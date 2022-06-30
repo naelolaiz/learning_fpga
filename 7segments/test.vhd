@@ -18,7 +18,7 @@ signal counterToDisplay: STD_LOGIC_VECTOR (15 downto 0);
 
 signal enabledDigit: std_logic_vector (3 downto 0) := "0001";
 --signal enabledDigit : integer range 0 to 4;
-signal counterForMultiplexer : integer range 0 to 100000 := 0; -- 10.5 ms
+signal counterForMultiplexer : integer range 0 to 100000 := 0;
 signal LED_BCD: STD_LOGIC_VECTOR (3 downto 0);
 
 begin
