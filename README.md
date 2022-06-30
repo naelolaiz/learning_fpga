@@ -6,5 +6,5 @@ Cyclone IV dev board, using a ep4ce6e22c8n fpga chip [datasheet in mouser](https
 ## links
  * [banggood link](https://www.banggood.com/es/ALTERA-Cyclone-IV-EP4CE6-FPGA-Development-Board-Kit-Altera-EP4CE-NIOSII-FPGA-Board-and-USB-Downloader-Infrared-Controller-p-1622523.html), with information in chineese
  * compatible code related interesting projects
- ** [VGA using same board](https://github.com/fsmiamoto/EasyFPGA-VGA)
+   * [VGA using same board](https://github.com/fsmiamoto/EasyFPGA-VGA)
 
