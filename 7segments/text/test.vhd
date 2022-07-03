@@ -15,7 +15,6 @@ end test;
 architecture behavior of test is
 	signal counterForDelay  : integer range 0 to 15000000 := 0; -- ticks every 10E6 / 50E6 = 200ms 
 	signal enabledDigit: std_logic_vector (1 downto 0) := "00";
-	--signal counterForScroll: integer range 0 to 3 := 0;
 	signal counterForMultiplexer : integer range 0 to 100000 := 0;
 	signal LED_BCD: std_logic_vector (3 downto 0);
 	signal charForDigit: character := nul;
@@ -35,7 +34,6 @@ begin
 			end if;
          if counterForDelay = 14999999 then
             counterForDelay <= 0;
-            --counterForScroll <= counterForScroll + 1;
 				if stringOffset = stringToPrint'length-1 then
 				   stringOffset <= 0;
 				else
