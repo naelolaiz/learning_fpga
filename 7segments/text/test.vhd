@@ -21,7 +21,7 @@ begin
 -- counter for multiplexer and delay used for scrolling the text
    counter : process(clock)
    variable counterForMultiplexer : integer range 0 to 100000 := 0; -- ticks every 100E3 / 50E6 = 2ms
-	variable counterForScrolling  : integer range 0 to 8000000 := 0; -- ticks every 8E6 / 50E6 = 160ms 
+   variable counterForScrolling  : integer range 0 to 8000000 := 0; -- ticks every 8E6 / 50E6 = 160ms 
 
    begin
       if clock'event and clock = '1' then
