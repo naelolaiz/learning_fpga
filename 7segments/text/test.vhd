@@ -13,8 +13,6 @@ end test;
 
 architecture behavior of test is
    constant stringToPrint: string := "_-+-_- Hello FPGA Wworld _-+-==- ";
-   signal counterForScrolling  : integer range 0 to 8000000 := 0; -- ticks every 8E6 / 50E6 = 160ms 
-   signal counterForMultiplexer : integer range 0 to 100000 := 0; -- ticks every 100E3 / 50E6 = 2ms
    signal enabledDigit: std_logic_vector (1 downto 0) := "00";
    signal charForDigit: character := nul;
    signal stringOffset: integer range 0 to stringToPrint'length-1:= 0;
@@ -22,27 +20,30 @@ begin
 
 -- counter for multiplexer and delay used for scrolling the text
    counter : process(clock)
+   variable counterForMultiplexer : integer range 0 to 100000 := 0; -- ticks every 100E3 / 50E6 = 2ms
+	variable counterForScrolling  : integer range 0 to 8000000 := 0; -- ticks every 8E6 / 50E6 = 160ms 
+
    begin
       if clock'event and clock = '1' then
       
          if counterForMultiplexer = counterForMultiplexer'HIGH - 1 then
          -- if it is equals to the highest possible value for counterForMultiplexer - 1
-            counterForMultiplexer <= 0;
+            counterForMultiplexer := 0;
             enabledDigit <= std_logic_vector(unsigned(enabledDigit)+1);
          else
-            counterForMultiplexer <= counterforMultiplexer + 1;
+            counterForMultiplexer := counterforMultiplexer + 1;
          end if;
          
          if counterForScrolling = counterForScrolling'HIGH - 1 then
          -- if it is equals to the highest possible value for counterForScrolling - 1
-            counterForScrolling <= 0;
+            counterForScrolling := 0;
             if stringOffset = stringToPrint'length-1 then
                stringOffset <= 0;
             else
                stringOffset <= stringOffset + 1;
             end if;
          else
-            counterForScrolling <= counterForScrolling + 1;
+            counterForScrolling := counterForScrolling + 1;
          end if;
          
       end if;
