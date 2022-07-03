@@ -12,12 +12,11 @@ entity test is
 end test;
 
 architecture behavior of test is
-	signal counterForDelay  : integer range 0 to 8000000 := 0; -- ticks every 10E6 / 50E6 = 200ms 
-	signal enabledDigit: std_logic_vector (1 downto 0) := "00";
+   constant stringToPrint: string := "_-+-_- Hello FPGA Wworld _-+-==- ";
+	signal counterForScrolling  : integer range 0 to 8000000 := 0; -- ticks every 8E6 / 50E6 = 160ms 
 	signal counterForMultiplexer : integer range 0 to 100000 := 0;
-	signal LED_BCD: std_logic_vector (3 downto 0);
+	signal enabledDigit: std_logic_vector (1 downto 0) := "00";
 	signal charForDigit: character := nul;
-	constant stringToPrint: string := "_-+-_- Hello FPGA Wworld _-+-==- ";
 	signal stringOffset: integer range 0 to stringToPrint'length-1:= 0;
 begin
 
@@ -31,15 +30,15 @@ begin
 		   else
 			   counterForMultiplexer <= counterforMultiplexer + 1;
 			end if;
-         if counterForDelay = 7999999 then
-            counterForDelay <= 0;
+         if counterForScrolling = 7999999 then
+            counterForScrolling <= 0;
 				if stringOffset = stringToPrint'length-1 then
 				   stringOffset <= 0;
 				else
 				   stringOffset <= stringOffset + 1;
 				end if;
          else
-            counterForDelay <= counterForDelay + 1;
+            counterForScrolling <= counterForScrolling + 1;
          end if;
       end if;
    end process;
