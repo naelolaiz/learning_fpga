@@ -25,7 +25,7 @@ begin
 
    begin
       if clock'event and clock = '1' then
-      
+		
          if counterForMultiplexer = counterForMultiplexer'HIGH - 1 then
          -- if it is equals to the highest possible value for counterForMultiplexer - 1
             counterForMultiplexer := 0;
@@ -49,20 +49,20 @@ begin
       end if;
    end process;
    
--- 4-to-1 MUX to active each of the digits 
-   process(enabledDigit, stringOffset)
+-- MUX to active each of the digits 
+   mux: process(enabledDigit, stringOffset)
       constant InputForShifter: std_logic_vector(3 downto 0) := "0001";
    begin
       -- see https://nandland.com/common-vhdl-conversions/#Numeric-Std_Logic_Vector-To-Integer 
       -- and http://atlas.physics.arizona.edu/~kjohns/downloads/vhdl/VHDL-xilinx-help.pdf : Foundation Express Packages -> std_logic_arith Package -> Conversion Functions : rol
-      cableSelect <= not std_logic_vector(unsigned(InputForShifter) rol (to_integer(unsigned(enabledDigit))));
+      cableSelect <= not std_logic_vector(unsigned(InputForShifter) rol to_integer(unsigned(enabledDigit)));
       
       -- select char to display according to the current enabled digit and the stringOffset
-      charForDigit <= stringToPrint(((stringOffset + to_integer(unsigned(not(enabledDigit)))) mod stringToPrint'length)+1);
+      charForDigit <= stringToPrint(((stringOffset + to_integer(unsigned(not enabledDigit))) mod stringToPrint'length)+1);
    end process;
    
 --ASCII to 7 segment conversions
-   process(charForDigit)
+   ascii_to_7segment: process(charForDigit)
    begin
       case charForDigit is
          when '0' => sevenSegments <= "11000000";
