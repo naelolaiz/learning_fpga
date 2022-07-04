@@ -12,11 +12,11 @@ entity test is
 end test;
 
 architecture behavior of test is
-signal counterForCounter: integer range 0 to 2500000 := 0; -- ticks every 2.5E6 / 50E6 = 50ms 
+signal counterForCounter: integer range 0 to 3125000 := 0; -- ticks every 3.125E6 / 50E6 = 62.5 ms (0.0625*16 = 1, so the second digit increases every second)
 signal counterForMux: integer range 0 to 100000 := 0; -- ticks every 100E3 / 50E6 = 2ms
 
 signal numberToDisplay: std_logic_vector (15 downto 0);
-signal enabledDigit: std_logic_vector (3 downto 0) := "0001";
+signal enabledDigit: integer range 0 to 3:= 0;
 signal currentDigitValue: std_logic_vector (3 downto 0);
 
 begin
@@ -26,7 +26,11 @@ begin
 
          if counterForMux = counterForMux'HIGH-1 then
             counterForMux <= 0;
-            enabledDigit <= std_logic_vector(unsigned(enabledDigit) rol 1);
+				if enabledDigit = enabledDigit'HIGH then
+				   enabledDigit <= 0;
+				else
+				   enabledDigit <= enabledDigit + 1;
+				end if;
          else
             counterForMux <= counterForMux + 1;
          end if;
@@ -42,17 +46,10 @@ begin
    
    -- MUX to generate anode activating signals for 4 LEDs 
    process(enabledDigit)
+	constant nibbleToShift: std_logic_vector(3 downto 0) := "0001";
    begin
-       cableSelect <= not enabledDigit;
-       if enabledDigit = "0001" then
-           currentDigitValue <= numberToDisplay(3 downto 0);
-       elsif enabledDigit = "0010" then
-           currentDigitValue <= numberToDisplay(7 downto 4);
-       elsif enabledDigit = "0100" then
-           currentDigitValue <= numberToDisplay(11 downto 8);
-       else
-           currentDigitValue <= numberToDisplay(15 downto 12);
-       end if;
+       cableSelect <= not std_logic_vector(unsigned(nibbleToShift) sll enabledDigit);
+		 currentDigitValue <= std_logic_vector(unsigned(numberToDisplay) srl (enabledDigit*4)) (3 downto 0);
    end process;
 
    sevenSegments <= "1000000" when currentDigitValue = "0000" else
