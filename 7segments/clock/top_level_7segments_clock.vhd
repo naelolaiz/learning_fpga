@@ -6,25 +6,25 @@ use ieee.numeric_std.ALL;
 entity digit is
    generic (MAX_NUMBER: integer range 0 to 9 := 9);
    port (clockForIncrement : in std_logic := '0';
-	      currentNumber : out std_logic_vector (3 downto 0) := "0000";
-	      carryBit : out std_logic := '0');
+         currentNumber : out std_logic_vector (3 downto 0) := "0000";
+         carryBit : out std_logic := '0');
 end digit;
 architecture behaviorDigit of digit is
    signal currentNumberSignal : integer range 0 to MAX_NUMBER := 0;
 begin
     clock: process(clockForIncrement)
-	 begin
-	    if clockForIncrement'event and clockForIncrement = '1' then
-		    if currentNumberSignal = MAX_NUMBER then
-			    currentNumberSignal <= 0;
-				 carryBit <= '1';
-			 else
+    begin
+       if clockForIncrement'event and clockForIncrement = '1' then
+          if currentNumberSignal = MAX_NUMBER then
+             currentNumberSignal <= 0;
+             carryBit <= '1';
+          else
              currentNumberSignal <= currentNumberSignal + 1;
-				 carryBit <= '0';
-			 end if;
-		 end if;
-	 end process;
-	 currentNumber <= std_logic_vector(to_unsigned(currentNumberSignal, 4));
+             carryBit <= '0';
+          end if;
+       end if;
+    end process;
+    currentNumber <= std_logic_vector(to_unsigned(currentNumberSignal, 4));
 end behaviorDigit;
 
 ----------------
@@ -62,23 +62,23 @@ begin
     port map (
       clockForIncrement => mainClockForDigits,
       currentNumber => numberToDisplay(3 downto 0),
-		carryBit => carryBitSecondsUnit);
-		
-	digitSecsTens : entity work.digit(behaviorDigit)
+      carryBit => carryBitSecondsUnit);
+      
+   digitSecsTens : entity work.digit(behaviorDigit)
     generic map (MAX_NUMBER => 5)
     port map (
       clockForIncrement => carryBitSecondsUnit,
       currentNumber => numberToDisplay(7 downto 4),
-		carryBit => carryBitSecondsTens); 
-		
-	digitMinsUnit : entity work.digit(behaviorDigit)
+      carryBit => carryBitSecondsTens); 
+      
+   digitMinsUnit : entity work.digit(behaviorDigit)
     generic map (MAX_NUMBER => 9)
     port map (
       clockForIncrement => carryBitSecondsTens,
       currentNumber => numberToDisplay(11 downto 8),
-		carryBit => carryBitMinutesUnit); 
-		
-	digitMinsTens : entity work.digit(behaviorDigit)
+      carryBit => carryBitMinutesUnit); 
+      
+   digitMinsTens : entity work.digit(behaviorDigit)
     generic map (MAX_NUMBER => 5)
     port map (
       clockForIncrement => carryBitMinutesUnit,
@@ -90,20 +90,20 @@ begin
 
          if counterForMux = counterForMux'HIGH-1 then
             counterForMux <= 0;
-				if enabledDigit = enabledDigit'HIGH then
-				   enabledDigit <= 0;
-				else
-				   enabledDigit <= enabledDigit + 1;
-				end if;
+            if enabledDigit = enabledDigit'HIGH then
+               enabledDigit <= 0;
+            else
+               enabledDigit <= enabledDigit + 1;
+            end if;
          else
             counterForMux <= counterForMux + 1;
          end if;
          
          if counterForCounter = counterForCounter'HIGH-1 then
             counterForCounter <= 0;
-				mainClockForDigits <= '1';
+            mainClockForDigits <= '1';
          else
-			   mainClockForDigits <= '0';
+            mainClockForDigits <= '0';
             counterForCounter <= counterForCounter + 1;
          end if;
       end if;
@@ -111,10 +111,10 @@ begin
    
    -- MUX to generate anode activating signals for 4 LEDs 
    process(enabledDigit)
-	constant nibbleToShift: std_logic_vector(3 downto 0) := "0001";
+   constant nibbleToShift: std_logic_vector(3 downto 0) := "0001";
    begin
        cableSelect <= not std_logic_vector(unsigned(nibbleToShift) sll enabledDigit);
-		 currentDigitValue <= std_logic_vector(unsigned(numberToDisplay) srl (enabledDigit*4)) (3 downto 0);
+       currentDigitValue <= std_logic_vector(unsigned(numberToDisplay) srl (enabledDigit*4)) (3 downto 0);
    end process;
 
    sevenSegments <= "1000000" when currentDigitValue = "0000" else
