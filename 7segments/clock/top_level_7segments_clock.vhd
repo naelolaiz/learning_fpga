@@ -46,13 +46,13 @@ architecture behavior of top_level_7segments_clock is
 signal counterForCounter: integer range 0 to 50000000 := 0; -- tick every second
 signal counterForMux: integer range 0 to 100000 := 0; -- ticks every 100E3 / 50E6 = 2ms
 
-signal numberToDisplay: std_logic_vector (15 downto 0);
+signal numberToDisplay: std_logic_vector (23 downto 0);
 signal enabledDigit: integer range 0 to 3:= 0;
 signal currentDigitValue: std_logic_vector (3 downto 0);
 
 signal mainClockForDigits: std_logic := '0';
 
-signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit: std_logic := '0';
+signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
 
 begin
 
@@ -82,8 +82,23 @@ begin
     generic map (MAX_NUMBER => 5)
     port map (
       clockForIncrement => carryBitMinutesUnit,
-      currentNumber => numberToDisplay(15 downto 12)); 
+      currentNumber => numberToDisplay(15 downto 12),
+      carryBit => carryBitMinutesTens); 
  
+   digitHoursUnit : entity work.digit(behaviorDigit)
+    generic map (MAX_NUMBER => 4)
+    port map (
+      clockForIncrement => carryBitMinutesTens,
+      currentNumber => numberToDisplay(19 downto 16),
+      carryBit => carryBitHoursUnit); 
+      
+   digitHoursTens : entity work.digit(behaviorDigit)
+    generic map (MAX_NUMBER => 2)
+    port map (
+      clockForIncrement => carryBitHoursUnit,
+      currentNumber => numberToDisplay(23 downto 20));       
+      
+      
    counter: process(clock)
    begin
       if clock'event and clock = '1' then
