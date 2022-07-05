@@ -203,14 +203,13 @@ resetButtonSignal <= not resetButton;
       clockForIncrement => carryBitHoursUnit,
       currentNumber => bcdDigits(23 downto 20),
       reset => resetButtonSignal);
-  -- debounce copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd
-  
---  debounce_clock_mode_switch : entity work.Debounce(RTL)
---    port map(
---    i_Clk    => clock,
---    i_Switch => inputButtons(0),
---    o_Switch => buttonClockModeDebounced
---  );
+  -- debounce copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd 
+  debounce_clock_mode_switch : entity work.Debounce(RTL)
+    port map(
+    i_Clk    => clock,
+    i_Switch => inputButtons(0),
+    o_Switch => buttonClockModeDebounced
+  );
 
 
    ---- button handler
