@@ -77,14 +77,14 @@ entity CounterTimer is
    port (clock: in std_logic := '0';
          reset: in std_logic := '0';
          timerTriggered : out std_logic := '0';
-         counter : out std_logic_vector (63 downto 0):= "0000000000000000000000000000000000000000000000000000000000000000");
+         counter : out std_logic_vector (63 downto 0):= std_logic_vector(to_unsigned(0,64)));
 end CounterTimer;
 
 architecture behaviorCounterTimer of CounterTimer is
    signal timerTick : std_logic := '0';
-   signal counterValue : std_logic_vector (63 downto 0) := "0000000000000000000000000000000000000000000000000000000000000000";
+   signal counterValue : std_logic_vector (63 downto 0) := std_logic_vector(to_unsigned(0,64));
 begin
-   Timer1Sec : entity work.Timer(behaviorTimer)
+   Timer : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => MAX_NUMBER_FOR_TIMER )
       port map    ( clock => clock,
                     timerTriggered => timerTick,
@@ -92,15 +92,14 @@ begin
    counterProcess : process(timerTick)
    begin
       if timerTick'event and timerTick = '1' then
-         --if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER_FOR_COUNTER, counterValue'length)) then
          if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER_FOR_COUNTER, counterValue'length)) then
-            counterValue <= "0000000000000000000000000000000000000000000000000000000000000000";
+            counterValue <= std_logic_vector(to_unsigned(0,64));
          else
-            counterValue <= std_logic_vector(to_unsigned(to_integer(unsigned(counterValue))+1, 64));
+            counterValue <= std_logic_vector(to_unsigned(to_integer(unsigned(counterValue))+1, counterValue'length));
          end if;
       end if;
       if reset = '1' then
-          counterValue <= "0000000000000000000000000000000000000000000000000000000000000000";
+          counterValue <= std_logic_vector(to_unsigned(0,64));
       end if;
    end process;
    timerTriggered <= TimerTick;
