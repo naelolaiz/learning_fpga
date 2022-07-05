@@ -86,7 +86,7 @@ begin
       carryBit => carryBitMinutesTens); 
  
    digitHoursUnit : entity work.digit(behaviorDigit)
-    generic map (MAX_NUMBER => 4)
+    generic map (MAX_NUMBER => 3)
     port map (
       clockForIncrement => carryBitMinutesTens,
       currentNumber => bcdDigits(19 downto 16),
