@@ -30,27 +30,27 @@ begin
 end behaviorDigit;
 
 ---------------
--- Clock entity
+-- Timer entity
 LIBRARY ieee;
 
 USE ieee.std_logic_1164.ALL;
 use ieee.numeric_std.ALL;
 
-entity Clock is
+entity Timer is
    generic (MAX_NUMBER: integer := 50000000);
    port (clock: in std_logic := '0';
 	      reset: in std_logic := '0';
 	      timerTriggered : out std_logic := '0');
-end Clock;
+end Timer;
 
-architecture behaviorClock of Clock is
+architecture behaviorTimer of Timer is
 begin
-   timerClock: process(clock, reset)
+   timerTimer: process(clock, reset)
 	variable counterForTriggerOut: integer range 0 to MAX_NUMBER := 0;
    begin
       if clock'event and clock = '1' then
    		if reset = '1' then
-	   	   counterForTriggerOut := 0;
+	   	    counterForTriggerOut := 0;
 		   end if;
 
          if counterForTriggerOut = MAX_NUMBER then
@@ -62,50 +62,50 @@ begin
 			end if;
       end if;
    end process;
-end behaviorClock;
+end behaviorTimer;
 
 
 ----------------
--- CounterClock entity
+-- CounterTimer entity
 LIBRARY ieee;
 use ieee.std_logic_1164.ALL;
 use ieee.numeric_std.ALL;
 
-entity CounterClock is
-   generic (MAX_NUMBER: integer := 50000000);
+entity CounterTimer is
+   generic (MAX_NUMBER_FOR_TIMER: integer := 50000000;
+	         MAX_NUMBER_FOR_COUNTER: integer := 10);
    port (clock: in std_logic := '0';
 	      reset: in std_logic := '0';
 	      timerTriggered : out std_logic := '0';
 			counter : out std_logic_vector (63 downto 0):= "0000000000000000000000000000000000000000000000000000000000000000");
-end CounterClock;
+end CounterTimer;
 
-architecture behaviorCounterClock of CounterClock is
-   signal clockTick : std_logic := '0';
-   variable counterValue : std_logic_vector (63 downto 0) := "0000000000000000000000000000000000000000000000000000000000000000";
+architecture behaviorCounterTimer of CounterTimer is
+   signal timerTick : std_logic := '0';
+   signal counterValue : std_logic_vector (63 downto 0) := "0000000000000000000000000000000000000000000000000000000000000000";
 begin
-   clock1Sec : entity work.Clock(behaviorClock)
-	   generic map ( MAX_NUMBER => MAX_NUMBER ) -- before it was 49999999. It was copied from examples. TODO: Check why!
+   Timer1Sec : entity work.Timer(behaviorTimer)
+	   generic map ( MAX_NUMBER => MAX_NUMBER_FOR_TIMER )
 		port map    ( clock => clock,
-		              timerTriggered => clockTick,
+		              timerTriggered => timerTick,
 					     reset => reset );
-   counterProcess : process(clockTick)
+   counterProcess : process(timerTick)
    begin
-      if clockTick'event and clockTick = '1' then
-         if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER, counterValue'length)) then
-            counterValue := "0000000000000000000000000000000000000000000000000000000000000000";
+      if timerTick'event and timerTick = '1' then
+         --if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER_FOR_COUNTER, counterValue'length)) then
+			if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER_FOR_COUNTER, counterValue'length)) then
+            counterValue <= "0000000000000000000000000000000000000000000000000000000000000000";
          else
-            counterValue := std_logic_vector(to_unsigned(to_integer(unsigned(counterValue))+1, 64));
+            counterValue <= std_logic_vector(to_unsigned(to_integer(unsigned(counterValue))+1, 64));
 			end if;
       end if;
-   end process;
-	resetProcess: process(reset)
-	begin
-		if reset'event and reset = '1' then
-		    counterValue := "0000000000000000000000000000000000000000000000000000000000000000";
+		if reset = '1' then
+		    counterValue <= "0000000000000000000000000000000000000000000000000000000000000000";
 		end if;
-	end process;
-	timerTriggered <= clockTick;
-end behaviorCounterClock;
+   end process;
+	timerTriggered <= TimerTick;
+	counter <= counterValue;
+end behaviorCounterTimer;
 ---------------
 -- top level entiry
 
@@ -125,25 +125,34 @@ end top_level_7segments_clock;
 
 architecture behavior of top_level_7segments_clock is
 signal bcdDigits: std_logic_vector (23 downto 0);
-signal enabledDigit: integer range 0 to 3:= 0;
-signal currentDigitValue: std_logic_vector (3 downto 0);
+signal enabledDigit: std_logic_vector (1 downto 0) := "00";
+signal currentDigitValue: std_logic_vector (3 downto 0) := "0000";
 
 signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
-signal clockTick1Sec: std_logic := '0';
+signal timerTick1Sec: std_logic := '0';
 
 type ClockMode is (MMSS,HHMM);
 signal currentClockMode : ClockMode := MMSS;
 
 begin
-   clock1Sec : entity work.Clock(behaviorClock)
+ --------------------------------
+ -- timer to get ticks every 1 sec
+   timer1Sec : entity work.Timer(behaviorTimer)
 	   generic map ( MAX_NUMBER => 50000000 ) -- before it was 49999999. It was copied from examples. TODO: Check why!
 		port map ( clock => clock,
-		           timerTriggered => clockTick1Sec );
-					  
+		           timerTriggered => timerTick1Sec );
+ ------------------------------------------------------------------
+ -- counter for for multiplexer (4 digits, one increment every 2ms)					  
+	counterForMux : entity work.CounterTimer(behaviorCounterTimer)
+	 generic map (MAX_NUMBER_FOR_TIMER => 100000, -- tick every 100E3 / 50E6 = 2ms
+	              MAX_NUMBER_FOR_COUNTER => 3)
+	 port map ( clock => clock,
+	            counter (1 downto 0) => enabledDigit);
+ -- digit instances ...					  
    digitSecsUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 9)
     port map (
-      clockForIncrement => clockTick1Sec,
+      clockForIncrement => timerTick1Sec,
       currentNumber => bcdDigits(3 downto 0),
       carryBit => carryBitSecondsUnit);
 
@@ -180,26 +189,8 @@ begin
     port map (
       clockForIncrement => carryBitHoursUnit,
       currentNumber => bcdDigits(23 downto 20));       
-      
-      
-   mainClock: process(clock)
-   variable counterForMux: integer range 0 to 100000 := 0; -- tick every 100E3 / 50E6 = 2ms
-   begin
-      if clock'event and clock = '1' then
 
-         if counterForMux = counterForMux'HIGH-1 then
-            counterForMux := 0;
-            if enabledDigit = enabledDigit'HIGH then
-               enabledDigit <= 0;
-            else
-               enabledDigit <= enabledDigit + 1;
-            end if;
-         else
-            counterForMux := counterForMux + 1;
-         end if;
-      end if;
-   end process;
-	
+   ---- button handler
 	-- TODO: implement debounce
 	buttonHandler: process(inputButtons)
 	begin
@@ -215,10 +206,11 @@ begin
    process(enabledDigit)
       constant nibbleToShift: std_logic_vector(3 downto 0) := "0001";
    begin
-      cableSelect <= not std_logic_vector(unsigned(nibbleToShift) sll enabledDigit);
-      currentDigitValue <= std_logic_vector(unsigned(bcdDigits) srl ((enabledDigit + (ClockMode'pos(currentClockMode) * 2))*4)) (3 downto 0);
+      cableSelect <= not std_logic_vector(unsigned(nibbleToShift) sll to_integer(unsigned(enabledDigit)));
+      currentDigitValue <= std_logic_vector(unsigned(bcdDigits) srl ((to_integer(unsigned(enabledDigit)) + (ClockMode'pos(currentClockMode) * 2))*4)) (3 downto 0);
    end process;
 
+	-- BCD to 7 segments
    sevenSegments <= "1000000" when currentDigitValue = "0000" else
       "1111001" when currentDigitValue =  "0001" else
       "0100100" when currentDigitValue =  "0010" else
