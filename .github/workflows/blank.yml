@@ -34,6 +34,9 @@ jobs:
     #    backend: ${{ matrix.backend }}
 
     - name: Test
+      uses: ghdl/setup-ghdl-ci@nightly
+      with: 
+        backend: llvm
       run: |
         echo "GHDL_PREFIX: $GHDL_PREFIX"
         echo "GHDL: $GHDL"
