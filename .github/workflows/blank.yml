@@ -43,8 +43,8 @@ jobs:
         echo "GHDL_LIBS: $GHDL_LIBS"
         ghdl --version
         $GHDL --version
-        ls -l 
         cd blink_led
         ghdl -a blink_led.vhd
         ghdl -e blink_led
-        ./blink_led      
+        ls -l 
+        ./blink_led
