@@ -30,8 +30,6 @@ Project containing tests for learning FPGA/VHDL.
       - [x] allow setting the time by increasing the numbers with a second button.
         - [x] the speed should be fast, and should depend on the current view mode.
       - [x] allow setting the time by decreasing the numbers with a third button. Update digit entity accordingly.
-      - [x] create a CI github action to compile a vhdl file with ghdl : https://github.com/naelolaiz/learning_fpga/blob/main/.github/workflows/ci.yml
-        - TODO: make other vhdl files compatible (they don't currently compile because of missing configurations and probably different standards used?)
       - TODO: 
         - make the middle dot on the second display to blink. At different intervals depending on the view mode (0.5 sec to change state -period 1hz- for HHMM, 0.25 ? sec to change state in MMSS)
         - add alarm
@@ -39,6 +37,8 @@ Project containing tests for learning FPGA/VHDL.
         - improve set time interface (dynamic speed for increasing/decreasing time)
         - cleanup
         - simplify code to remove redundant timers
+ - [x] create a CI github action to compile a vhdl file with ghdl : https://github.com/naelolaiz/learning_fpga/blob/main/.github/workflows/ci.yml
+   - TODO: make other vhdl files compatible. At least " Clock" (they don't currently compile because of missing configurations and probably different standards used?)
   - TODO:
     - create a simple game with the buttons and the 7 segments display (snake / space invaders)
       - learn how to generate random numbers with the FPGA
