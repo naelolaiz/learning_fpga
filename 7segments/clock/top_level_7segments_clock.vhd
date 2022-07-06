@@ -32,10 +32,11 @@ signal buttonClockModeDebounced : std_logic := '0';
 signal resetButtonSignal : std_logic := '0';
 
 signal increaseTimeButtonDebounced : std_logic := '1';
+signal decreaseTimeButtonDebounced : std_logic := '1';
 
 begin
 resetButtonSignal <= not resetButton;
-mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else timerTick005Sec when currentClockMode = MMSS else timerTick00015Sec;
+mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1') else timerTick005Sec when currentClockMode = MMSS else timerTick00015Sec;
 
  --------------------------------
  -- timer to get ticks every 1 sec
@@ -68,7 +69,8 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
    digitSecsUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 9)
     port map (
-      clockForIncrement => mainClockForClock,
+      clock => mainClockForClock,
+		direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(3 downto 0),
       carryBit => carryBitSecondsUnit,
       reset => resetButtonSignal);
@@ -76,7 +78,8 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
       digitSecsTens : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 5)
     port map (
-      clockForIncrement => carryBitSecondsUnit,
+      clock => carryBitSecondsUnit,
+		direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(7 downto 4),
       carryBit => carryBitSecondsTens,
       reset => resetButtonSignal); 
@@ -84,7 +87,8 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
    digitMinsUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 9)
     port map (
-      clockForIncrement => carryBitSecondsTens,
+      clock => carryBitSecondsTens,
+		direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(11 downto 8),
       carryBit => carryBitMinutesUnit,
       reset => resetButtonSignal); 
@@ -92,7 +96,8 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
    digitMinsTens : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 5)
     port map (
-      clockForIncrement => carryBitMinutesUnit,
+      clock => carryBitMinutesUnit,
+		direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(15 downto 12),
       carryBit => carryBitMinutesTens,
       reset => resetButtonSignal); 
@@ -100,7 +105,8 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
    digitHoursUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 3)
     port map (
-      clockForIncrement => carryBitMinutesTens,
+      clock => carryBitMinutesTens,
+		direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(19 downto 16),
       carryBit => carryBitHoursUnit,
       reset => resetButtonSignal); 
@@ -108,7 +114,8 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
    digitHoursTens : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 2)
     port map (
-      clockForIncrement => carryBitHoursUnit,
+      clock => carryBitHoursUnit,
+		direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(23 downto 20),
       reset => resetButtonSignal);
   -- debounce copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd 
@@ -118,8 +125,15 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
     i_Switch => inputButtons(0),
     o_Switch => buttonClockModeDebounced
   );
-  
+
   debounce_increase_time_button : entity work.Debounce(RTL)
+    port map(
+    i_Clk    => clock,
+    i_Switch => inputButtons(2),
+    o_Switch => decreaseTimeButtonDebounced
+  );
+  
+  debounce_decrease_time_button : entity work.Debounce(RTL)
     port map(
     i_Clk    => clock,
     i_Switch => inputButtons(3),
