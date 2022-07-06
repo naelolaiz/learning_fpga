@@ -29,7 +29,9 @@ Project containing tests for learning FPGA/VHDL.
         - [x] use a debouncer for the button (this is the only code that is not mine. It is copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd). I copied it because I knew that it was there, and I was focused on other functionalities. TODO: create my own version.
       - [x] allow setting the time by increasing the numbers with a second button.
         - [x] the speed should be fast, and should depend on the current view mode.
-      - [x] allow setting the time by decreasing the numbers with a third button. Update digit entity accordingly.       
+      - [x] allow setting the time by decreasing the numbers with a third button. Update digit entity accordingly.
+      - [x] create a CI github action to compile a vhdl file with ghdl : https://github.com/naelolaiz/learning_fpga/blob/main/.github/workflows/ci.yml
+        - TODO: make other vhdl files compatible (they don't currently compile because of missing configurations and probably different standards used?)
       - TODO: 
         - make the middle dot on the second display to blink. At different intervals depending on the view mode (0.5 sec to change state -period 1hz- for HHMM, 0.25 ? sec to change state in MMSS)
         - add alarm
