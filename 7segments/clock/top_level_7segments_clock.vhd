@@ -1,117 +1,5 @@
-LIBRARY ieee;
-
-USE ieee.std_logic_1164.ALL;
-use ieee.numeric_std.ALL;
-
----------------
--- Digit entity
-entity Digit is
-   generic (MAX_NUMBER: integer range 0 to 9 := 9);
-   port (clockForIncrement : in std_logic := '0';
-	      reset : in std_logic := '0';
-         currentNumber : out std_logic_vector (3 downto 0) := "0000";
-         carryBit : out std_logic := '0');
-end Digit;
-architecture behaviorDigit of Digit is
-   signal currentNumberSignal : integer range 0 to MAX_NUMBER := 0;
-begin
-    increment: process(clockForIncrement, reset)
-    begin
-       if clockForIncrement'event and clockForIncrement = '1' then
-          if currentNumberSignal = MAX_NUMBER then
-             currentNumberSignal <= 0;
-             carryBit <= '1';
-          else
-             currentNumberSignal <= currentNumberSignal + 1;
-             carryBit <= '0';
-          end if;
-       end if;
-		 if reset = '1' then
-		    currentNumberSignal <= 0;
-		 end if;
-    end process;
-    currentNumber <= std_logic_vector(to_unsigned(currentNumberSignal, 4));
-end behaviorDigit;
-
----------------
--- Timer entity
-LIBRARY ieee;
-
-USE ieee.std_logic_1164.ALL;
-use ieee.numeric_std.ALL;
-
-entity Timer is
-   generic (MAX_NUMBER: integer := 50000000);
-   port (clock: in std_logic := '0';
-         reset: in std_logic := '0';
-         timerTriggered : out std_logic := '0');
-end Timer;
-
-architecture behaviorTimer of Timer is
-begin
-   timerTimer: process(clock, reset)
-   variable counterForTriggerOut: integer range 0 to MAX_NUMBER := 0;
-   begin
-      if clock'event and clock = '1' then
-         if reset = '1' then
-             counterForTriggerOut := 0;
-         end if;
-
-         if counterForTriggerOut = MAX_NUMBER then
-            counterForTriggerOut := 0;
-            timerTriggered <= '1';
-         else
-            counterForTriggerOut := counterForTriggerOut + 1;
-            timerTriggered <= '0';
-         end if;
-      end if;
-   end process;
-end behaviorTimer;
-
-
-----------------
--- CounterTimer entity
-LIBRARY ieee;
-use ieee.std_logic_1164.ALL;
-use ieee.numeric_std.ALL;
-
-entity CounterTimer is
-   generic (MAX_NUMBER_FOR_TIMER: integer := 50000000;
-            MAX_NUMBER_FOR_COUNTER: integer := 10);
-   port (clock: in std_logic := '0';
-         reset: in std_logic := '0';
-         timerTriggered : out std_logic := '0';
-         counter : out std_logic_vector (63 downto 0):= std_logic_vector(to_unsigned(0,64)));
-end CounterTimer;
-
-architecture behaviorCounterTimer of CounterTimer is
-   signal timerTick : std_logic := '0';
-   signal counterValue : std_logic_vector (63 downto 0) := std_logic_vector(to_unsigned(0,64));
-begin
-   Timer : entity work.Timer(behaviorTimer)
-      generic map ( MAX_NUMBER => MAX_NUMBER_FOR_TIMER )
-      port map    ( clock => clock,
-                    timerTriggered => timerTick,
-                    reset => reset );
-   counterProcess : process(timerTick, reset)
-   begin
-      if timerTick'event and timerTick = '1' then
-         if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER_FOR_COUNTER, counterValue'length)) then
-            counterValue <= std_logic_vector(to_unsigned(0,64));
-         else
-            counterValue <= std_logic_vector(to_unsigned(to_integer(unsigned(counterValue))+1, counterValue'length));
-         end if;
-      end if;
-      if reset = '1' then
-          counterValue <= std_logic_vector(to_unsigned(0,64));
-      end if;
-   end process;
-   timerTriggered <= TimerTick;
-   counter <= counterValue;
-end behaviorCounterTimer;
----------------
--- top level entiry
-
+------------------------------
+-- top level entitry for clock
 
 LIBRARY ieee;
 
@@ -134,14 +22,21 @@ signal currentDigitValue: std_logic_vector (3 downto 0) := "0000";
 
 signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
 signal timerTick1Sec: std_logic := '0';
+signal timerTick005Sec: std_logic := '0';
+signal timerTick00015Sec: std_logic := '0';
+signal mainClockForClock: std_logic := '0';
 
 type ClockMode is (MMSS,HHMM);
 signal currentClockMode : ClockMode := MMSS;
 signal buttonClockModeDebounced : std_logic := '0';
 signal resetButtonSignal : std_logic := '0';
 
+signal increaseTimeButtonDebounced : std_logic := '1';
+
 begin
 resetButtonSignal <= not resetButton;
+mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else timerTick005Sec when currentClockMode = MMSS else timerTick00015Sec;
+
  --------------------------------
  -- timer to get ticks every 1 sec
    timer1Sec : entity work.Timer(behaviorTimer)
@@ -149,6 +44,19 @@ resetButtonSignal <= not resetButton;
       port map ( clock => clock,
                  timerTriggered => timerTick1Sec,
 					  reset => resetButtonSignal);
+					  
+   timer005Sec : entity work.Timer(behaviorTimer)
+      generic map ( MAX_NUMBER => 2500000 )
+      port map ( clock => clock,
+                 timerTriggered => timerTick005Sec,
+					  reset => resetButtonSignal);					  
+	timer00015Sec : entity work.Timer(behaviorTimer)
+      generic map ( MAX_NUMBER => 75000 )
+      port map ( clock => clock,
+                 timerTriggered => timerTick00015Sec,
+					  reset => resetButtonSignal);	
+					  
+					  
  ------------------------------------------------------------------
  -- counter for for multiplexer (4 digits, one increment every 2ms)                
    counterForMux : entity work.CounterTimer(behaviorCounterTimer)
@@ -160,7 +68,7 @@ resetButtonSignal <= not resetButton;
    digitSecsUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 9)
     port map (
-      clockForIncrement => timerTick1Sec,
+      clockForIncrement => mainClockForClock,
       currentNumber => bcdDigits(3 downto 0),
       carryBit => carryBitSecondsUnit,
       reset => resetButtonSignal);
@@ -210,7 +118,14 @@ resetButtonSignal <= not resetButton;
     i_Switch => inputButtons(0),
     o_Switch => buttonClockModeDebounced
   );
-
+  
+  debounce_increase_time_button : entity work.Debounce(RTL)
+    port map(
+    i_Clk    => clock,
+    i_Switch => inputButtons(3),
+    o_Switch => increaseTimeButtonDebounced
+  );
+  
 
    ---- button handler
    buttonHandler: process(buttonClockModeDebounced)
