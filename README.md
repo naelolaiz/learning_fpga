@@ -15,3 +15,31 @@ Project containing tests for learning FPGA/VHDL.
 ### [Driving 4 multiplexed 7 segment digits with alphanumeric characters, with scroll](https://github.com/naelolaiz/learning_fpga/tree/main/7segments/text)
 ![What it looks like](7segments/text/doc/scrolling_long_text.gif)
 ![RTL view](7segments/text/doc/RTL_view.png)
+## Log:
+- Learn VHDL (in progress)
+  - [x] hello world: blinking led (+keyboard) : https://github.com/naelolaiz/learning_fpga/tree/main/blink_led
+  - [x] driver for 7 segments display
+     - [x] basic handling and mux for 4 digits on a simple counter: https://github.com/naelolaiz/learning_fpga/tree/main/7segments/counter
+     - [x] extended handling with alphanumeric chars, strings and scrolling: https://github.com/naelolaiz/learning_fpga/tree/main/7segments/text
+     - (in progress) simple clock application using entities for compositions: https://github.com/naelolaiz/learning_fpga/tree/main/7segments/clock
+       - [x] create reusable entity for digits and connect instances in cascade.
+       - [x] create reusable entity for a timer. Use it as clock for the first digit.
+       - [x] create reusable entity for a time counter (instatiating a timer inside). Use it for handling the CableSelect on the multiplexed digits.
+       - [x] allow two view modes HHMM/MMSS. Change it with a button.
+         - [x] use a debouncer for the button (this is the only code that is not mine. It is copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd)
+       - [x] allow setting the time by increasing the numbers with a second button.
+         - [x] the speed should be fast, and should depend on the current view mode.
+         - TODO: 
+           - simplify code to remove redundant timers
+           - 
+       - [x] allow setting the time by decreasing the numbers with a third button. Update digit entity accordingly.       
+       - TODO:
+         - add alarm
+         - milliseconds view
+         - improve set time interface (dynamic speed for increasing/decreasing time)
+         - cleanup
+ - TODO:
+   - create a simple game with the buttons and the 7 segments display (snake / space invaders)
+     - learn how to generate random numbers with the FPGA
+     
+- Learn Verilog (TODO)
