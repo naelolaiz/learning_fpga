@@ -70,7 +70,7 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
     generic map (MAX_NUMBER => 9)
     port map (
       clock => mainClockForClock,
-		direction => decreaseTimeButtonDebounced,
+      direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(3 downto 0),
       carryBit => carryBitSecondsUnit,
       reset => resetButtonSignal);
@@ -79,7 +79,7 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
     generic map (MAX_NUMBER => 5)
     port map (
       clock => carryBitSecondsUnit,
-		direction => decreaseTimeButtonDebounced,
+      direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(7 downto 4),
       carryBit => carryBitSecondsTens,
       reset => resetButtonSignal); 
@@ -88,7 +88,7 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
     generic map (MAX_NUMBER => 9)
     port map (
       clock => carryBitSecondsTens,
-		direction => decreaseTimeButtonDebounced,
+      direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(11 downto 8),
       carryBit => carryBitMinutesUnit,
       reset => resetButtonSignal); 
@@ -97,7 +97,7 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
     generic map (MAX_NUMBER => 5)
     port map (
       clock => carryBitMinutesUnit,
-		direction => decreaseTimeButtonDebounced,
+      direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(15 downto 12),
       carryBit => carryBitMinutesTens,
       reset => resetButtonSignal); 
@@ -106,7 +106,7 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
     generic map (MAX_NUMBER => 3)
     port map (
       clock => carryBitMinutesTens,
-		direction => decreaseTimeButtonDebounced,
+      direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(19 downto 16),
       carryBit => carryBitHoursUnit,
       reset => resetButtonSignal); 
@@ -115,7 +115,7 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
     generic map (MAX_NUMBER => 2)
     port map (
       clock => carryBitHoursUnit,
-		direction => decreaseTimeButtonDebounced,
+      direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(23 downto 20),
       reset => resetButtonSignal);
   -- debounce copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd 
