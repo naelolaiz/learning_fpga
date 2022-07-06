@@ -26,7 +26,7 @@ Project containing tests for learning FPGA/VHDL.
       - [x] create reusable entity for a timer. Use it as clock for the first digit.
       - [x] create reusable entity for a time counter (instatiating a timer inside). Use it for handling the CableSelect on the multiplexed digits.
       - [x] allow two view modes HHMM/MMSS. Change it with a button.
-        - [x] use a debouncer for the button (this is the only code that is not mine. It is copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd). I copied it because I knew that it was there, and I was focused on other functionalities. TODO: create my own version.
+        - [x] use a debouncer for the button (this is the only code that is not mine. It is copied from https://nandland.com/project-4-debounce-a-switch/). I copied it because I knew that it was there, and I was focused on other functionalities. TODO: create my own version.
       - [x] allow setting the time by increasing the numbers with a second button.
         - [x] the speed should be fast, and should depend on the current view mode.
       - [x] allow setting the time by decreasing the numbers with a third button. Update digit entity accordingly.
