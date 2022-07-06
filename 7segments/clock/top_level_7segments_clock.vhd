@@ -9,7 +9,7 @@ use ieee.numeric_std.ALL;
 entity top_level_7segments_clock is
    port (
          clock: in std_logic;
-			resetButton: in std_logic := '1';
+         resetButton: in std_logic := '1';
          inputButtons : in std_logic_vector(3 downto 0);
          sevenSegments : out std_logic_vector(7 downto 0);
          cableSelect : out std_logic_vector(3 downto 0));
@@ -43,20 +43,20 @@ mainClockForClock <= timerTick1Sec when increaseTimeButtonDebounced = '1' else t
       generic map ( MAX_NUMBER => 50000000 ) -- before it was 49999999. It was copied from examples. TODO: Check why!
       port map ( clock => clock,
                  timerTriggered => timerTick1Sec,
-					  reset => resetButtonSignal);
-					  
+                 reset => resetButtonSignal);
+                 
    timer005Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 2500000 )
       port map ( clock => clock,
                  timerTriggered => timerTick005Sec,
-					  reset => resetButtonSignal);					  
-	timer00015Sec : entity work.Timer(behaviorTimer)
+                 reset => resetButtonSignal);                 
+   timer00015Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 75000 )
       port map ( clock => clock,
                  timerTriggered => timerTick00015Sec,
-					  reset => resetButtonSignal);	
-					  
-					  
+                 reset => resetButtonSignal);   
+                 
+                 
  ------------------------------------------------------------------
  -- counter for for multiplexer (4 digits, one increment every 2ms)                
    counterForMux : entity work.CounterTimer(behaviorCounterTimer)
