@@ -30,6 +30,7 @@ type ClockMode is (MMSS,HHMM);
 signal currentClockMode : ClockMode := MMSS;
 signal buttonClockModeDebounced : std_logic := '0';
 signal resetButtonSignal : std_logic := '0';
+signal dotBlinkingSignal: std_logic := '0';
 
 
 signal increaseTimeButtonDebounced : std_logic := '1';
@@ -39,13 +40,22 @@ begin
 resetButtonSignal <= not resetButton;
 mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1')
                       else variableTimerTickForTimeSet when currentClockMode = MMSS
-							 else timerTick00015Sec;
+                      else timerTick00015Sec;
+--dotBlinkingSignal <= oneSecondPeriodSquare when currentClockMode = MMSS else dotBlinkingSignal xor '1' when oneSecondPeriodSquare'event else '0';
 
+updateDotBlinkingSignal : process(currentClockMode, oneSecondPeriodSquare)
+begin
+    if currentClockMode = MMSS then
+       dotBlinkingSignal <= oneSecondPeriodSquare;
+    elsif rising_edge(oneSecondPeriodSquare) then
+       dotBlinkingSignal <= not dotBlinkingSignal;
+    end if;
+end process;
  --------------------------------
  -- timer to get ticks every 1 sec
    timer1Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 50000000, -- before it was 49999999. It was copied from examples. TODO: Check why!
-		              TRIGGER_DURATION => 25000000 ) -- so we can use the 50% duty cycle for blinking the led
+                    TRIGGER_DURATION => 25000000 ) -- so we can use the 50% duty cycle for blinking the led
       port map ( clock => clock,
                  timerTriggered => oneSecondPeriodSquare,
                  reset => resetButtonSignal);
@@ -55,14 +65,14 @@ mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '
 --      port map ( clock => clock,
 --                 timerTriggered => variableTimerTickForTimeSet,
 --                 reset => resetButtonSignal);  
-					  
+                 
    timer00015Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 75000 )
       port map ( clock => clock,
                  timerTriggered => timerTick00015Sec,
                  reset => resetButtonSignal);
    
-	variableTimerForTimeSet : entity work.VariableTimer(behaviorVariableTimer)
+   variableTimerForTimeSet : entity work.VariableTimer(behaviorVariableTimer)
    generic map ( MAX_NUMBER => 2500000 )
       port map ( clock => clock,
                  timerTriggered => variableTimerTickForTimeSet,
@@ -129,8 +139,8 @@ mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '
       direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(23 downto 20),
       reset => resetButtonSignal);
-		
-	debounce_clock_mode_switch : entity work.Debounce(RTL)
+      
+   debounce_clock_mode_switch : entity work.Debounce(RTL)
     port map(
     i_Clk    => clock,
     i_Switch => inputButtons(0),
@@ -172,20 +182,20 @@ mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '
    end process;
 
    -- BCD to 7 segments
-   sevenSegments <= (oneSecondPeriodSquare or cableSelect(2)) & "1000000" when currentDigitValue = "0000" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "1111001" when currentDigitValue =  "0001" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0100100" when currentDigitValue =  "0010" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0110000" when currentDigitValue =  "0011" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0011001" when currentDigitValue =  "0100" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0010010" when currentDigitValue =  "0101" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000010" when currentDigitValue =  "0110" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "1111000" when currentDigitValue =  "0111" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000000" when currentDigitValue =  "1000" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0010000" when currentDigitValue =  "1001" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0001000" when currentDigitValue =  "1010" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000011" when currentDigitValue =  "1011" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "1000110" when currentDigitValue =  "1100" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0100001" when currentDigitValue =  "1101" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000110" when currentDigitValue =  "1110" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0001110";
+   sevenSegments <= (dotBlinkingSignal or cableSelect(2)) & "1000000" when currentDigitValue = "0000" else
+                    (dotBlinkingSignal or cableSelect(2)) & "1111001" when currentDigitValue =  "0001" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0100100" when currentDigitValue =  "0010" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0110000" when currentDigitValue =  "0011" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0011001" when currentDigitValue =  "0100" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0010010" when currentDigitValue =  "0101" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0000010" when currentDigitValue =  "0110" else
+                    (dotBlinkingSignal or cableSelect(2)) & "1111000" when currentDigitValue =  "0111" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0000000" when currentDigitValue =  "1000" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0010000" when currentDigitValue =  "1001" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0001000" when currentDigitValue =  "1010" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0000011" when currentDigitValue =  "1011" else
+                    (dotBlinkingSignal or cableSelect(2)) & "1000110" when currentDigitValue =  "1100" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0100001" when currentDigitValue =  "1101" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0000110" when currentDigitValue =  "1110" else
+                    (dotBlinkingSignal or cableSelect(2)) & "0001110";
 end behavior;
