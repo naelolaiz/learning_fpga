@@ -13,6 +13,7 @@ entity Digit is
          currentNumber : out std_logic_vector (3 downto 0) := "0000";
          carryBit : out std_logic := '0');
 end Digit;
+
 architecture behaviorDigit of Digit is
    signal currentNumberSignal : integer range 0 to MAX_NUMBER := 0;
 begin
