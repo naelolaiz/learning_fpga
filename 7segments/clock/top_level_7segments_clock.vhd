@@ -12,7 +12,7 @@ entity top_level_7segments_clock is
          resetButton: in std_logic := '1';
          inputButtons : in std_logic_vector(3 downto 0);
          sevenSegments : out std_logic_vector(7 downto 0);
-         cableSelect : out std_logic_vector(3 downto 0));
+         cableSelect : buffer std_logic_vector(3 downto 0));
 end top_level_7segments_clock;
 
 architecture behavior of top_level_7segments_clock is
@@ -21,41 +21,52 @@ signal enabledDigit: std_logic_vector (1 downto 0) := "00";
 signal currentDigitValue: std_logic_vector (3 downto 0) := "0000";
 
 signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
-signal timerTick1Sec: std_logic := '0';
-signal timerTick005Sec: std_logic := '0';
+signal variableTimerTickForTimeSet: std_logic := '0';
 signal timerTick00015Sec: std_logic := '0';
 signal mainClockForClock: std_logic := '0';
+signal oneSecondPeriodSquare: std_logic := '0';
 
 type ClockMode is (MMSS,HHMM);
 signal currentClockMode : ClockMode := MMSS;
 signal buttonClockModeDebounced : std_logic := '0';
 signal resetButtonSignal : std_logic := '0';
 
+
 signal increaseTimeButtonDebounced : std_logic := '1';
 signal decreaseTimeButtonDebounced : std_logic := '1';
 
 begin
 resetButtonSignal <= not resetButton;
-mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1') else timerTick005Sec when currentClockMode = MMSS else timerTick00015Sec;
+mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1')
+                      else variableTimerTickForTimeSet when currentClockMode = MMSS
+							 else timerTick00015Sec;
 
  --------------------------------
  -- timer to get ticks every 1 sec
    timer1Sec : entity work.Timer(behaviorTimer)
-      generic map ( MAX_NUMBER => 50000000 ) -- before it was 49999999. It was copied from examples. TODO: Check why!
+      generic map ( MAX_NUMBER => 50000000, -- before it was 49999999. It was copied from examples. TODO: Check why!
+		              TRIGGER_DURATION => 25000000 ) -- so we can use the 50% duty cycle for blinking the led
       port map ( clock => clock,
-                 timerTriggered => timerTick1Sec,
+                 timerTriggered => oneSecondPeriodSquare,
                  reset => resetButtonSignal);
                  
-   timer005Sec : entity work.Timer(behaviorTimer)
-      generic map ( MAX_NUMBER => 2500000 )
-      port map ( clock => clock,
-                 timerTriggered => timerTick005Sec,
-                 reset => resetButtonSignal);                 
+--   timer005Sec : entity work.Timer(behaviorTimer)
+--      generic map ( MAX_NUMBER => 2500000 )
+--      port map ( clock => clock,
+--                 timerTriggered => variableTimerTickForTimeSet,
+--                 reset => resetButtonSignal);  
+					  
    timer00015Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 75000 )
       port map ( clock => clock,
                  timerTriggered => timerTick00015Sec,
-                 reset => resetButtonSignal);   
+                 reset => resetButtonSignal);
+   
+	variableTimerForTimeSet : entity work.VariableTimer(behaviorVariableTimer)
+   generic map ( MAX_NUMBER => 2500000 )
+      port map ( clock => clock,
+                 timerTriggered => variableTimerTickForTimeSet,
+                 reset => resetButtonSignal);  
                  
                  
  ------------------------------------------------------------------
@@ -118,8 +129,8 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
       direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(23 downto 20),
       reset => resetButtonSignal);
-
-  debounce_clock_mode_switch : entity work.Debounce(RTL)
+		
+	debounce_clock_mode_switch : entity work.Debounce(RTL)
     port map(
     i_Clk    => clock,
     i_Switch => inputButtons(0),
@@ -161,20 +172,20 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
    end process;
 
    -- BCD to 7 segments
-   sevenSegments <= "11000000" when currentDigitValue = "0000" else
-      "11111001" when currentDigitValue =  "0001" else
-      "10100100" when currentDigitValue =  "0010" else
-      "10110000" when currentDigitValue =  "0011" else
-      "10011001" when currentDigitValue =  "0100" else
-      "10010010" when currentDigitValue =  "0101" else
-      "10000010" when currentDigitValue =  "0110" else
-      "11111000" when currentDigitValue =  "0111" else
-      "10000000" when currentDigitValue =  "1000" else
-      "10010000" when currentDigitValue =  "1001" else
-      "10001000" when currentDigitValue =  "1010" else
-      "10000011" when currentDigitValue =  "1011" else
-      "11000110" when currentDigitValue =  "1100" else
-      "10100001" when currentDigitValue =  "1101" else
-      "10000110" when currentDigitValue =  "1110" else
-      "10001110" ;
+   sevenSegments <= (oneSecondPeriodSquare or cableSelect(2)) & "1000000" when currentDigitValue = "0000" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "1111001" when currentDigitValue =  "0001" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0100100" when currentDigitValue =  "0010" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0110000" when currentDigitValue =  "0011" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0011001" when currentDigitValue =  "0100" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0010010" when currentDigitValue =  "0101" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0000010" when currentDigitValue =  "0110" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "1111000" when currentDigitValue =  "0111" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0000000" when currentDigitValue =  "1000" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0010000" when currentDigitValue =  "1001" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0001000" when currentDigitValue =  "1010" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0000011" when currentDigitValue =  "1011" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "1000110" when currentDigitValue =  "1100" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0100001" when currentDigitValue =  "1101" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0000110" when currentDigitValue =  "1110" else
+                    (oneSecondPeriodSquare or cableSelect(2)) & "0001110";
 end behavior;

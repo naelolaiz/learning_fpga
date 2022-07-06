@@ -6,7 +6,8 @@ USE ieee.std_logic_1164.ALL;
 use ieee.numeric_std.ALL;
 
 entity Timer is
-   generic (MAX_NUMBER: integer := 50000000);
+   generic (MAX_NUMBER: integer := 50000000;
+            TRIGGER_DURATION: integer := 1);
    port (clock: in std_logic := '0';
          reset: in std_logic := '0';
          timerTriggered : out std_logic := '0');
@@ -27,10 +28,10 @@ begin
             timerTriggered <= '1';
          else
             counterForTriggerOut := counterForTriggerOut + 1;
-            timerTriggered <= '0';
+            if counterForTriggerOut = TRIGGER_DURATION then
+               timerTriggered <= '0';
+            end if;
          end if;
       end if;
    end process;
 end behaviorTimer;
-
-
