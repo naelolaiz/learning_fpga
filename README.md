@@ -40,4 +40,11 @@ Project containing tests for learning FPGA/VHDL.
   - TODO:
     - create a simple game with the buttons and the 7 segments display (snake / space invaders)
       - learn how to generate random numbers with the FPGA
+    - create a vga text driver
+      - adapt 7 segment created entities to use VGA as display (clock, game, ...)
+    - create an i2s driver
+      - create / find a FFT implementation to
+        - create a spectral analyzer (i2s, fft, vga)
+        - (+IFFT, +DSP algorithms) create an FX/DSP module
+          - (+bluetooth/BLE driver) extend module with wireless audio
 - Learn Verilog (TODO)
