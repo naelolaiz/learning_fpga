@@ -118,7 +118,7 @@ mainClockForClock <= timerTick1Sec when (increaseTimeButtonDebounced = '1' and d
       direction => decreaseTimeButtonDebounced,
       currentNumber => bcdDigits(23 downto 20),
       reset => resetButtonSignal);
-  -- debounce copied from https://github.com/fsmiamoto/EasyFPGA-VGA/blob/master/Debounce.vhd 
+
   debounce_clock_mode_switch : entity work.Debounce(RTL)
     port map(
     i_Clk    => clock,
