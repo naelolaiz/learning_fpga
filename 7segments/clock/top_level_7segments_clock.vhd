@@ -20,7 +20,7 @@ signal bcdDigits: std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned
 signal enabledDigit: std_logic_vector (1 downto 0) := "00";
 signal currentDigitValue: std_logic_vector (3 downto 0) := "0000";
 
-signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
+--signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
 signal variableTimerTickForTimeSet: std_logic := '0';
 signal timerTick00015Sec: std_logic := '0';
 signal mainClockForClock: std_logic := '0';
@@ -41,7 +41,6 @@ resetButtonSignal <= not resetButton;
 mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1')
                       else variableTimerTickForTimeSet when currentClockMode = MMSS
                       else timerTick00015Sec;
---dotBlinkingSignal <= oneSecondPeriodSquare when currentClockMode = MMSS else dotBlinkingSignal xor '1' when oneSecondPeriodSquare'event else '0';
 
 updateDotBlinkingSignal : process(currentClockMode, oneSecondPeriodSquare)
 begin
@@ -59,13 +58,7 @@ end process;
       port map ( clock => clock,
                  timerTriggered => oneSecondPeriodSquare,
                  reset => resetButtonSignal);
-                 
---   timer005Sec : entity work.Timer(behaviorTimer)
---      generic map ( MAX_NUMBER => 2500000 )
---      port map ( clock => clock,
---                 timerTriggered => variableTimerTickForTimeSet,
---                 reset => resetButtonSignal);  
-                 
+                                
    timer00015Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 75000 )
       port map ( clock => clock,
@@ -86,59 +79,16 @@ end process;
                  MAX_NUMBER_FOR_COUNTER => 3)
     port map ( clock => clock,
                counter (1 downto 0) => enabledDigit);
- -- digit instances ...               
-   digitSecsUnit : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 9)
+
+ -----------------
+ -- clock instance
+   bcdClock : entity work.Clock(behaviorClock)
     port map (
       clock => mainClockForClock,
       direction => decreaseTimeButtonDebounced,
-      currentNumber => bcdDigits(3 downto 0),
-      carryBit => carryBitSecondsUnit,
+      bcdDigits => bcdDigits,
       reset => resetButtonSignal);
-
-      digitSecsTens : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 5)
-    port map (
-      clock => carryBitSecondsUnit,
-      direction => decreaseTimeButtonDebounced,
-      currentNumber => bcdDigits(7 downto 4),
-      carryBit => carryBitSecondsTens,
-      reset => resetButtonSignal); 
-      
-   digitMinsUnit : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 9)
-    port map (
-      clock => carryBitSecondsTens,
-      direction => decreaseTimeButtonDebounced,
-      currentNumber => bcdDigits(11 downto 8),
-      carryBit => carryBitMinutesUnit,
-      reset => resetButtonSignal); 
-      
-   digitMinsTens : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 5)
-    port map (
-      clock => carryBitMinutesUnit,
-      direction => decreaseTimeButtonDebounced,
-      currentNumber => bcdDigits(15 downto 12),
-      carryBit => carryBitMinutesTens,
-      reset => resetButtonSignal); 
- 
-   digitHoursUnit : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 3)
-    port map (
-      clock => carryBitMinutesTens,
-      direction => decreaseTimeButtonDebounced,
-      currentNumber => bcdDigits(19 downto 16),
-      carryBit => carryBitHoursUnit,
-      reset => resetButtonSignal); 
-      
-   digitHoursTens : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 2)
-    port map (
-      clock => carryBitHoursUnit,
-      direction => decreaseTimeButtonDebounced,
-      currentNumber => bcdDigits(23 downto 20),
-      reset => resetButtonSignal);
+-------------------
       
    debounce_clock_mode_switch : entity work.Debounce(RTL)
     port map(

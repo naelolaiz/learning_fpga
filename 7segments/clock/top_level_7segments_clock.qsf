@@ -68,6 +68,7 @@ set_location_assignment PIN_25 -to resetButton
 set_location_assignment PIN_127 -to sevenSegments[7]
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name VHDL_FILE Clock.vhd
 set_global_assignment -name VHDL_FILE VariableTimer.vhd
 set_global_assignment -name VHDL_FILE 7segmentsDigit.vhd
 set_global_assignment -name VHDL_FILE Timer.vhd
