@@ -30,8 +30,11 @@ Project containing tests for learning FPGA/VHDL.
       - [x] allow setting the time by increasing the numbers with a second button.
         - [x] the speed should be fast, and should depend on the current view mode.
       - [x] allow setting the time by decreasing the numbers with a third button. Update digit entity accordingly.
+      - [x] make the middle dot on the second display to blink. At different intervals depending on the view mode (0.5 sec to change state -period 1hz- for HHMM, 0.25 ? sec to change state in MMSS)
+        - TODO: cleanup code. I created this separated branch to test different things, but now the code is a bit messy...
+      - [x] create VariableTimers.
+        - [x] create serial configuration port
       - TODO: 
-        - make the middle dot on the second display to blink. At different intervals depending on the view mode (0.5 sec to change state -period 1hz- for HHMM, 0.25 ? sec to change state in MMSS)
         - add alarm
         - milliseconds view
         - improve set time interface (dynamic speed for increasing/decreasing time)
