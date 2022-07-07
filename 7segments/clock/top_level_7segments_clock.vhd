@@ -8,11 +8,12 @@ use ieee.numeric_std.ALL;
 
 entity top_level_7segments_clock is
    port (
-         clock: in std_logic;
+         clock50MHz: in std_logic;
          resetButton: in std_logic := '1';
          inputButtons : in std_logic_vector(3 downto 0);
          sevenSegments : out std_logic_vector(7 downto 0);
-         cableSelect : buffer std_logic_vector(3 downto 0));
+         cableSelect : buffer std_logic_vector(3 downto 0);
+         buzzer : out std_logic := '1');
 end top_level_7segments_clock;
 
 architecture behavior of top_level_7segments_clock is
@@ -32,9 +33,15 @@ signal buttonClockModeDebounced : std_logic := '0';
 signal resetButtonSignal : std_logic := '0';
 signal dotBlinkingSignal: std_logic := '0';
 
-
+-- debouncing buttons signals
 signal increaseTimeButtonDebounced : std_logic := '1';
 signal decreaseTimeButtonDebounced : std_logic := '1';
+
+-- alarm
+signal clockForAlarmSet : std_logic := '0'; -- TODO: make it local variable instead?
+signal alarmBcdDigits : std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
+signal squareWaveForBuzzer : std_logic := '1';
+
 
 begin
 resetButtonSignal <= not resetButton;
@@ -50,24 +57,25 @@ begin
        dotBlinkingSignal <= not dotBlinkingSignal;
     end if;
 end process;
+
  --------------------------------
  -- timer to get ticks every 1 sec
    timer1Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 50000000, -- before it was 49999999. It was copied from examples. TODO: Check why!
                     TRIGGER_DURATION => 25000000 ) -- so we can use the 50% duty cycle for blinking the led
-      port map ( clock => clock,
+      port map ( clock => clock50MHz,
                  timerTriggered => oneSecondPeriodSquare,
                  reset => resetButtonSignal);
                                 
    timer00015Sec : entity work.Timer(behaviorTimer)
       generic map ( MAX_NUMBER => 75000 )
-      port map ( clock => clock,
+      port map ( clock => clock50MHz,
                  timerTriggered => timerTick00015Sec,
                  reset => resetButtonSignal);
    
    variableTimerForTimeSet : entity work.VariableTimer(behaviorVariableTimer)
    generic map ( MAX_NUMBER => 2500000 )
-      port map ( clock => clock,
+      port map ( clock => clock50MHz,
                  timerTriggered => variableTimerTickForTimeSet,
                  reset => resetButtonSignal);  
                  
@@ -77,40 +85,64 @@ end process;
    counterForMux : entity work.CounterTimer(behaviorCounterTimer)
     generic map (MAX_NUMBER_FOR_TIMER => 100000, -- tick every 100E3 / 50E6 = 2ms
                  MAX_NUMBER_FOR_COUNTER => 3)
-    port map ( clock => clock,
+    port map ( clock => clock50MHz,
                counter (1 downto 0) => enabledDigit);
 
  -----------------
- -- clock instance
+ -- clock instances
    bcdClock : entity work.Clock(behaviorClock)
     port map (
       clock => mainClockForClock,
       direction => decreaseTimeButtonDebounced,
       bcdDigits => bcdDigits,
       reset => resetButtonSignal);
--------------------
       
+   alarmBcdClock : entity work.Clock(behaviorClock)
+    port map (
+      clock => clockForAlarmSet,
+      direction => decreaseTimeButtonDebounced,
+      bcdDigits => alarmBcdDigits,
+      reset => resetButtonSignal);
+		
+   square400Hz : entity work.Timer(behaviorTimer)
+      generic map ( MAX_NUMBER => 125000, 
+                    TRIGGER_DURATION => 62500)
+      port map ( clock => clock50MHz,
+                 timerTriggered => squareWaveForBuzzer,
+                 reset => resetButtonSignal);		
+		
+buzzer <= squareWaveForBuzzer when alarmBcdDigits = bcdDigits else '1';
+--   alarmChecker : process(alarmBcdDigits, bcdDigits)
+--   begin
+--      if alarmBcdDigits = bcdDigits then
+--         buzzer <= square400Hz;
+--      else
+--         buzzer <= '1';
+--      end if;
+--   end process;
+
+-------------------
+-- debouncing buttons      
    debounce_clock_mode_switch : entity work.Debounce(RTL)
     port map(
-    i_Clk    => clock,
+    i_Clk    => clock50MHz,
     i_Switch => inputButtons(0),
     o_Switch => buttonClockModeDebounced
   );
 
   debounce_increase_time_button : entity work.Debounce(RTL)
     port map(
-    i_Clk    => clock,
+    i_Clk    => clock50MHz,
     i_Switch => inputButtons(2),
     o_Switch => decreaseTimeButtonDebounced
   );
   
   debounce_decrease_time_button : entity work.Debounce(RTL)
     port map(
-    i_Clk    => clock,
+    i_Clk    => clock50MHz,
     i_Switch => inputButtons(3),
     o_Switch => increaseTimeButtonDebounced
   );
-  
 
    ---- button handler
    buttonHandler: process(buttonClockModeDebounced)
