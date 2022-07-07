@@ -34,8 +34,11 @@ Project containing tests for learning FPGA/VHDL.
         - TODO: cleanup code. I created this separated branch to test different things, but now the code is a bit messy...
       - [x] create VariableTimers.
         - [x] create serial configuration port
+      - [x] add alarm
+        - make alarm sound intermitent
+	  - make alarm sound 20 seconds
+	- use fourth unused button for switching to a new mode: set alarm
       - TODO: 
-        - add alarm
         - milliseconds view
         - improve set time interface (dynamic speed for increasing/decreasing time)
         - cleanup
