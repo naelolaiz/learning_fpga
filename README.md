@@ -35,8 +35,8 @@ Project containing tests for learning FPGA/VHDL.
       - [x] create VariableTimers.
         - [x] create serial configuration port
       - [x] add alarm
-        - make alarm sound intermitent
-	  - make alarm sound 20 seconds
+        - [x] make alarm sound intermitent
+	  - [x] make alarm sound 20 seconds
 	- use fourth unused button for switching to a new mode: set alarm
       - TODO: 
         - milliseconds view
