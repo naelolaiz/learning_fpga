@@ -37,7 +37,7 @@ Project containing tests for learning FPGA/VHDL.
       - [x] add alarm
         - [x] make alarm sound intermitent
 	  - [x] make alarm sound 20 seconds
-	- use fourth unused button for switching to a new mode: set alarm
+	- [x] use fourth unused button for switching to a new mode: set alarm
       - TODO: 
         - milliseconds view
         - improve set time interface (dynamic speed for increasing/decreasing time)

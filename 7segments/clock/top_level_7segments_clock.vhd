@@ -17,14 +17,14 @@ entity top_level_7segments_clock is
 end top_level_7segments_clock;
 
 architecture behavior of top_level_7segments_clock is
-signal bcdDigits: std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
+signal bcdDigitsMainClock, bcdDigitsDisplayed: std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
 signal enabledDigit: std_logic_vector (1 downto 0) := "00";
 signal currentDigitValue: std_logic_vector (3 downto 0) := "0000";
 
 --signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
 signal variableTimerTickForTimeSet: std_logic := '0';
 signal timerTick00015Sec: std_logic := '0';
-signal mainClockForClock: std_logic := '0';
+signal clockForMainClock: std_logic := '0';
 signal oneSecondPeriodSquare: std_logic := '0';
 
 type ClockMode is (MMSS,HHMM);
@@ -41,13 +41,21 @@ signal decreaseTimeButtonDebounced : std_logic := '1';
 signal clockForAlarmSet : std_logic := '0';
 signal alarmBcdDigits : std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
 signal squareWaveForBuzzer : std_logic := '1';
-
+type SelectedClock is (MAIN_CLOCK, ALARM_CLOCK);
+signal currentSelectedClock : SelectedClock := MAIN_CLOCK;
+signal buttonSelectedClockDebounced : std_logic := '1';
 
 begin
 resetButtonSignal <= not resetButton;
-mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1')
+clockForMainClock <= oneSecondPeriodSquare when ((increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1') or currentSelectedClock = ALARM_CLOCK)
                       else variableTimerTickForTimeSet when currentClockMode = MMSS
                       else timerTick00015Sec;
+
+clockForAlarmSet <= '0' when ((increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1') or currentSelectedClock = MAIN_CLOCK)
+                       else variableTimerTickForTimeSet when currentClockMode = MMSS
+                       else timerTick00015Sec;
+
+bcdDigitsDisplayed <= bcdDigitsMainClock when currentSelectedClock = MAIN_CLOCK else alarmBcdDigits;
 
 updateDotBlinkingSignal : process(currentClockMode, oneSecondPeriodSquare)
 begin
@@ -92,9 +100,9 @@ end process;
  -- clock instances
    bcdClock : entity work.Clock(behaviorClock)
     port map (
-      clock => mainClockForClock,
+      clock => clockForMainClock,
       direction => decreaseTimeButtonDebounced,
-      bcdDigits => bcdDigits,
+      bcdDigits => bcdDigitsMainClock,
       reset => resetButtonSignal);
       
    alarmBcdClock : entity work.Clock(behaviorClock)
@@ -111,7 +119,7 @@ end process;
                  timerTriggered => squareWaveForBuzzer,
                  reset => resetButtonSignal);		
 		
-buzzer <= squareWaveForBuzzer and oneSecondPeriodSquare when alarmBcdDigits(23 downto 5) = bcdDigits(23 downto 5) else 'Z';
+buzzer <= squareWaveForBuzzer and oneSecondPeriodSquare when alarmBcdDigits(23 downto 5) = bcdDigitsMainClock(23 downto 5) else 'Z';
 
 -------------------
 -- debouncing buttons      
@@ -120,6 +128,13 @@ buzzer <= squareWaveForBuzzer and oneSecondPeriodSquare when alarmBcdDigits(23 d
     i_Clk    => clock50MHz,
     i_Switch => inputButtons(0),
     o_Switch => buttonClockModeDebounced
+  );
+
+  debounce_view_alarm : entity work.Debounce(RTL)
+    port map(
+    i_Clk    => clock50MHz,
+    i_Switch => inputButtons(1),
+    o_Switch => buttonSelectedClockDebounced
   );
 
   debounce_increase_time_button : entity work.Debounce(RTL)
@@ -136,8 +151,9 @@ buzzer <= squareWaveForBuzzer and oneSecondPeriodSquare when alarmBcdDigits(23 d
     o_Switch => increaseTimeButtonDebounced
   );
 
+
    ---- button handler
-   buttonHandler: process(buttonClockModeDebounced)
+   buttonClockModeHandler: process(buttonClockModeDebounced)
    begin
       if buttonClockModeDebounced'event and buttonClockModeDebounced = '0' then
          -- currentClockMode is toggled with button 0
@@ -146,13 +162,21 @@ buzzer <= squareWaveForBuzzer and oneSecondPeriodSquare when alarmBcdDigits(23 d
          currentClockMode <= ClockMode'val(to_integer(unsigned(not std_logic_vector(to_unsigned(ClockMode'pos(currentClockMode),1)))));
       end if;
    end process;
+
+   buttonSelectedClockHandler: process(buttonSelectedClockDebounced)
+   begin
+      if buttonSelectedClockDebounced'event and buttonSelectedClockDebounced = '0' then
+         -- currentSelectedClock is toggled with button 1
+         currentSelectedClock <= SelectedClock'val(to_integer(unsigned(not std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock),1)))));
+      end if;
+   end process;
    
    -- MUX to generate anode activating signals for 4 LEDs 
-   process(enabledDigit, bcdDigits, currentClockMode)
+   process(enabledDigit, bcdDigitsDisplayed, currentClockMode)
       constant nibbleToShift: std_logic_vector(3 downto 0) := "0001";
    begin
       cableSelect <= not std_logic_vector(unsigned(nibbleToShift) sll to_integer(unsigned(enabledDigit)));
-      currentDigitValue <= std_logic_vector(unsigned(bcdDigits) srl ((to_integer(unsigned(enabledDigit)) + (ClockMode'pos(currentClockMode) * 2))*4)) (3 downto 0);
+      currentDigitValue <= std_logic_vector(unsigned(bcdDigitsDisplayed) srl ((to_integer(unsigned(enabledDigit)) + (ClockMode'pos(currentClockMode) * 2))*4)) (3 downto 0);
    end process;
 
    -- BCD to 7 segments
