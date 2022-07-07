@@ -38,7 +38,7 @@ signal increaseTimeButtonDebounced : std_logic := '1';
 signal decreaseTimeButtonDebounced : std_logic := '1';
 
 -- alarm
-signal clockForAlarmSet : std_logic := '0'; -- TODO: make it local variable instead?
+signal clockForAlarmSet : std_logic := '0';
 signal alarmBcdDigits : std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
 signal squareWaveForBuzzer : std_logic := '1';
 
@@ -111,15 +111,7 @@ end process;
                  timerTriggered => squareWaveForBuzzer,
                  reset => resetButtonSignal);		
 		
-buzzer <= squareWaveForBuzzer when alarmBcdDigits = bcdDigits else '1';
---   alarmChecker : process(alarmBcdDigits, bcdDigits)
---   begin
---      if alarmBcdDigits = bcdDigits then
---         buzzer <= square400Hz;
---      else
---         buzzer <= '1';
---      end if;
---   end process;
+buzzer <= squareWaveForBuzzer and oneSecondPeriodSquare when alarmBcdDigits(23 downto 5) = bcdDigits(23 downto 5) else 'Z';
 
 -------------------
 -- debouncing buttons      
