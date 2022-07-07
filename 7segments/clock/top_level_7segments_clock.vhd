@@ -45,6 +45,10 @@ type SelectedClock is (MAIN_CLOCK, ALARM_CLOCK);
 signal currentSelectedClock : SelectedClock := MAIN_CLOCK;
 signal buttonSelectedClockDebounced : std_logic := '1';
 
+signal directionForMainClock : std_logic := '1';
+signal directionForAlarmClock : std_logic := '1';
+
+
 begin
 resetButtonSignal <= not resetButton;
 clockForMainClock <= oneSecondPeriodSquare when ((increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1') or currentSelectedClock = ALARM_CLOCK)
@@ -56,6 +60,9 @@ clockForAlarmSet <= '0' when ((increaseTimeButtonDebounced = '1' and decreaseTim
                        else timerTick00015Sec;
 
 bcdDigitsDisplayed <= bcdDigitsMainClock when currentSelectedClock = MAIN_CLOCK else alarmBcdDigits;
+
+directionForMainClock  <= '1' when currentSelectedClock = ALARM_CLOCK else decreaseTimeButtonDebounced;
+directionForAlarmClock <= '1' when currentSelectedClock = MAIN_CLOCK else decreaseTimeButtonDebounced;
 
 updateDotBlinkingSignal : process(currentClockMode, oneSecondPeriodSquare)
 begin
@@ -101,14 +108,14 @@ end process;
    bcdClock : entity work.Clock(behaviorClock)
     port map (
       clock => clockForMainClock,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForMainClock,
       bcdDigits => bcdDigitsMainClock,
       reset => resetButtonSignal);
       
    alarmBcdClock : entity work.Clock(behaviorClock)
     port map (
       clock => clockForAlarmSet,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForAlarmClock,
       bcdDigits => alarmBcdDigits,
       reset => resetButtonSignal);
 		
