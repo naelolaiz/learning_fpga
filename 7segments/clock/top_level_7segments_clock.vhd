@@ -187,20 +187,20 @@ buzzer <= squareWaveForBuzzer and oneSecondPeriodSquare when alarmBcdDigits(23 d
    end process;
 
    -- BCD to 7 segments
-   sevenSegments <= (dotBlinkingSignal or cableSelect(2)) & "1000000" when currentDigitValue = "0000" else
-                    (dotBlinkingSignal or cableSelect(2)) & "1111001" when currentDigitValue =  "0001" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0100100" when currentDigitValue =  "0010" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0110000" when currentDigitValue =  "0011" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0011001" when currentDigitValue =  "0100" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0010010" when currentDigitValue =  "0101" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0000010" when currentDigitValue =  "0110" else
-                    (dotBlinkingSignal or cableSelect(2)) & "1111000" when currentDigitValue =  "0111" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0000000" when currentDigitValue =  "1000" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0010000" when currentDigitValue =  "1001" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0001000" when currentDigitValue =  "1010" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0000011" when currentDigitValue =  "1011" else
-                    (dotBlinkingSignal or cableSelect(2)) & "1000110" when currentDigitValue =  "1100" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0100001" when currentDigitValue =  "1101" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0000110" when currentDigitValue =  "1110" else
-                    (dotBlinkingSignal or cableSelect(2)) & "0001110";
+   sevenSegments <= ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "1000000" when currentDigitValue = "0000" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "1111001" when currentDigitValue =  "0001" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0100100" when currentDigitValue =  "0010" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0110000" when currentDigitValue =  "0011" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0011001" when currentDigitValue =  "0100" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0010010" when currentDigitValue =  "0101" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0000010" when currentDigitValue =  "0110" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "1111000" when currentDigitValue =  "0111" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0000000" when currentDigitValue =  "1000" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0010000" when currentDigitValue =  "1001" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0001000" when currentDigitValue =  "1010" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0000011" when currentDigitValue =  "1011" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "1000110" when currentDigitValue =  "1100" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0100001" when currentDigitValue =  "1101" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0000110" when currentDigitValue =  "1110" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock), 1))(0))  & "0001110";
 end behavior;
