@@ -16,6 +16,7 @@ end Clock;
 
 architecture behaviorClock of Clock is
 signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
+signal decimalCounterHours: std_logic_vector(4 downto 0) := std_logic_vector(to_unsigned(0,5));
 begin
  -- digit instances ...               
    digitSecsUnit : entity work.Digit(behaviorDigit)
@@ -53,23 +54,15 @@ begin
       currentNumber => bcdDigits(15 downto 12),
       carryBit => carryBitMinutesTens,
       reset => reset); 
- 
-   digitHoursUnit : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 3)
-    port map (
-      clock => carryBitMinutesTens,
-      direction => direction,
-      currentNumber => bcdDigits(19 downto 16),
-      carryBit => carryBitHoursUnit,
-      reset => reset); 
-      
-   digitHoursTens : entity work.Digit(behaviorDigit)
-    generic map (MAX_NUMBER => 2)
-    port map (
-      clock => carryBitHoursUnit,
-      direction => direction,
-      currentNumber => bcdDigits(23 downto 20),
-      reset => reset);
-      
+   ------------------------------------------------------------------
+   -- counter for for multiplexer (4 digits, one increment every 2ms)                
+   digitsHours : entity work.Counter(behaviorCounterForDigit)
+    generic map (MAX_NUMBER_FOR_COUNTER => 23)
+    port map ( clock => carryBitMinutesTens,
+               direction => direction,
+	       counter(4 downto 0) => decimalCounterHours,
+	       reset => reset);
+   bcdDigits(19 downto 16) <= std_logic_vector(to_unsigned(to_integer(unsigned(decimalCounterHours)) mod 10, 4));
+   bcdDigits(23 downto 20) <= std_logic_vector(to_unsigned(to_integer(unsigned(decimalCounterHours)) / 10, 4));
 
 end behaviorClock;
