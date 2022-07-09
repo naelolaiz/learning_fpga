@@ -36,14 +36,22 @@ But currently I am seeing a muted signal  (small noise up to 200mV) in the DAC b
 The I2S signals I am seeing:
 #### Left/Right / Word Select
 We can confirm here that the input frequency of 24576000 Hz for the master clock correctly ended in a LRCLK frequency (=sampling rate) of 96kHz.
+
 ![Left/Right select (freq equals to sampling rate)](doc/LeftRight_WordSelect.png)
 #### I2S data signal
 ![I2S data signal](doc/DataOut.png)
 #### BCK / data clock
 CHECK: Is it normal to not be periodic?
+
 ![Data clock](doc/BCK_DataClock.png)
 ![Data clock in detail](doc/BCK_DataClock_Detailed.png)
 #### Master Clock
 CHECK: Are the discontinuities expected?
+
 ![Master clock](doc/MasterClock.png)
 ![Master clock in detail - single shot capture](doc/MasterClock_Detailed_SingleShot.png)
+#### Some signal!
+I managed to replicate the distorted waveform I got before! I got it by sending the (16 bit) output of the waveform generator into the 16 most significant bits of the (24 bit) i2s input, instead of the 24 LSB. 
+This is the waveform I get:
+
+![Distorted waveform](doc/DAC_with_number_in_MSB.png)
