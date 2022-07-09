@@ -37,7 +37,8 @@ begin
 	    sdata => oData,
 	    data_l => mySignalL,
 	    data_r => mySignalR);
+
    oLeftRightClock <= sLeftRight;
-   mySignalL (23 downto 8) <= sSineNumber;
-   mySignalR (23 downto 8) <= sSineNumber;
+   mySignalL <= std_logic_vector(to_unsigned(to_integer(unsigned(sSineNumber) - 8192) * 256 , 24));
+   mySignalR <= std_logic_vector(to_unsigned(to_integer(unsigned(sSineNumber) - 8192) * 256 , 24));
 end rtl;
