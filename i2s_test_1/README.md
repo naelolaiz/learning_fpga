@@ -63,3 +63,8 @@ Finally! I was doing the calculations wrong:
 Here is the new DAC output I get. It is still doing a strange wraparound. But it is (almost) a sinusoid, at the proper frequency!
 
 ![Now we are talking!](doc/DAC_with_number_in_MSB_1kHz.png)
+
+I did a quick hack adding substracting an offset to make it look good.
+I will do my own oscillator instead.
+
+![One looking good 1 kHz sinusoid](doc/CenteredSine1kHz.png)
