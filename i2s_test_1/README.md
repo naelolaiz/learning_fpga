@@ -27,6 +27,7 @@ Code copied from from https://github.com/newdigate/papilio_duo_i2s.git
 
 ### Adaptation
 Looking at the table of frequencies, I decided to try 96kHz of sampling rate. Then I modified i2s_master.vhd, to make the constant MCLK_FREQ equals to 24576000, that is equals to 96000 * 256. (so, no PLL mode required)
+I am using the internal Cyclone IV dev board 50MHz in pin 23, as clock for i2s_master. The phase_inc of the waveform generator is set to 2 MHz (in theory : 2 * 2**32 / 50 ) (2 MHz * bit resolution / 50MHz).
 
 The current code is still not working properly.
 I am currently seeing in the scope:
