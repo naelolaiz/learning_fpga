@@ -35,8 +35,8 @@ Some previous before I saw a deformed output, I thought the bits could be invert
 But currently I am seeing a muted signal  (small noise up to 200mV) in the DAC board output.
 The I2S signals I am seeing:
 ![Left/Right select (freq equals to sampling rate)](doc/LeftRight_WordSelect.png)
-![I2S data signal](doci/DataOut.png)
-![Data clock](BCK_DataClock.png)
-![Data clock in detail](BCK_DataClock_Detailed.png)
-![Master clock](MasterClock.png)
-![Master clock in detail - single shot capture](MasterClock_Detailed_SingleShot.png)
+![I2S data signal](doc/DataOut.png)
+![Data clock](doc/BCK_DataClock.png)
+![Data clock in detail](doc/BCK_DataClock_Detailed.png)
+![Master clock](doc/MasterClock.png)
+![Master clock in detail - single shot capture](doc/MasterClock_Detailed_SingleShot.png)
