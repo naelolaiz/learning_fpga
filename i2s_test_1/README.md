@@ -68,4 +68,4 @@ Here is the new DAC output I get. It is still doing a strange wraparound. But it
 I did a quick hack adding substracting an offset to make it look good.
 I will do my own oscillator instead.
 
-![One looking good 1 kHz sinusoid](doc/CenteredSine1kHz.png)
+![One looking good 1 kHz sinusoid](doc/CenteredSine33kHz.png)
