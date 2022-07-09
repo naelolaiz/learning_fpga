@@ -55,3 +55,11 @@ I managed to replicate the distorted waveform I got before! I got it by sending 
 This is the waveform I get. If that is the original sinusoid distorted, the frequency I calculated previously is wrong, as we can appreciate here (3.817 kHz)
 
 ![Measuring period of DAC output](doc/DAC_with_number_in_MSB_detailed.png)
+
+Finally! I was doing the calculations wrong:
+ * I intended 2MHz in an audio application :P (to much FPGA)
+ * The DAC was using the clock input as in the example (from the I2S word select signal), but then I was doing the calculations as with the 50MHz input clock.
+
+Here is the new DAC output I get. It is still doing a strange wraparound. But it is (almost) a sinusoid, at the proper frequency!
+
+![Now we are talking!](doc/DAC_with_number_in_MSB_1kHz.png)
