@@ -55,3 +55,5 @@ I managed to replicate the distorted waveform I got before! I got it by sending 
 This is the waveform I get:
 
 ![Distorted waveform](doc/DAC_with_number_in_MSB.png)
+In any case, if that is the original sinusoid distorted, THe frequency I calculated previously is wrong, as we can appreciate here (3.817 kHz)
+![Measuring period of DAC output](doc/DAC_with_number_in_MSB_detailed.png)
