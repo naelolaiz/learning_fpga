@@ -17,7 +17,7 @@ Item on ali-express, with information on pinout and diagram: https://es.aliexpre
 Code copied from from https://github.com/newdigate/papilio_duo_i2s.git
 
 ### Implementation
-![Original implementation](doc/wave_gen_curcuit.png)
+![Original implementation](doc/wave_gen_circuit.png)
 
 ### IMPORTANT NOTES
  * The i2s reset is pulled DOWN but the waveform generator reset is pulled UP!
