@@ -51,7 +51,7 @@ CHECK: Are the discontinuities expected?
 ![Master clock](doc/MasterClock.png)
 ![Master clock in detail - single shot capture](doc/MasterClock_Detailed_SingleShot.png)
 #### Some signal!
-I managed to replicate the distorted waveform I got before! I got it by sending the (16 bit) output of the waveform generator into the 16 most significant bits of the (24 bit) i2s input, instead of the 24 LSB. 
+I managed to replicate the distorted waveform I got before! I got it by sending the (16 bit) output of the waveform generator into the 16 most significant bits of the (24 bit) i2s input, instead of the 16 LSB. 
 This is the waveform I get. If that is the original sinusoid distorted, THe frequency I calculated previously is wrong, as we can appreciate here (3.817 kHz)
 
 ![Measuring period of DAC output](doc/DAC_with_number_in_MSB_detailed.png)
