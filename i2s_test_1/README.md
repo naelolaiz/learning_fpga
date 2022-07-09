@@ -8,7 +8,6 @@ Item on ali-express, with information on pinout and diagram: https://es.aliexpre
 ### Extracts
 #### Pinout
 ![Chip pins](doc/pcm5102_table2_TerminalFunctions.png)
-![Another pinout description](doc/pcm5102_board_pinout.jpg)
 
 #### Clock frequencies
 ![Master clock frequencies related to the sampling rate frequencies](doc/pcm5102_table3_MasterClock_vs_SRs.png)
