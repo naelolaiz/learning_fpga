@@ -15,7 +15,7 @@ end entity;
 
 
 architecture rtl of top_level_NCO_i2s_oscillator is
-constant phaseInc : std_logic_vector (31 downto 0) := std_logic_vector(to_unsigned(171798691,32)); --858993459, 32)); --10 * 4294967296 / 50; -- 10 MHz * 2^32 / 50MHz
+constant phaseInc : std_logic_vector (31 downto 0) := std_logic_vector(to_unsigned(85899,32)); -- 1000 Hz / 50000000Hz * 2^32
 signal sSineNumber : std_logic_vector(15 downto 0);
 signal mySignalL : std_logic_vector (23 downto 0);
 signal mySignalR : std_logic_vector (23 downto 0);
@@ -41,7 +41,7 @@ begin
 end process;
 
   waveform_generator : entity work.waveform_gen_14addr_16value(rtl)
-  port map( clk => sLeftRight,
+  port map(clk => iClock50Mhz,
            reset => iReset,
 	   sin_out => sSineNumber,
 	   phase_inc => phaseInc);
@@ -55,8 +55,10 @@ end process;
 	    sclk => oSerialBitClock,
 	    sdata => oData,
 	    data_l => mySignalL,
-	    data_r => mySignalR);
+	    --(others => '0'); -- ('0' when sLeftRight = '1' else '1'));
+	    --"000" & sSineNumber & "00000", -- & sSineNumber,
+	    data_r => mySignalR); --(others => '1'); --('0' when sLeftRight = '0' else '1')); --"000" & sSineNumber & "00000"); -- & sSineNumber);
    oLeftRightClock <= sLeftRight;
-   mySignalL (15 downto 0) <= sSineNumber; --(others => '0'); -- when std_logic_vector(to_unsigned(counter, 4))(3) = '0' else (others => '1');
-   mySignalR (15 downto 0) <= sSineNumber; --(others => '0'); -- when std_logic_vector(to_unsigned(counter, 4))(3) = '1' else (others => '1');
+   mySignalL (23 downto 8) <= sSineNumber; --(others => '0'); -- when std_logic_vector(to_unsigned(counter, 4))(3) = '0' else (others => '1');
+   mySignalR (23 downto 8) <= sSineNumber; --(others => '0'); -- when std_logic_vector(to_unsigned(counter, 4))(3) = '1' else (others => '1');
 end rtl;
