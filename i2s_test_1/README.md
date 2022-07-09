@@ -1,5 +1,5 @@
 # Attempt to generate a sinusoid through a PCM5102 I2S DAC board.
-![One looking good 1 kHz sinusoid](doc/CenteredSine1kHz.png)
+![One looking good 1 kHz sinusoid](doc/CenteredSine33kHz.png)
 ## PCM5102 Board
 Item on ali-express, with information on pinout and diagram: https://es.aliexpress.com/item/32968353841.html
 ![Board diagram](doc/pcm5102_board_diagram.jpg)
