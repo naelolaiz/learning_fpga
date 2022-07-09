@@ -30,5 +30,13 @@ Looking at the table of frequencies, I decided to try 96kHz of sampling rate. Th
 I am using the internal Cyclone IV dev board 50MHz in pin 23, as clock for i2s_master. The phase_inc of the waveform generator is set to 2 MHz (in theory : 2 * 2**32 / 50 ) (2 MHz * bit resolution / 50MHz).
 
 The current code is still not working properly.
-I am currently seeing in the scope:
-
+### Debugging
+Some previous before I saw a deformed output, I thought the bits could be inverted or something (I didn't save it with the scope. I will try to duplicate the results).
+But currently I am seeing a muted signal  (small noise up to 200mV) in the DAC board output.
+The I2S signals I am seeing:
+![Left/Right select (freq equals to sampling rate)](doc/LeftRight_WordSelect.png)
+![I2S data signal](doci/DataOut.png)
+![Data clock](BCK_DataClock.png)
+![Data clock in detail](BCK_DataClock_Detailed.png)
+![Master clock](MasterClock.png)
+![Master clock in detail - single shot capture](MasterClock_Detailed_SingleShot.png)
