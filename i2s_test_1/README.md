@@ -34,9 +34,15 @@ The current code is still not working properly.
 Some previous before I saw a deformed output, I thought the bits could be inverted or something (I didn't save it with the scope. I will try to duplicate the results).
 But currently I am seeing a muted signal  (small noise up to 200mV) in the DAC board output.
 The I2S signals I am seeing:
+#### Left/Right / Word Select
 ![Left/Right select (freq equals to sampling rate)](doc/LeftRight_WordSelect.png)
+#### I2S data signal
 ![I2S data signal](doc/DataOut.png)
+#### BCK / data clock
+CHECK: Is it normal to not be periodic?
 ![Data clock](doc/BCK_DataClock.png)
 ![Data clock in detail](doc/BCK_DataClock_Detailed.png)
+#### Master Clock
+CHECK: Are the discontinuities expected?
 ![Master clock](doc/MasterClock.png)
 ![Master clock in detail - single shot capture](doc/MasterClock_Detailed_SingleShot.png)
