@@ -35,6 +35,7 @@ Some previous before I saw a deformed output, I thought the bits could be invert
 But currently I am seeing a muted signal  (small noise up to 200mV) in the DAC board output.
 The I2S signals I am seeing:
 #### Left/Right / Word Select
+We can confirm here that the input frequency of 24576000 Hz for the master clock correctly ended in a LRCLK frequency (=sampling rate) of 96kHz.
 ![Left/Right select (freq equals to sampling rate)](doc/LeftRight_WordSelect.png)
 #### I2S data signal
 ![I2S data signal](doc/DataOut.png)
