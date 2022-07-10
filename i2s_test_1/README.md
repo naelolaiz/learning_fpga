@@ -20,6 +20,8 @@ Code copied from from https://github.com/newdigate/papilio_duo_i2s.git
 ### Implementation
 ![Original implementation](doc/wave_gen_circuit.png)
 
+![The hardware](doc/boards.jpg)
+
 ### IMPORTANT NOTES
  * The i2s reset is pulled DOWN but the waveform generator reset is pulled UP!
  * It is important to make
