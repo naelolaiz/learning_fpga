@@ -13,8 +13,9 @@ Project containing tests for learning FPGA/VHDL.
    * [Information in Portuguese, with example in vhdl](https://github.com/filippovf/KitEasyFPGA)
    * [FPGA designs with VHDL](https://vhdlguide.readthedocs.io/en/latest/)
 ## Demos:
-### [Testing VGA driver](doc/vga_testing.gif)
-### [Driving 4 multiplexed 7 segment digits with alphanumeric characters, with scroll](https://github.com/naelolaiz/learning_fpga/tree/main/7segments/text)
+### Testing VGA driver
+![Bouncing text and square](doc/vga_testing.gif)
+### ![Driving 4 multiplexed 7 segment digits with alphanumeric characters, with scroll](https://github.com/naelolaiz/learning_fpga/tree/main/7segments/text)
 ![What it looks like](7segments/text/doc/scrolling_long_text.gif)
 ![RTL view](7segments/text/doc/RTL_view.png)
 ## Log:
