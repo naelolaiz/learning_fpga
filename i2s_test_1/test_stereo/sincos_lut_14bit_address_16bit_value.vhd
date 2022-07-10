@@ -26,15 +26,17 @@ entity sincos_lut_14addr_16 is
 
 port (
 
-  clk      : in  std_logic;
-  addr     : in  std_logic_vector(13 downto 0);
-  sin_out  : out std_logic_vector(15 downto 0)
+  clk       : in  std_logic;
+  addr      : in  std_logic_vector(13 downto 0);
+  addr_1    : in  std_logic_vector(13 downto 0);
+  sin_out   : out std_logic_vector(15 downto 0);
+  sin_out_1 : out std_logic_vector(15 downto 0)
   );
   
 end entity;
 
 
-architecture rtl of sincos_lut_14addr_16 is
+ architecture rtl of sincos_lut_14addr_16 is
 
 
 type rom_type is array (0 to 16383) of std_logic_vector (15 downto 0);
@@ -2092,13 +2094,24 @@ X"ff37", X"ff44", X"ff50", X"ff5d", X"ff69", X"ff76", X"ff82", X"ff8f",
 X"ff9b", X"ffa8", X"ffb5", X"ffc1", X"ffce", X"ffda", X"ffe7", X"fff3" 
 );
 
+signal counter : std_logic := '0';
+signal value : std_logic_vector(15 downto 0);
+signal current_addr:std_logic_vector(13 downto 0);
 begin
 
 rom_select: process (clk)
 begin
-  if clk'event and clk = '1' then
-    sin_out <= SIN_ROM(conv_integer(addr)) + 8192;
---    cos_out <= COS_ROM(conv_integer(addr)) + 2048;
+  if rising_edge(clk) then
+	 counter <= not counter;
+    value <= SIN_ROM(conv_integer(current_addr)) + 8192;
+	 if counter = '0' then
+      current_addr <= addr;
+		sin_out <= value;
+	 else
+      current_addr <= addr_1;
+		sin_out_1 <= value;
+	  end if;
+	
   end if;
 end process rom_select;
 
