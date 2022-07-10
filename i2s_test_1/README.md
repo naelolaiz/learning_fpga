@@ -28,31 +28,22 @@ Code copied from from https://github.com/newdigate/papilio_duo_i2s.git
 
 ### Adaptation
 Looking at the table of frequencies, I decided to try 96kHz of sampling rate. Then I modified i2s_master.vhd, to make the constant MCLK_FREQ equals to 24576000, that is equals to 96000 * 256. (so, no PLL mode required)
-I am using the internal Cyclone IV dev board 50MHz in pin 23, as clock for i2s_master. The phase_inc of the waveform generator is set to 2 MHz (in theory : 2 * 2**32 / 50 ) (2 MHz * bit resolution / 50MHz).
-
+I am using the internal Cyclone IV dev board 50MHz in pin 23, as clock for i2s_master.
 The current code is still not working properly.
 ### Debugging
-Some previous before I saw a deformed output, I thought the bits could be inverted or something (I didn't save it with the scope. I will try to duplicate the results).
-But currently I am seeing a muted signal  (small noise up to 200mV) in the DAC board output.
-The I2S signals I am seeing:
 #### Left/Right / Word Select
 We can confirm here that the input frequency of 24576000 Hz for the master clock correctly ended in a LRCLK frequency (=sampling rate) of 96kHz.
-
 ![Left/Right select (freq equals to sampling rate)](doc/LeftRight_WordSelect.png)
 #### I2S data signal
 ![I2S data signal](doc/DataOut.png)
 #### BCK / data clock
-CHECK: Is it normal to not be periodic?
-
 ![Data clock](doc/BCK_DataClock.png)
 ![Data clock in detail](doc/BCK_DataClock_Detailed.png)
 #### Master Clock
-CHECK: Are the discontinuities expected?
-
 ![Master clock](doc/MasterClock.png)
 ![Master clock in detail - single shot capture](doc/MasterClock_Detailed_SingleShot.png)
 #### Some signal!
-I managed to replicate the distorted waveform I got before! I got it by sending the (16 bit) output of the waveform generator into the 16 most significant bits of the (24 bit) i2s input, instead of the 16 LSB. 
+I managed to replicate a distorted waveform! I got it by sending the (16 bit) output of the waveform generator into the 16 most significant bits of the (24 bit) i2s input, instead of the 16 LSB. 
 This is the waveform I get. If that is the original sinusoid distorted, the frequency I calculated previously is wrong, as we can appreciate here (3.817 kHz)
 
 ![Measuring period of DAC output](doc/DAC_with_number_in_MSB_detailed.png)
@@ -65,7 +56,7 @@ Here is the new DAC output I get. It is still doing a strange wraparound. But it
 
 ![Now we are talking!](doc/DAC_with_number_in_MSB_1kHz.png)
 
-I did a quick hack adding substracting an offset to make it look good.
+I did a quick hack adding substracting an offset to make it look good. And in fact, that is basically what the [original code](https://github.com/newdigate/papilio_duo_i2s/blob/master/i2s_function_generator/circuit/shift_left_16_to_24.vhd) does.
 I will do my own oscillator instead.
 
 ![One looking good 1 kHz sinusoid](doc/CenteredSine33kHz.png)
