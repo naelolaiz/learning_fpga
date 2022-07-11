@@ -36,6 +36,7 @@ architecture rtl of top_level_vga_test is
   signal should_draw_text_static : std_logic;
   signal should_draw_text_dynamic : std_logic;
   signal should_draw_text_changing : std_logic;
+  signal should_draw_text_changing2 : std_logic;
 
   -- nael
   signal counterForHalfSecond : integer range 0 to 25000000 := 0;
@@ -54,6 +55,7 @@ architecture rtl of top_level_vga_test is
 
   constant changingStringSize : integer := 20;
   signal changingString : string (1 to changingStringSize) := "                    ";
+  signal changingString2 : string (1 to changingStringSize) := "                    ";
 
   component VgaController is
     port (
@@ -94,6 +96,23 @@ changingString(15) <= character'val(halfSecondCounter +14);
 changingString(16) <= character'val(halfSecondCounter +15);
 changingString(17) <= character'val(halfSecondCounter +16);
 
+changingString2(17) <= character'val(halfSecondCounter);
+changingString2(16) <= character'val(halfSecondCounter +1);
+changingString2(15) <= character'val(halfSecondCounter +2);
+changingString2(14) <= character'val(halfSecondCounter +3);
+changingString2(13) <= character'val(halfSecondCounter +4);
+changingString2(12) <= character'val(halfSecondCounter +5);
+changingString2(11) <= character'val(halfSecondCounter +6);
+changingString2(10) <= character'val(halfSecondCounter +7);
+changingString2(9) <= character'val(halfSecondCounter +8);
+changingString2(8) <= character'val(halfSecondCounter +9);
+changingString2(7) <= character'val(halfSecondCounter +10);
+changingString2(6) <= character'val(halfSecondCounter +11);
+changingString2(5) <= character'val(halfSecondCounter +12);
+changingString2(4) <= character'val(halfSecondCounter +13);
+changingString2(3) <= character'val(halfSecondCounter +14);
+changingString2(2) <= character'val(halfSecondCounter +15);
+changingString2(1) <= character'val(halfSecondCounter +16);
 TickProcess : process (clk)
 begin
     if (rising_edge(clk)) then
@@ -109,7 +128,7 @@ begin
        else
           counterForDynamicTextPositionUpdate <= counterForDynamicTextPositionUpdate + 1;
        end if;
-       if counterForHalfSecond = 10000000 then -- 25000000-1 then
+       if counterForHalfSecond = 4000000 then -- 25000000-1 then
           counterForHalfSecond <= 0;
 	  ticksForHalfSecond <= not ticksForHalfSecond;
 	  halfSecondCounter <= halfSecondCounter + 1;
@@ -232,18 +251,36 @@ square_y <= yPosSquare;
         	pixel => should_draw_text_static -- result
         );
 
-        textElement: entity work.Pixel_On_Text_WithSize
+        textWithSize: entity work.Pixel_On_Text_WithSize
         generic map (
-	        fontScale => 3,
+	        fontScale => 4,
+		xForward => true,
+		yForward => false,
+        	textLength => changingStringSize
+        )
+        port map(
+        	clk => vga_clk,
+		displayText => changingString2,
+        	position => (HDATA_BEGIN,VDATA_BEGIN + 40),  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
+        	horzCoord => hpos,
+        	vertCoord => vpos,
+        	pixel => should_draw_text_changing
+        );
+
+        textWithSize2: entity work.Pixel_On_Text_WithSize
+        generic map (
+	        fontScale => 4,
+		xForward => true,
+		yForward => true,
         	textLength => changingStringSize
         )
         port map(
         	clk => vga_clk,
 		displayText => changingString,
-        	position => (HDATA_BEGIN,VDATA_BEGIN + 40),  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
+        	position => (HDATA_BEGIN + 60, VDATA_BEGIN + 80),  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
         	horzCoord => hpos,
         	vertCoord => vpos,
-        	pixel => should_draw_text_changing -- result
+        	pixel => should_draw_text_changing2
         );
 
         textElementMoving: entity work.Pixel_On_Text2
@@ -312,7 +349,13 @@ square_y <= yPosSquare;
 	 end if;
       end if;
       if should_draw_text_changing = '1' then
-         tempColorSum  := "111";
+         if should_draw_text_changing2 = '1' then
+            tempColorSum  := "011";
+	 else
+            tempColorSum := "010";
+         end if;
+      elsif should_draw_text_changing2 = '1' then
+         tempColorSum := "100";
       end if;
       rgb_input <= tempColorSum;
     end if;
