@@ -184,7 +184,7 @@ moveText : process (ticksForDynamicTextPositionUpdate)
 begin
    if rising_edge(ticksForDynamicTextPositionUpdate) then
       if xDirectionText then
-         if xPosNael = HDATA_END - 292 then
+         if xPosNael = HDATA_END - (297 * 2) then
 	    xDirectionText <= not xDirectionText;
 	    text_dynamic_rgb(0) <= '1';
 	    text_dynamic_rgb <= text_dynamic_rgb(0) & text_dynamic_rgb(2 downto 1);
@@ -200,7 +200,7 @@ begin
 	 end if;
       end if;
       if yDirectionText then
-         if yPosNael = VDATA_END - 60 then
+         if yPosNael = VDATA_END - 50 then
 	    yDirectionText <= not yDirectionText;
 	    text_dynamic_rgb <= text_dynamic_rgb(1) & text_dynamic_rgb(2) & text_dynamic_rgb(0);
 	 else
@@ -283,14 +283,17 @@ square_y <= yPosSquare;
         	pixel => should_draw_text_changing2
         );
 
-        textElementMoving: entity work.Pixel_On_Text2
+        textElementMoving: entity work.Pixel_On_Text_WithSize
         generic map (
-        	displayText => "<<<((([[[ * FPGA VGA TEST * ]]])))>>>" 
+	        textLength => 37,
+		fontScale => 2
+--        	displayText => "<<<((([[[ * FPGA VGA TEST * ]]])))>>>" 
         )
         port map(
         	clk => vga_clk,
-        	positionX => xPosNael,  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
-        	positionY => yPosNael, -- text position.y (top left)
+        	position => (xPosNael, yPosNael),  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
+		displayText => "<<<((([[[ * FPGA VGA TEST * ]]])))>>>",
+--        	positionY => yPosNael, -- text position.y (top left)
         	horzCoord => hpos,
         	vertCoord => vpos,
         	pixel => should_draw_text_dynamic -- result
