@@ -31,7 +31,10 @@ entity Pixel_On_Text_WithSize is
 	generic(
 	   -- needed for init displayText, the default value 11 is just a random number
        textLength: integer := 11;
-       fontScale: integer := 1
+       fontScale: integer := 1;
+       xForward: boolean := true;
+       yForward: boolean := true;
+       textDirection: text_direction := RightToLeft
 	);
 	port (
 		clk: in std_logic;
@@ -55,8 +58,10 @@ architecture Behavioral of Pixel_On_Text_WithSize is
    signal translatedVertCoord: integer :=0;
 
 begin
-   translatedHorzCoord <= (horzCoord - position.x) / fontScale ;
-   translatedVertCoord <= (vertCoord - position.y) / fontScale;
+   translatedHorzCoord <= (horzCoord - position.x) / fontScale when xForward 
+                      else (textLength * FONT_WIDTH)-((horzCoord - position.x) / fontScale);
+   translatedVertCoord <= (vertCoord - position.y) / fontScale when yForward
+                          else FONT_HEIGHT- ((vertCoord - position.y) /fontScale);
 
 unscaledPixelOnText: entity  work.Pixel_On_Text
 generic map (textLength => textLength)
