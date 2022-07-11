@@ -1,4 +1,5 @@
 # Testing driving a VGA monitor
+!(demo)[docs/crazy_screen.gif]
 ## VGA Driver
 For this tests I took this VGA driver code: https://github.com/fsmiamoto/EasyFPGA-VGA.git
 ## Text generation
