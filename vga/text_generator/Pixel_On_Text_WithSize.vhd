@@ -33,8 +33,7 @@ entity Pixel_On_Text_WithSize is
        textLength: integer := 11;
        fontScale: integer := 1;
        xForward: boolean := true;
-       yForward: boolean := true;
-       textDirection: text_direction := RightToLeft
+       yForward: boolean := true
 	);
 	port (
 		clk: in std_logic;
