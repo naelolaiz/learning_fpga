@@ -232,8 +232,9 @@ square_y <= yPosSquare;
         	pixel => should_draw_text_static -- result
         );
 
-        textElement: entity work.Pixel_On_Text
+        textElement: entity work.Pixel_On_Text_WithSize
         generic map (
+	        fontScale => 3,
         	textLength => changingStringSize
         )
         port map(
