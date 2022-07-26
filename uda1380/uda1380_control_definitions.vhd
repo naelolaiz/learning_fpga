@@ -1,5 +1,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
+--use ieee.std_logic_arith.all;
+use ieee.numeric_std.all;
 
 package uda1380_control_definitions is
    constant DEVICE_ADDR             : std_logic_vector(6 downto 0) := "0011000";
@@ -22,14 +24,19 @@ package uda1380_control_definitions is
    constant UDA1380_REG_DEC         : std_logic_vector(6 downto 0) := "0101000";
    
    -- BITS for register address 00H (Evaluation modes and clock settings) : 2 bytes
-   constant EN_ADC_BIT                : std_logic_vector(11 downto 11) := "0"; -- ADC clock enable
-   constant EN_DEC_BIT                : std_logic_vector(10 downto 10) := "1"; -- decimator clock enable
-   constant EN_DAC_BIT                : std_logic_vector(9  downto 9)  := "0";  -- FSDAC clock enable
-   constant EN_INTERP_BIT             : std_logic_vector(8  downto 8)  := "1";  -- Interpolator clock enable
-   constant ADC_CLK_BIT               : std_logic_vector(5  downto 5)  := "0";  -- ADC clock select (0=SYSCLK; 1=WSPLL)
-   constant DAC_CLK_BIT               : std_logic_vector(4  downto 4)  := "0";  -- DAC clock select (0=SYSCLK; 1=WSPLL)
-   constant SYS_DIV_BITS              : std_logic_vector(3  downto 2)  := "00";  -- dividers for system clock input
-   constant WSPLL_BITS                : std_logic_vector(1  downto 0)  := "10";  -- WSPLL setting
+   type EV_MODES_AND_CLOCK_SETTINGS_TYPE is record
+      EVALUATION_BITS           : std_logic_vector(15 downto 13); --  := "000"; -- evaluation bits (use default)
+      EMPTY_BIT1                : std_logic_vector(12 downto 12); --  := "0";
+      EN_ADC_BIT                : std_logic_vector(11 downto 11); --  := "0"; -- ADC clock enable
+      EN_DEC_BIT                : std_logic_vector(10 downto 10); --  := "1"; -- decimator clock enable
+      EN_DAC_BIT                : std_logic_vector(9  downto 9) ; --  := "0";  -- FSDAC clock enable
+      EN_INTERP_BIT             : std_logic_vector(8  downto 8) ; --  := "1";  -- Interpolator clock enable
+      EMPTY_BITS2               : std_logic_vector(6 downto 7)  ; --  := "00";
+      ADC_CLK_BIT               : std_logic_vector(5  downto 5) ; --  := "0";  -- ADC clock select (0=SYSCLK; 1=WSPLL)
+      DAC_CLK_BIT               : std_logic_vector(4  downto 4) ; --  := "0";  -- DAC clock select (0=SYSCLK; 1=WSPLL)
+      SYS_DIV_BITS              : std_logic_vector(3  downto 2) ; --  := "00";  -- dividers for system clock input
+      WSPLL_BITS                : std_logic_vector(1  downto 0) ; --  := "10";  -- WSPLL setting
+   end record  EV_MODES_AND_CLOCK_SETTINGS_TYPE;
    
    -- Dividers for system clock input
    constant SYS_DIV_256Fs           : std_logic_vector(1 downto 0) := "00";
@@ -44,10 +51,16 @@ package uda1380_control_definitions is
    constant WSPLL_50_TO_100          : std_logic_vector(1 downto 0) := "11";
    
    -- Configuration bits for register address 01 (i2s) : 2 bytes
-   constant SFORI_BITS     : std_logic_vector (10 downto 8) := "000"; -- digital data input formats
-   constant SEL_SOURCE_BIT : std_logic_vector (6 downto 6)  := "0";  -- digital output interface mode (0: decimator; 1: digital mixer output)
-   constant SIM_BIT        : std_logic_vector (4 downto 4)  := "0";  -- digital output interface mode settings (BCK0 PAD. 0: slave; 1: master)
-   constant SFORO_BITS     : std_logic_vector (2 downto 0)  := "000";  -- digital data output formats
+   type I2S_INPUT_AND_OUTPUT_SETTINGS_TYPE is record
+      EMPTY_BITS     : std_logic_vector (15 downto 11);  -- := (others => '0');
+      SFORI_BITS     : std_logic_vector (10 downto 8) ;  -- := "000"; -- digital data input formats
+      EMPTY_BIT2     : std_logic_vector (7 downto 7)  ;  -- := "0";
+      SEL_SOURCE_BIT : std_logic_vector (6 downto 6)  ;  -- := "0";  -- digital output interface mode (0: decimator; 1: digital mixer output)
+      EMPTY_BIT3     : std_logic_vector (5 downto 5)  ;  -- := "0";
+      SIM_BIT        : std_logic_vector (4 downto 4)  ;  -- := "0";  -- digital output interface mode settings (BCK0 PAD. 0: slave; 1: master)
+      EMPTY_BIT4     : std_logic_vector (3 downto 3)  ;  -- := "0";
+      SFORO_BITS     : std_logic_vector (2 downto 0)  ;  -- := "000";  -- digital data output formats
+   end record I2S_INPUT_AND_OUTPUT_SETTINGS_TYPE;
    
    
    constant SFOR_I2S_BUS            : std_logic_vector(2 downto 0) := "000"; -- default
@@ -57,21 +70,31 @@ package uda1380_control_definitions is
    constant SFOR_MSB_JUST           : std_logic_vector(2 downto 0) := "101";
    
    -- Configuration bits for register address 02H (Power control settings)
-   constant  PON_PLL  : std_logic_vector (15 downto 15) := "0"; -- Power-on WSPLL (0: power-off; 1: power-on)
-   constant  PON_HP   : std_logic_vector (13 downto 13) := "0"; -- Power-on headphone driver (0: power-off; 1: power-on)
-   constant  PON_DAC  : std_logic_vector (10 downto 10) := "0"; -- Power-on DAC
-   constant  PON_BIAS : std_logic_vector (8  downto 8)  := "0";  -- Power-on BIAS 
-   constant  EN_AVC   : std_logic_vector (7  downto 7)  := "0";  -- Enable control AVC
-   constant  PON_AVC  : std_logic_vector (6  downto 6)  := "0";  -- Power-on AVC
-   constant  PON_LNA  : std_logic_vector (4  downto 4)  := "0";  -- Power-on LNA
-   constant  PON_PGAL : std_logic_vector (3  downto 3)  := "0";  -- Power-on PGAL
-   constant  PON_ADCL : std_logic_vector (2  downto 2)  := "0";  -- Power-on ADCL
-   constant  PON_PGAR : std_logic_vector (1  downto 1)  := "0";  -- Power-on PGAR
-   constant  PON_ADCR : std_logic_vector (0  downto 0)  := "0";  -- Power-on ADCR
-   
+   type POWER_CONTROL_SETTINGS_TYPE is record
+      PON_PLL  : std_logic_vector (15 downto 15)  ; -- := "0"; -- Power-on WSPLL (0: power-off; 1: power-on)
+      EMPTY_BIT : std_logic_vector(14 downto 14)  ; -- := "0";
+      PON_HP   : std_logic_vector (13 downto 13)  ; -- := "0"; -- Power-on headphone driver (0: power-off; 1: power-on)
+      EMPTY_BITS2 : std_logic_vector(12 downto 11); --   := "0";
+      PON_DAC  : std_logic_vector (10 downto 10)  ; -- := "0"; -- Power-on DAC
+      EMPTY_BIT3 : std_logic_vector(9 downto 9)   ; -- := "0";
+      PON_BIAS : std_logic_vector (8  downto 8)   ; -- := "0";  -- Power-on BIAS 
+      EN_AVC   : std_logic_vector (7  downto 7)   ; -- := "0";  -- Enable control AVC
+      PON_AVC  : std_logic_vector (6  downto 6)   ; -- := "0";  -- Power-on AVC
+      EMPTY_BIT4 : std_logic_vector(5 downto 5)   ; -- := "0";
+      PON_LNA  : std_logic_vector (4  downto 4)   ; -- := "0";  -- Power-on LNA
+      PON_PGAL : std_logic_vector (3  downto 3)   ; -- := "0";  -- Power-on PGAL
+      PON_ADCL : std_logic_vector (2  downto 2)   ; -- := "0";  -- Power-on ADCL
+      PON_PGAR : std_logic_vector (1  downto 1)   ; -- := "0";  -- Power-on PGAR
+      PON_ADCR : std_logic_vector (0  downto 0)   ; -- := "0";  -- Power-on ADCR
+   end record POWER_CONTROL_SETTINGS_TYPE;
+  
    -- Configuration bits for register address 03H (Analog mixer settings)
-   constant  ANALOG_VOLUME_CONTROL_LEFT_CHANNEL_BITS   : std_logic_vector (13 downto 8) := (others => '1'); -- Analog volume control, left channel
-   constant  ANALOG_VOLUME_CONTROL_RIGHT_CHANNEL_BITS  : std_logic_vector (5 downto 0)  := (others => '1');  -- Analog volume control, right channel
+   type ANALOG_MIXER_SETTINGS_TYPE is record
+      EMPTY_BITS : std_logic_vector (15 downto 14); -- := "00";
+      ANALOG_VOLUME_CONTROL_LEFT_CHANNEL_BITS   : std_logic_vector (13 downto 8); -- := (others => '1'); -- Analog volume control, left channel
+      EMPTY_BITS2 : std_logic_vector (7 downto 6); -- := "00";
+      ANALOG_VOLUME_CONTROL_RIGHT_CHANNEL_BITS  : std_logic_vector (5 downto 0); --  := (others => '1');  -- Analog volume control, right channel
+   end record ANALOG_MIXER_SETTINGS_TYPE;
 
    constant  AVC_VALUE_16_5_dB : std_logic_vector (5 downto 0) := "000000";
    constant  AVC_VALUE_15_dB   : std_logic_vector (5 downto 0) := "000001";
@@ -102,8 +125,10 @@ package uda1380_control_definitions is
    constant  AVC_VALUE_MINUS_INFINITY  : std_logic_vector (5 downto 0) := "111111";
    
    -- Configuration bits for register address 10H (Analog mixer settings)
-   constant  MVC_RIGHT  : std_logic_vector (15 downto 8) := (others => '0');
-   constant  MVC_LEFT   : std_logic_vector (7 downto 0)  := (others => '0');
+   type MASTER_VOLUME_CONTROL_TYPE is record
+      MVC_RIGHT  : std_logic_vector (15 downto 8); --  := (others => '0');
+      MVC_LEFT   : std_logic_vector (7 downto 0); --  := (others => '0');
+   end record MASTER_VOLUME_CONTROL_TYPE;
    
    constant  MVC_VALUE_0_dB           : std_logic_vector (7 downto 0) := "00000000";
    constant  MVC_VALUE_MINUS_0_25dB   : std_logic_vector (7 downto 0) := "00000001";
@@ -133,24 +158,19 @@ package uda1380_control_definitions is
    constant  MVC_VALUE_MINUS_INFINITY : std_logic_vector (7 downto 0) := "11111100";
    
    -- Configuration bits for register address 11H (Digital mixer settings)
-   constant  VC2_BITS   : std_logic_vector (15 downto 8) := (others => '0'); -- Digital mixer volume control, channel 2
-   constant  VC1_BITS   : std_logic_vector (7 downto 0)  := (others => '0');  -- Digital mixer volume control, channel 1
+   type MIXER_VOLUME_CONTROL_TYPE is record
+      VC2_BITS   : std_logic_vector (15 downto 8); -- := (others => '0'); -- Digital mixer volume control, channel 2
+      VC1_BITS   : std_logic_vector (7 downto 0); --  := (others => '0');  -- Digital mixer volume control, channel 1
+   end record MIXER_VOLUME_CONTROL_TYPE;
    
    -- Configuration bits for register address 12H (Mode, bass boost and treble)
-   constant  M_1_BIT                 : integer := 15; -- Flat/minimum/maximum setting, bit 1
-   constant  M_0_BIT                 : integer := 14; -- Flat/minimum/maximum setting, bit 0
-   constant  TREBLE_LEFT_1_BIT       : integer := 13; -- Treble setting left, bit 1
-   constant  TREBLE_LEFT_0_BIT       : integer := 12; -- Treble setting left, bit 0
-   constant  BASS_BOOST_LEFT_3_BIT   : integer := 11; -- Bass boost setting left, bit 3
-   constant  BASS_BOOST_LEFT_2_BIT   : integer := 10; -- Bass boost setting left, bit 2
-   constant  BASS_BOOST_LEFT_1_BIT   : integer := 9;  -- Bass boost setting left, bit 1
-   constant  BASS_BOOST_LEFT_0_BIT   : integer := 8;  -- Bass boost setting left, bit 0
-   constant  TREBLE_RIGHT_1_BIT       : integer := 5; -- Treble setting right, bit 1
-   constant  TREBLE_RIGHT_0_BIT       : integer := 4; -- Treble setting right, bit 0
-   constant  BASS_BOOST_RIGHT_3_BIT   : integer := 3; -- Bass boost setting right, bit 3
-   constant  BASS_BOOST_RIGHT_2_BIT   : integer := 2; -- Bass boost setting right, bit 2
-   constant  BASS_BOOST_RIGHT_1_BIT   : integer := 1;  -- Bass boost setting right, bit 1
-   constant  BASS_BOOST_RIGHT_0_BIT   : integer := 0;  -- Bass boost setting right, bit 0
+   type MODE_BASSBOOST_AND_TREBLE_TYPE is record
+      M_BITS                : std_logic_vector(15 downto 14) ; -- := "00"; -- Flat/minimum/maximum setting
+      TREBLE_LEFT_BITS      : std_logic_vector(13 downto 12) ; -- := "00"; -- Treble setting left
+      BASS_BOOST_LEFT_BITS  : std_logic_vector(11 downto 8)  ; -- := "0000" -- Bass boost setting left
+      TREBLE_RIGHT_BITS     : std_logic_vector(5 downto 4)   ; -- := "00";    -- Treble setting right
+      BASS_BOOST_RIGHT_BITS : std_logic_vector(3 downto 0)   ; -- := "0000"; -- Bass boost setting right
+   end record MODE_BASSBOOST_AND_TREBLE_TYPE;
    
    constant  M_FLAT      : std_logic_vector (1 downto 0) := "00";
    constant  M_MINIMUM   : std_logic_vector (1 downto 0) := "01";
@@ -177,12 +197,17 @@ package uda1380_control_definitions is
    
    
    -- Configuration bits for register address 13H (Master mute, channel de-emphasis and mute)
-   constant  MASTER_MUTE_BIT        : std_logic_vector (14 downto 14) := "1"; -- Master mute
-   constant  CHANNEL_2_MUTE_BIT     : std_logic_vector (11 downto 11) := "1"; -- Channel 2 mute
-   constant  DEEMPHASIS_2_BITS      : std_logic_vector (10 downto 8)  := (others => '0'); -- De-emphasis for channel 2(?).
-   
-   constant  CHANNEL_1_MUTE_BIT     : std_logic_vector (3 downto 3) := "1";   -- Channel 1 mute
-   constant  DEEMPHASIS_1_BITS      : std_logic_vector (2 downto 0) := (others => '0'); -- De-emphasis for channel 1(?).
+   type MUTE_AND_DEEMPHASIS_TYPE is record
+      EMPTY_BIT              : std_logic_vector (15 downto 15) ; -- := "0";
+      MASTER_MUTE_BIT        : std_logic_vector (14 downto 14) ; -- := "1"; -- Master mute
+      EMPTY_BITS2            : std_logic_vector (13 downto 12) ; -- := "00";
+      CHANNEL_2_MUTE_BIT     : std_logic_vector (11 downto 11) ; -- := "1"; -- Channel 2 mute
+      DEEMPHASIS_2_BITS      : std_logic_vector (10 downto 8)  ; -- := (others => '0'); -- De-emphasis for channel 2(?).
+      EMPTY_BITS3            : std_logic_vector (7 downto 4)   ; -- := "0000";
+     
+      CHANNEL_1_MUTE_BIT     : std_logic_vector (3 downto 3) ; --   := "1";   -- Channel 1 mute
+      DEEMPHASIS_1_BITS      : std_logic_vector (2 downto 0) ; --   := (others => '0'); -- De-emphasis for channel 1(?).
+   end record MUTE_AND_DEEMPHASIS_TYPE;
    
    constant  DEEMPHASIS_OFF     : std_logic_vector (2 downto 0) := "000"; 
    constant  DEEMPHASIS_32KHz   : std_logic_vector (2 downto 0) := "001"; 
@@ -190,15 +215,19 @@ package uda1380_control_definitions is
    constant  DEEMPHASIS_48KHz   : std_logic_vector (2 downto 0) := "011"; 
    constant  DEEMPHASIS_96KHz   : std_logic_vector (2 downto 0) := "100"; 
 
-  -- Configuration bits for register address 14H (Master mute, channel de-emphasis and mute)
-  constant DA_POL_INV_BIT  : std_logic_vector (15 downto 15) := "0";
-  constant SEL_NS_BIT      : std_logic_vector (14 downto 14) := "0";
-  constant MIX_POS_BIT     : std_logic_vector (13 downto 13) := "0";
-  constant MIX_BIT         : std_logic_vector (12 downto 12) := "0";
-  constant SILENCE_BIT     : std_logic_vector (7 downto 7)   := "0";
-  constant SDET_ON_BIT     : std_logic_vector (6 downto 6)   := "0";
-  constant SD_VALUE_BITS    : std_logic_vector (5 downto 4)   := "00";
-  constant OS_BITS          : std_logic_vector (1 downto 0)   := "00";
+  -- Configuration bits for register address 14H (Mixer, silence detector and oversampling settings)
+  type MIXER_SILENCEDETECTOR_OVERSAMPLING_TYPE is record
+     DA_POL_INV_BIT  : std_logic_vector (15 downto 15) ; -- := "0";
+     SEL_NS_BIT      : std_logic_vector (14 downto 14) ; -- := "0";
+     MIX_POS_BIT     : std_logic_vector (13 downto 13) ; -- := "0";
+     MIX_BIT         : std_logic_vector (12 downto 12) ; -- := "0";
+     EMPTY_BITS      : std_logic_vector (11 downto 8)  ; -- := "0000";
+     SILENCE_BIT     : std_logic_vector (7 downto 7)   ; -- := "0";
+     SDET_ON_BIT     : std_logic_vector (6 downto 6)   ; -- := "0";
+     SD_VALUE_BITS    : std_logic_vector (5 downto 4)  ; -- := "00";
+     EMPTY_BITS2      : std_logic_vector (3 downto 2)  ; -- := "00";
+     OS_BITS          : std_logic_vector (1 downto 0)  ; -- := "00";
+  end record MIXER_SILENCEDETECTOR_OVERSAMPLING_TYPE;
 
   constant SILENCE_DETECTOR_3200_SAMPLES  : std_logic_vector (1 downto 0) := "00";
   constant SILENCE_DETECTOR_4800_SAMPLES  : std_logic_vector (1 downto 0) := "01";
@@ -210,12 +239,16 @@ package uda1380_control_definitions is
   constant OVERSAMPLING_INPUT_QUAD_SPEED   : std_logic_vector (1 downto 0) := "10";
 
   -- Configuration bits for register address 22H (ADC settings)
-  constant ADCPOL_INV_BIT : std_logic_vector (12 downto 12) := "0"; -- ADC polarity control. 0: non inverting; 1: inverting.
-  constant VGA_CTRL_BITS  : std_logic_vector (11 downto 8)  := (others => '0'); -- Microphone input VGA gain settings
-  constant SEL_LNA_BIT    : std_logic_vector (3 downto 3)   := "0"; -- Line input select. 0: select line input. 1: select LNA for the left channel ADC.
-  constant SEL_MIC_BIT    : std_logic_vector (2 downto 2)   := "0"; -- Microphone input select. 0: select right channel ADC. Select left channel ADC.
-  constant SKIP_DCFIL_BIT : std_logic_vector (1 downto 1)   := "1"; -- DC filter bypass. 0: DC filter enabled; 1: DC filter bypassed.
-  constant EN_DCFIL       : std_logic_vector (0 downto 0)   := "0"; -- DC filter enable. 0: DC filter disabled; 1: DC filter enabled.
+  type ADC_SETTINGS_TYPE is record
+     EMPTY_BITS     : std_logic_vector (15 downto 13) ; -- := "000";
+     ADCPOL_INV_BIT : std_logic_vector (12 downto 12) ; -- := "0"; -- ADC polarity control. 0: non inverting; 1: inverting.
+     VGA_CTRL_BITS  : std_logic_vector (11 downto 8)  ; -- := (others => '0'); -- Microphone input VGA gain settings
+     EMPTY_BITS2    : std_logic_vector (7 downto 4)   ; -- := "0000";
+     SEL_LNA_BIT    : std_logic_vector (3 downto 3)   ; -- := "0"; -- Line input select. 0: select line input. 1: select LNA for the left channel ADC.
+     SEL_MIC_BIT    : std_logic_vector (2 downto 2)   ; -- := "0"; -- Microphone input select. 0: select right channel ADC. Select left channel ADC.
+     SKIP_DCFIL_BIT : std_logic_vector (1 downto 1)   ; -- := "1"; -- DC filter bypass. 0: DC filter enabled; 1: DC filter bypassed.
+     EN_DCFIL       : std_logic_vector (0 downto 0)   ; -- := "0"; -- DC filter enable. 0: DC filter disabled; 1: DC filter enabled.
+  end record ADC_SETTINGS_TYPE;
   -- microphone input VGA gain setting bits
   constant VGA_CONTROL_0dB  : std_logic_vector (3 downto 0)  := "0000"; 
   constant VGA_CONTROL_2dB  : std_logic_vector (3 downto 0)  := "0001"; 
@@ -235,9 +268,14 @@ package uda1380_control_definitions is
   constant VGA_CONTROL_30dB : std_logic_vector (3 downto 0)  := "1111"; 
 
   -- Configuration bits for register address 23H (AGC settings)
-  constant AGC_TIME_BITS  : std_logic_vector (10 downto 8) := "000"; -- AGC time constant settings
-  constant AGC_LEVEL_BITS : std_logic_vector (3 downto 2)  := "00";  -- AGC target level settings
-  constant AGC_ENABLE_BIT : std_logic_vector (0 downto 0) := "0";   -- AGC enable control. 0: off; 1: AGC enabled
+  type AGC_SETTINGS_TYPE is record
+     EMPTY_BITS     : std_logic_vector (15 downto 11) ; -- := "00000";
+     AGC_TIME_BITS  : std_logic_vector (10 downto 8)  ; -- := "000"; -- AGC time constant settings
+     EMPTY_BITS2    : std_logic_vector (7 downto 4)   ; -- := "0000";
+     AGC_LEVEL_BITS : std_logic_vector (3 downto 2)   ; -- := "00";  -- AGC target level settings
+     EMPTY_BITS3    : std_logic_vector (1 downto 1)   ; -- := "0";
+     AGC_ENABLE_BIT : std_logic_vector (0 downto 0)   ; -- := "0";   -- AGC enable control. 0: off; 1: AGC enabled
+  end record AGC_SETTINGS_TYPE;
 
   -- AGC time constant setting bits
   constant AGC_TIME_11_100_ms_at_44100 : std_logic_vector (2 downto 0) := "000"; 
@@ -256,17 +294,113 @@ package uda1380_control_definitions is
   constant AGC_LEVEL_MINUS_14dBFS   : std_logic_vector (1 downto 0) := "11";
 
   -- Configuration bits for register 18H (Headphone driver and interpolation filter read-out)
-  constant HP_STCTV_BIT : integer := 10; -- Headphone driver short-circuit detection
-  constant HP_STCTL_BIT : integer := 9;  -- Left headphone driver short-circuit detection
-  constant HP_STCTR_BIT : integer := 8;  -- Right headphone driver short-circuit detection
-  constant SDETR2_BIT   : integer := 6;  -- Interpolator silence detect channel 2 right
-  constant SDETL2_BIT   : integer := 5;  -- Interpolator silence detect channel 2 left
-  constant SDETR1_BIT   : integer := 4;  -- Interpolator silence detect channel 1 right
-  constant SDETL1_BIT   : integer := 3;  -- Interpolator silence detect channel 1 left
-  constant MUTE_STATE_M_BIT : integer := 2; -- Interpolator muting
-  constant MUTE_STATE_CH2 : integer := 1; -- Interpolator muting channel 2
-  constant MUTE_STATE_CH1 : integer := 0; -- Interpolator muting channel 1
+  type HEADPHONE_DRIVER_AND_INTEPOLATOR_FILTER_SETTINGS_TYPE is record
+     EMPTY_BITS       : std_logic_vector (15 downto 11) ; -- := "00000";
+     HP_STCTV_BIT     : std_logic_vector (10 downto 10); -- Headphone driver short-circuit detection
+     HP_STCTL_BIT     : std_logic_vector (9  downto 9);  -- Left headphone driver short-circuit detection
+     HP_STCTR_BIT     : std_logic_vector (8  downto 8);  -- Right headphone driver short-circuit detection
+     EMPTY_BIT2       : std_logic_vector (7  downto 7);  -- Right headphone driver short-circuit detection
+     SDETR2_BIT       : std_logic_vector (6  downto 6);  -- Interpolator silence detect channel 2 right
+     SDETL2_BIT       : std_logic_vector (5  downto 5);  -- Interpolator silence detect channel 2 left
+     SDETR1_BIT       : std_logic_vector (4  downto 4);  -- Interpolator silence detect channel 1 right
+     SDETL1_BIT       : std_logic_vector (3  downto 3);  -- Interpolator silence detect channel 1 left
+     MUTE_STATE_M_BIT : std_logic_vector (2 downto 2); -- Interpolator muting
+     MUTE_STATE_CH2   : std_logic_vector (1 downto 1); -- Interpolator muting channel 2
+     MUTE_STATE_CH1   : std_logic_vector (0 downto 0); -- Interpolator muting channel 1
+  end record HEADPHONE_DRIVER_AND_INTEPOLATOR_FILTER_SETTINGS_TYPE;
 
+  type I2C_COMMAND_TYPE is record
+     reg_address         : std_logic_vector (22 downto 16);
+     command_first_byte  : std_logic_vector (15 downto 8);
+     command_second_byte : std_logic_vector (7 downto 0);
+  end record I2C_COMMAND_TYPE;
+
+
+-- uint8_t UDA1380InitData[][3] =
+-- commands to initialize
+constant INIT_RESET_L3_SETTINGS : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_L3,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_ENABLE_ALL_POWER : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_PWRCTRL,
+                                                   command_first_byte => x"A5",
+                                                   command_second_byte => x"DF"
+                                                   );
+
+constant INIT_WSPLL_ALL_CLOCKS_ENABLED : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_EVALCLK,
+                                                   command_first_byte => x"0F",
+                                                   command_second_byte => x"39"
+                                                   );
+
+constant INIT_I2S_CONFIGURATION_I2S_DIGITALMIXER_BCK0_SLAVE : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_I2S,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_MIXER_INPUT_GAIN_CONFIGURATION : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_ANAMIX,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_ENABLE_HEADPHONE_SHORT_CIRCUIT_PROTECTION : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_HEADAMP,
+                                                   command_first_byte => x"02",
+                                                   command_second_byte => x"02"
+                                                   );
+
+constant INIT_FULL_MASTER_VOLUME : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_MSTRVOL,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_FULL_MIXER_VOLUME_BOTH_CHANNELS : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_MIXVOL,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_FLAT_TREBLE_AND_BOOST : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_MODEBBT,
+                                                   command_first_byte => x"55",
+                                                   command_second_byte => x"15"
+                                                   );
+
+constant INIT_DISABLE_MUTE_AND_DEEMPHASIS : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_MSTRMUTE,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+constant INIT_MIXER_OFF_OTHER_OFF : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_MIXSDO,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_ADC_DECIMATOR_VOLUME_MAX : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_DECVOL,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_NO_PGA_MUTE_FULL_GAIN : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_PGA,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_SELECT_LINE_IN_AND_MIC_MAX_MIC_GAIN : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_ADC,
+                                                   command_first_byte => x"0F",
+                                                   command_second_byte => x"02"
+                                                   );
+
+constant INIT_AGC_SETTINGS : I2C_COMMAND_TYPE := ( reg_address => UDA1380_REG_AGC,
+                                                   command_first_byte => x"00",
+                                                   command_second_byte => x"00"
+                                                   );
+
+constant INIT_DISABLE_ALL_CLOCKS : I2C_COMMAND_TYPE := (reg_address => UDA1380_REG_EVALCLK,
+                                                        command_first_byte => x"00",
+							command_second_byte => x"32");
+constant INIT_DISABLE_POWER_TO_INPUT : I2C_COMMAND_TYPE := (reg_address => UDA1380_REG_PWRCTRL,
+                                                        command_first_byte => x"A5",
+							command_second_byte => x"C0");
+constant INIT_END : I2C_COMMAND_TYPE := (reg_address => (others => '1'),
+                                                        command_first_byte => x"FF",
+							command_second_byte => x"FF");
 end uda1380_control_definitions;
 
  -- package body uda1380_control_definitions is
