@@ -22,16 +22,14 @@ package uda1380_control_definitions is
    constant UDA1380_REG_DEC         : std_logic_vector(6 downto 0) := "0101000";
    
    -- BITS for register address 00H (Evaluation modes and clock settings) : 2 bytes
-   constant EN_ADC_BIT                : integer := 11; -- ADC clock enable (default: 0)
-   constant EN_DEC_BIT                : integer := 10; -- decimator clock enable (default: 1)
-   constant EN_DAC_BIT                : integer := 9;  -- FSDAC clock enable (default: 0)
-   constant EN_INTERP_BIT             : integer := 8;  -- Interpolator clock enable (default: 1)
-   constant ADC_CLK_BIT               : integer := 5;  -- ADC clock select (0(default)=SYSCLK; 1=WSPLL)
-   constant DAC_CLK_BIT               : integer := 4;  -- DAC clock select (0(default)=SYSCLK; 1=WSPLL)
-   constant SYS_DIV_1_BIT             : integer := 3;  -- bit 1 of dividers for system clock input
-   constant SYS_DIV_0_BIT             : integer := 2;  -- bit 0 of dividers for system clock input
-   constant WSPLL_1_BIT               : integer := 1; -- WSPLL setting (bit 1)
-   constant WSPLL_0_BIT               : integer := 0; -- WSPLL setting (bit 0)
+   constant EN_ADC_BIT                : std_logic_vector(11 downto 11) := "0"; -- ADC clock enable
+   constant EN_DEC_BIT                : std_logic_vector(10 downto 10) := "1"; -- decimator clock enable
+   constant EN_DAC_BIT                : std_logic_vector(9  downto 9)  := "0";  -- FSDAC clock enable
+   constant EN_INTERP_BIT             : std_logic_vector(8  downto 8)  := "1";  -- Interpolator clock enable
+   constant ADC_CLK_BIT               : std_logic_vector(5  downto 5)  := "0";  -- ADC clock select (0=SYSCLK; 1=WSPLL)
+   constant DAC_CLK_BIT               : std_logic_vector(4  downto 4)  := "0";  -- DAC clock select (0=SYSCLK; 1=WSPLL)
+   constant SYS_DIV_BITS              : std_logic_vector(3  downto 2)  := "00";  -- dividers for system clock input
+   constant WSPLL_BITS                : std_logic_vector(1  downto 0)  := "10";  -- WSPLL setting
    
    -- Dividers for system clock input
    constant SYS_DIV_256Fs           : std_logic_vector(1 downto 0) := "00";
@@ -46,14 +44,10 @@ package uda1380_control_definitions is
    constant WSPLL_50_TO_100          : std_logic_vector(1 downto 0) := "11";
    
    -- Configuration bits for register address 01 (i2s) : 2 bytes
-   constant SFORI_2_BIT    : integer := 10; -- digital data input formats, bit 2 (default: 0)
-   constant SFORI_1_BIT    : integer := 9;  -- digital data input formats, bit 1 (default: 0)
-   constant SFORI_0_BIT    : integer := 8;  -- digital data input formats, bit 0 (default: 0)
-   constant SEL_SOURCE_BIT : integer := 6;  -- digital output interface mode (0(default): decimator; 1: digital mixer output)
-   constant SIM_BIT        : integer := 4;  -- digital output interface mode settings (BCK0 PAD. 0 (default): slave; 1: master)
-   constant SFORO_2_BIT    : integer := 2;  -- digital data output formats, bit 2 (default: 0)  
-   constant SFORO_1_BIT    : integer := 1;  -- digital data output formats, bit 1 (default: 0)
-   constant SFORO_0_BIT    : integer := 0;  -- digital data output formats, bit 0 (default: 0)
+   constant SFORI_BITS     : std_logic_vector (10 downto 8) := "000"; -- digital data input formats
+   constant SEL_SOURCE_BIT : std_logic_vector (6 downto 6)  := "0";  -- digital output interface mode (0: decimator; 1: digital mixer output)
+   constant SIM_BIT        : std_logic_vector (4 downto 4)  := "0";  -- digital output interface mode settings (BCK0 PAD. 0: slave; 1: master)
+   constant SFORO_BITS     : std_logic_vector (2 downto 0)  := "000";  -- digital data output formats
    
    
    constant SFOR_I2S_BUS            : std_logic_vector(2 downto 0) := "000"; -- default
@@ -63,32 +57,22 @@ package uda1380_control_definitions is
    constant SFOR_MSB_JUST           : std_logic_vector(2 downto 0) := "101";
    
    -- Configuration bits for register address 02H (Power control settings)
-   constant  PON_PLL  : integer := 15; -- Power-on WSPLL (0 (default): power-off; 1: power-on)
-   constant  PON_HP   : integer := 13; -- Power-on headphone driver (0(default): power-off; 1: power-on)
-   constant  PON_DAC  : integer := 10; -- Power-on DAC (def: 0)
-   constant  PON_BIAS : integer := 8;  -- Power-on BIAS 
-   constant  EN_AVC   : integer := 7;  -- Enable control AVC
-   constant  PON_AVC  : integer := 6;  -- Power-on AVC
-   constant  PON_LNA  : integer := 4;  -- Power-on LNA
-   constant  PON_PGAL : integer := 3;  -- Power-on PGAL
-   constant  PON_ADCL : integer := 2;  -- Power-on ADCL
-   constant  PON_PGAR : integer := 1;  -- Power-on PGAR
-   constant  PON_ADCR : integer := 0;  -- Power-on ADCR
+   constant  PON_PLL  : std_logic_vector (15 downto 15) := "0"; -- Power-on WSPLL (0: power-off; 1: power-on)
+   constant  PON_HP   : std_logic_vector (13 downto 13) := "0"; -- Power-on headphone driver (0: power-off; 1: power-on)
+   constant  PON_DAC  : std_logic_vector (10 downto 10) := "0"; -- Power-on DAC
+   constant  PON_BIAS : std_logic_vector (8  downto 8)  := "0";  -- Power-on BIAS 
+   constant  EN_AVC   : std_logic_vector (7  downto 7)  := "0";  -- Enable control AVC
+   constant  PON_AVC  : std_logic_vector (6  downto 6)  := "0";  -- Power-on AVC
+   constant  PON_LNA  : std_logic_vector (4  downto 4)  := "0";  -- Power-on LNA
+   constant  PON_PGAL : std_logic_vector (3  downto 3)  := "0";  -- Power-on PGAL
+   constant  PON_ADCL : std_logic_vector (2  downto 2)  := "0";  -- Power-on ADCL
+   constant  PON_PGAR : std_logic_vector (1  downto 1)  := "0";  -- Power-on PGAR
+   constant  PON_ADCR : std_logic_vector (0  downto 0)  := "0";  -- Power-on ADCR
    
    -- Configuration bits for register address 03H (Analog mixer settings)
-   constant  AVCL_5_BIT   : integer := 13; -- Analog volume control, left channel, bit 5
-   constant  AVCL_4_BIT   : integer := 12; -- Analog volume control, left channel, bit 4
-   constant  AVCL_3_BIT   : integer := 11; -- Analog volume control, left channel, bit 3
-   constant  AVCL_2_BIT   : integer := 10; -- Analog volume control, left channel, bit 2
-   constant  AVCL_1_BIT   : integer := 9;  -- Analog volume control, left channel, bit 1
-   constant  AVCL_0_BIT   : integer := 8;  -- Analog volume control, left channel, bit 0
-   constant  AVCR_5_BIT   : integer := 5; -- Analog volume control, right channel, bit 5
-   constant  AVCR_4_BIT   : integer := 4; -- Analog volume control, right channel, bit 4
-   constant  AVCR_3_BIT   : integer := 3; -- Analog volume control, right channel, bit 3
-   constant  AVCR_2_BIT   : integer := 2; -- Analog volume control, right channel, bit 2
-   constant  AVCR_1_BIT   : integer := 1; -- Analog volume control, right channel, bit 1
-   constant  AVCR_0_BIT   : integer := 0; -- Analog volume control, right channel, bit 0
-   
+   constant  ANALOG_VOLUME_CONTROL_LEFT_CHANNEL_BITS   : std_logic_vector (13 downto 8) := (others => '1'); -- Analog volume control, left channel
+   constant  ANALOG_VOLUME_CONTROL_RIGHT_CHANNEL_BITS  : std_logic_vector (5 downto 0)  := (others => '1');  -- Analog volume control, right channel
+
    constant  AVC_VALUE_16_5_dB : std_logic_vector (5 downto 0) := "000000";
    constant  AVC_VALUE_15_dB   : std_logic_vector (5 downto 0) := "000001";
    constant  AVC_VALUE_13_5_dB : std_logic_vector (5 downto 0) := "000010";
@@ -118,22 +102,8 @@ package uda1380_control_definitions is
    constant  AVC_VALUE_MINUS_INFINITY  : std_logic_vector (5 downto 0) := "111111";
    
    -- Configuration bits for register address 10H (Analog mixer settings)
-   constant  MVCR_7_BIT   : integer := 15; -- Master volume control, right channel, bit 7
-   constant  MVCR_6_BIT   : integer := 14; -- Master volume control, right channel, bit 6
-   constant  MVCR_5_BIT   : integer := 13; -- Master volume control, right channel, bit 5
-   constant  MVCR_4_BIT   : integer := 12; -- Master volume control, right channel, bit 4
-   constant  MVCR_3_BIT   : integer := 11; -- Master volume control, right channel, bit 3
-   constant  MVCR_2_BIT   : integer := 10; -- Master volume control, right channel, bit 2
-   constant  MVCR_1_BIT   : integer := 9;  -- Master volume control, right channel, bit 1
-   constant  MVCR_0_BIT   : integer := 8;  -- Master volume control, right channel, bit 0
-   constant  MVCL_7_BIT   : integer := 7; -- Master volume control, left channel, bit 7
-   constant  MVCL_6_BIT   : integer := 6; -- Master volume control, left channel, bit 6
-   constant  MVCL_5_BIT   : integer := 5; -- Master volume control, left channel, bit 5
-   constant  MVCL_4_BIT   : integer := 4; -- Master volume control, left channel, bit 4
-   constant  MVCL_3_BIT   : integer := 3; -- Master volume control, left channel, bit 3
-   constant  MVCL_2_BIT   : integer := 2; -- Master volume control, left channel, bit 2
-   constant  MVCL_1_BIT   : integer := 1;  -- Master volume control, left channel, bit 1
-   constant  MVCL_0_BIT   : integer := 0;  -- Master volume control, left channel, bit 0
+   constant  MVC_RIGHT  : std_logic_vector (15 downto 8) := (others => '0');
+   constant  MVC_LEFT   : std_logic_vector (7 downto 0)  := (others => '0');
    
    constant  MVC_VALUE_0_dB           : std_logic_vector (7 downto 0) := "00000000";
    constant  MVC_VALUE_MINUS_0_25dB   : std_logic_vector (7 downto 0) := "00000001";
@@ -163,22 +133,8 @@ package uda1380_control_definitions is
    constant  MVC_VALUE_MINUS_INFINITY : std_logic_vector (7 downto 0) := "11111100";
    
    -- Configuration bits for register address 11H (Digital mixer settings)
-   constant  VC2_7_BIT   : integer := 15; -- Digital mixer volume control, channel 2, bit 7
-   constant  VC2_6_BIT   : integer := 14; -- Digital mixer volume control, channel 2, bit 6
-   constant  VC2_5_BIT   : integer := 13; -- Digital mixer volume control, channel 2, bit 5
-   constant  VC2_4_BIT   : integer := 12; -- Digital mixer volume control, channel 2, bit 4
-   constant  VC2_3_BIT   : integer := 11; -- Digital mixer volume control, channel 2, bit 3
-   constant  VC2_2_BIT   : integer := 10; -- Digital mixer volume control, channel 2, bit 2
-   constant  VC2_1_BIT   : integer := 9;  -- Digital mixer volume control, channel 2, bit 1
-   constant  VC2_0_BIT   : integer := 8;  -- Digital mixer volume control, channel 2, bit 0
-   constant  VC1_7_BIT   : integer := 7;  -- Digital mixer volume control, channel 1, bit 7
-   constant  VC1_6_BIT   : integer := 6;  -- Digital mixer volume control, channel 1, bit 6
-   constant  VC1_5_BIT   : integer := 5;  -- Digital mixer volume control, channel 1, bit 5
-   constant  VC1_4_BIT   : integer := 4;  -- Digital mixer volume control, channel 1, bit 4
-   constant  VC1_3_BIT   : integer := 3;  -- Digital mixer volume control, channel 1, bit 3
-   constant  VC1_2_BIT   : integer := 2;  -- Digital mixer volume control, channel 1, bit 2
-   constant  VC1_1_BIT   : integer := 1;  -- Digital mixer volume control, channel 1, bit 1
-   constant  VC1_0_BIT   : integer := 0;  -- Digital mixer volume control, channel 1, bit 0
+   constant  VC2_BITS   : std_logic_vector (15 downto 8) := (others => '0'); -- Digital mixer volume control, channel 2
+   constant  VC1_BITS   : std_logic_vector (7 downto 0)  := (others => '0');  -- Digital mixer volume control, channel 1
    
    -- Configuration bits for register address 12H (Mode, bass boost and treble)
    constant  M_1_BIT                 : integer := 15; -- Flat/minimum/maximum setting, bit 1
@@ -221,22 +177,95 @@ package uda1380_control_definitions is
    
    
    -- Configuration bits for register address 13H (Master mute, channel de-emphasis and mute)
-   constant  MASTER_MUTE_BIT        : integer := 14; -- Master mute (default : 1)
-   constant  CHANNEL_2_MUTE_BIT     : integer := 11; -- Channel 2 mute (default: 1)
-   constant  DEEMPHASIS_2_2_BIT     : integer := 10; -- De-emphasis for channel 2(?) BIT 2. Default: 0
-   constant  DEEMPHASIS_2_1_BIT     : integer := 9;  -- De-emphasis for channel 2(?) BIT 1. Default: 0
-   constant  DEEMPHASIS_2_0_BIT     : integer := 8;  -- De-emphasis for channel 2(?) BIT 0. Default: 0
+   constant  MASTER_MUTE_BIT        : std_logic_vector (14 downto 14) := "1"; -- Master mute
+   constant  CHANNEL_2_MUTE_BIT     : std_logic_vector (11 downto 11) := "1"; -- Channel 2 mute
+   constant  DEEMPHASIS_2_BITS      : std_logic_vector (10 downto 8)  := (others => '0'); -- De-emphasis for channel 2(?).
    
-   constant  CHANNEL_1_MUTE_BIT     : integer := 3;  -- Channel 1 mute (default: 1)
-   constant  DEEMPHASIS_1_2_BIT     : integer := 2;  -- De-emphasis for channel 1(?) BIT 2. Default: 0
-   constant  DEEMPHASIS_1_1_BIT     : integer := 1;  -- De-emphasis for channel 1(?) BIT 1. Default: 0
-   constant  DEEMPHASIS_1_0_BIT     : integer := 0;  -- De-emphasis for channel 1(?) BIT 0. Default: 0
+   constant  CHANNEL_1_MUTE_BIT     : std_logic_vector (3 downto 3) := "1";   -- Channel 1 mute
+   constant  DEEMPHASIS_1_BITS      : std_logic_vector (2 downto 0) := (others => '0'); -- De-emphasis for channel 1(?).
    
    constant  DEEMPHASIS_OFF     : std_logic_vector (2 downto 0) := "000"; 
    constant  DEEMPHASIS_32KHz   : std_logic_vector (2 downto 0) := "001"; 
    constant  DEEMPHASIS_44KHz   : std_logic_vector (2 downto 0) := "010"; 
    constant  DEEMPHASIS_48KHz   : std_logic_vector (2 downto 0) := "011"; 
    constant  DEEMPHASIS_96KHz   : std_logic_vector (2 downto 0) := "100"; 
+
+  -- Configuration bits for register address 14H (Master mute, channel de-emphasis and mute)
+  constant DA_POL_INV_BIT  : std_logic_vector (15 downto 15) := "0";
+  constant SEL_NS_BIT      : std_logic_vector (14 downto 14) := "0";
+  constant MIX_POS_BIT     : std_logic_vector (13 downto 13) := "0";
+  constant MIX_BIT         : std_logic_vector (12 downto 12) := "0";
+  constant SILENCE_BIT     : std_logic_vector (7 downto 7)   := "0";
+  constant SDET_ON_BIT     : std_logic_vector (6 downto 6)   := "0";
+  constant SD_VALUE_BITS    : std_logic_vector (5 downto 4)   := "00";
+  constant OS_BITS          : std_logic_vector (1 downto 0)   := "00";
+
+  constant SILENCE_DETECTOR_3200_SAMPLES  : std_logic_vector (1 downto 0) := "00";
+  constant SILENCE_DETECTOR_4800_SAMPLES  : std_logic_vector (1 downto 0) := "01";
+  constant SILENCE_DETECTOR_9600_SAMPLES  : std_logic_vector (1 downto 0) := "10";
+  constant SILENCE_DETECTOR_19200_SAMPLES : std_logic_vector (1 downto 0) := "11";
+
+  constant OVERSAMPLING_INPUT_SINGLE_SPEED : std_logic_vector (1 downto 0) := "00";
+  constant OVERSAMPLING_INPUT_DOUBLE_SPEED : std_logic_vector (1 downto 0) := "01";
+  constant OVERSAMPLING_INPUT_QUAD_SPEED   : std_logic_vector (1 downto 0) := "10";
+
+  -- Configuration bits for register address 22H (ADC settings)
+  constant ADCPOL_INV_BIT : std_logic_vector (12 downto 12) := "0"; -- ADC polarity control. 0: non inverting; 1: inverting.
+  constant VGA_CTRL_BITS  : std_logic_vector (11 downto 8)  := (others => '0'); -- Microphone input VGA gain settings
+  constant SEL_LNA_BIT    : std_logic_vector (3 downto 3)   := "0"; -- Line input select. 0: select line input. 1: select LNA for the left channel ADC.
+  constant SEL_MIC_BIT    : std_logic_vector (2 downto 2)   := "0"; -- Microphone input select. 0: select right channel ADC. Select left channel ADC.
+  constant SKIP_DCFIL_BIT : std_logic_vector (1 downto 1)   := "1"; -- DC filter bypass. 0: DC filter enabled; 1: DC filter bypassed.
+  constant EN_DCFIL       : std_logic_vector (0 downto 0)   := "0"; -- DC filter enable. 0: DC filter disabled; 1: DC filter enabled.
+  -- microphone input VGA gain setting bits
+  constant VGA_CONTROL_0dB  : std_logic_vector (3 downto 0)  := "0000"; 
+  constant VGA_CONTROL_2dB  : std_logic_vector (3 downto 0)  := "0001"; 
+  constant VGA_CONTROL_4dB  : std_logic_vector (3 downto 0)  := "0010"; 
+  constant VGA_CONTROL_6dB  : std_logic_vector (3 downto 0)  := "0011"; 
+  constant VGA_CONTROL_8dB  : std_logic_vector (3 downto 0)  := "0100"; 
+  constant VGA_CONTROL_10dB : std_logic_vector (3 downto 0)  := "0101"; 
+  constant VGA_CONTROL_12dB : std_logic_vector (3 downto 0)  := "0110"; 
+  constant VGA_CONTROL_14dB : std_logic_vector (3 downto 0)  := "0111"; 
+  constant VGA_CONTROL_16dB : std_logic_vector (3 downto 0)  := "1000"; 
+  constant VGA_CONTROL_18dB : std_logic_vector (3 downto 0)  := "1001"; 
+  constant VGA_CONTROL_20dB : std_logic_vector (3 downto 0)  := "1010"; 
+  constant VGA_CONTROL_22dB : std_logic_vector (3 downto 0)  := "1011"; 
+  constant VGA_CONTROL_24dB : std_logic_vector (3 downto 0)  := "1100"; 
+  constant VGA_CONTROL_26dB : std_logic_vector (3 downto 0)  := "1101"; 
+  constant VGA_CONTROL_28dB : std_logic_vector (3 downto 0)  := "1110"; 
+  constant VGA_CONTROL_30dB : std_logic_vector (3 downto 0)  := "1111"; 
+
+  -- Configuration bits for register address 23H (AGC settings)
+  constant AGC_TIME_BITS  : std_logic_vector (10 downto 8) := "000"; -- AGC time constant settings
+  constant AGC_LEVEL_BITS : std_logic_vector (3 downto 2)  := "00";  -- AGC target level settings
+  constant AGC_ENABLE_BIT : std_logic_vector (0 downto 0) := "0";   -- AGC enable control. 0: off; 1: AGC enabled
+
+  -- AGC time constant setting bits
+  constant AGC_TIME_11_100_ms_at_44100 : std_logic_vector (2 downto 0) := "000"; 
+  constant AGC_TIME_16_100_ms_at_44100 : std_logic_vector (2 downto 0) := "001"; 
+  constant AGC_TIME_11_200_ms_at_44100 : std_logic_vector (2 downto 0) := "010"; 
+  constant AGC_TIME_16_200_ms_at_44100 : std_logic_vector (2 downto 0) := "011"; 
+  constant AGC_TIME_21_200_ms_at_44100 : std_logic_vector (2 downto 0) := "100"; 
+  constant AGC_TIME_11_400_ms_at_44100 : std_logic_vector (2 downto 0) := "101"; 
+  constant AGC_TIME_16_400_ms_at_44100 : std_logic_vector (2 downto 0) := "110"; 
+  constant AGC_TIME_21_400_ms_at_44100 : std_logic_vector (2 downto 0) := "111"; 
+
+  -- AGC target level setting bits
+  constant AGC_LEVEL_MINUS_5_5dBFS  : std_logic_vector (1 downto 0) := "00";
+  constant AGC_LEVEL_MINUS_8dBFS    : std_logic_vector (1 downto 0) := "01";
+  constant AGC_LEVEL_MINUS_11_5dBFS : std_logic_vector (1 downto 0) := "10";
+  constant AGC_LEVEL_MINUS_14dBFS   : std_logic_vector (1 downto 0) := "11";
+
+  -- Configuration bits for register 18H (Headphone driver and interpolation filter read-out)
+  constant HP_STCTV_BIT : integer := 10; -- Headphone driver short-circuit detection
+  constant HP_STCTL_BIT : integer := 9;  -- Left headphone driver short-circuit detection
+  constant HP_STCTR_BIT : integer := 8;  -- Right headphone driver short-circuit detection
+  constant SDETR2_BIT   : integer := 6;  -- Interpolator silence detect channel 2 right
+  constant SDETL2_BIT   : integer := 5;  -- Interpolator silence detect channel 2 left
+  constant SDETR1_BIT   : integer := 4;  -- Interpolator silence detect channel 1 right
+  constant SDETL1_BIT   : integer := 3;  -- Interpolator silence detect channel 1 left
+  constant MUTE_STATE_M_BIT : integer := 2; -- Interpolator muting
+  constant MUTE_STATE_CH2 : integer := 1; -- Interpolator muting channel 2
+  constant MUTE_STATE_CH1 : integer := 0; -- Interpolator muting channel 1
 
 end uda1380_control_definitions;
 
