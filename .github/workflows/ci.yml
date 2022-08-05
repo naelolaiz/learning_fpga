@@ -45,7 +45,7 @@ jobs:
         cd blink_led
         $GHDL -a blink_led.vhd
         $GHDL -e blink_led
-        ./blink_led
+        ./blink_led --assert-level=error
     - name: test_serial2parallel
       run: |
         echo "GHDL_PREFIX: $GHDL_PREFIX"
@@ -56,4 +56,4 @@ jobs:
         $GHDL -a Serial2Parallel.vhd
         $GHDL -a Serial2Parallel_tb.vhd
         $GHDL -e serial2parallel_tb
-        ./serial2parallel_tb
+        ./serial2parallel_tb --assert-level=error
