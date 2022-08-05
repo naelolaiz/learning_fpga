@@ -20,7 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         backend: [ '', mcode, llvm, gcc ]
-        version: [ 18.04, 20.04, latest ]
+        version: [ 20.04, latest ]
+        #version: [ 18.04, 20.04, latest ] # TODO: put 18.04 back commenting screenshots generation on it
     runs-on: ubuntu-${{ matrix.version }}
     name: '🐧 Ubuntu ${{ matrix.version }} · ${{ matrix.backend }}'
     steps:
@@ -28,14 +29,17 @@ jobs:
     - name: '🧰 Checkout'
       uses: actions/checkout@v2
 
-    #- name: Run Action
-    #  uses: ./
-    #  with:
-    #    backend: ${{ matrix.backend }}
-
     - uses: ghdl/setup-ghdl-ci@nightly
       with: 
         backend: llvm
+
+    - name: Install gtkwave and related tools for generating the simulation screenshots
+      run: | 
+        sudo apt-get install -y gtkwave scrot xvfb python-pil python3-pyvirtualdisplay python3-pip
+        pip3 install --user --upgrade setuptools wheel # ubuntu 18.04 apparently doesnt have proper setuptools
+        pip3 install --user pillow pyscreenshot path
+
+
     - name: test_blink_led
       run: |
         echo "GHDL_PREFIX: $GHDL_PREFIX"
@@ -46,6 +50,7 @@ jobs:
         $GHDL -a blink_led.vhd
         $GHDL -e blink_led
         ./blink_led --assert-level=error
+
     - name: test_serial2parallel
       run: |
         echo "GHDL_PREFIX: $GHDL_PREFIX"
@@ -56,4 +61,13 @@ jobs:
         $GHDL -a Serial2Parallel.vhd
         $GHDL -a Serial2Parallel_tb.vhd
         $GHDL -e serial2parallel_tb
+        $GHDL -r serial2parallel_tb --vcd=serial2parallel_tb.vcd
+        python3 ../scripts/gtkwave_export.py serial2parallel_tb.vcd
+        mkdir  ../out_screenshots
+        mv gtkwave_id0.png ../out_screenshots/serial2parallel_tb_signals.png # TODO: rename output filename in script
         ./serial2parallel_tb --assert-level=error
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: screenshots  ${{ matrix.version }}·${{ matrix.backend }}
+        path: ${{ github.workspace }}/out_screenshots/
