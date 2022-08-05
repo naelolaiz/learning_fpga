@@ -35,18 +35,18 @@ begin
      for b in NUMBER_OF_BITS-1 downto 0 loop
         sClock <= '0';
         sData <= sCounter(b);
-        wait for 1ns;
+        wait for 1 ns;
         sClock <= '1';
-        wait for 1ns;
+        wait for 1 ns;
      end loop;
      sClock <= '0';
-     wait for 1ns;
+     wait for 1 ns;
      sPrint <= '1';
      sClock <= '1';
-     wait for 1ns;
+     wait for 1 ns;
      sData <= '0';
      sClock <= '0';
-     wait for 1ns;
+     wait for 1 ns;
      sClock <= '1';
      wait for 1 ns;
      assert ( sCounter = sOutData )
