@@ -36,7 +36,7 @@ jobs:
     - uses: ghdl/setup-ghdl-ci@nightly
       with: 
         backend: llvm
-    - name: Test
+    - name: test_blink_led
       run: |
         echo "GHDL_PREFIX: $GHDL_PREFIX"
         echo "GHDL: $GHDL"
@@ -48,3 +48,16 @@ jobs:
         ghdl -e blink_led
         ls -l 
         ./blink_led
+    - name: test_serial2parallel
+      run: |
+        echo "GHDL_PREFIX: $GHDL_PREFIX"
+        echo "GHDL: $GHDL"
+        echo "GHDL_LIBS: $GHDL_LIBS"
+        ghdl --version
+        $GHDL --version
+        cd general_components/
+        ghdl -a Serial2Parallel.vhd
+        ghdl -a Serial2Parallel_tb.vhd
+        ghdl -e serial2parallel_tb
+        ls -l 
+        ./serial2parallel_tb
