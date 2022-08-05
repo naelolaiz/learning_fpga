@@ -52,6 +52,7 @@ begin
      assert ( sCounter = sOutData )
      report "Error" severity error;
   end loop;
+  wait; -- finish simulation
 end process;
 
 end tb;
