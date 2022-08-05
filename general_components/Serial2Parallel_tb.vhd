@@ -14,8 +14,6 @@ architecture tb of Serial2Parallel_tb is
   signal sOutData : std_logic_vector (NUMBER_OF_BITS-1 downto 0);
 
 
-  signal sI : integer;
-  signal sBit : integer;
 begin
 
  tbInstance : entity work.Serial2Parallel(logic)
@@ -27,17 +25,7 @@ begin
 
 process
 begin
-  -- two cycles
-  for i in 1 to 2 loop
-    sClock <= '0';
-    wait for 1 ns;
-    sClock <= '1';
-    wait for 1 ns;
-  end loop;
-  sBit <= 0;
-  sI <= 0;
   for i in 0 to ((2** NUMBER_OF_BITS) - 1) loop
-     sI <= i;
      sPrint <= '0';
      wait for 1 ns;
      sCounter <= std_logic_vector(to_unsigned(i,NUMBER_OF_BITS));
@@ -46,7 +34,6 @@ begin
      sClock <= '1';
      wait for 1 ns;
      for b in NUMBER_OF_BITS-1 downto 0 loop
-        sBit <= b;
         sClock <= '0';
         sData <= sCounter(b);
         wait for 1ns;
