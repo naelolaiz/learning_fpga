@@ -26,10 +26,9 @@ begin
 process
 begin
   for i in 0 to ((2** NUMBER_OF_BITS) - 1) loop
-     sPrint <= '0';
-     wait for 1 ns;
-     sCounter <= std_logic_vector(to_unsigned(i,NUMBER_OF_BITS));
      sClock <= '0';
+     sPrint <= '0';
+     sCounter <= std_logic_vector(to_unsigned(i,NUMBER_OF_BITS));
      wait for 1 ns;
      sClock <= '1';
      wait for 1 ns;
@@ -41,6 +40,7 @@ begin
         wait for 1ns;
      end loop;
      sClock <= '0';
+     wait for 1ns;
      sPrint <= '1';
      sClock <= '1';
      wait for 1ns;
@@ -48,7 +48,7 @@ begin
      sClock <= '0';
      wait for 1ns;
      sClock <= '1';
-     wait for 2 ns;
+     wait for 1 ns;
      assert ( sCounter = sOutData )
      report "Error" severity error;
   end loop;

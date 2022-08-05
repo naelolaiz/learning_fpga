@@ -16,10 +16,12 @@ begin
 
    process(inClock, inData, inPrint, cachedData)
    begin
-     if inPrint = '1' then
-       outData <= cachedData;
-     elsif rising_edge(inClock) then -- shift left and concatenate with inData
-       cachedData <= cachedData(NUMBER_OF_BITS-2 downto 0) & inData;
+     if rising_edge(inClock) then -- shift left and concatenate with inData
+       if inPrint = '1' then
+          outData <= cachedData;
+       else
+          cachedData <= cachedData(NUMBER_OF_BITS-2 downto 0) & inData;
+       end if;
      end if;
 
    end process;
