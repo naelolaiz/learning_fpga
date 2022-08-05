@@ -41,23 +41,19 @@ jobs:
         echo "GHDL_PREFIX: $GHDL_PREFIX"
         echo "GHDL: $GHDL"
         echo "GHDL_LIBS: $GHDL_LIBS"
-        ghdl --version
         $GHDL --version
         cd blink_led
-        ghdl -a blink_led.vhd
-        ghdl -e blink_led
-        ls -l 
+        $GHDL -a blink_led.vhd
+        $GHDL -e blink_led
         ./blink_led
     - name: test_serial2parallel
       run: |
         echo "GHDL_PREFIX: $GHDL_PREFIX"
         echo "GHDL: $GHDL"
         echo "GHDL_LIBS: $GHDL_LIBS"
-        ghdl --version
         $GHDL --version
         cd general_components/
-        ghdl -a Serial2Parallel.vhd
-        ghdl -a Serial2Parallel_tb.vhd
-        ghdl -e serial2parallel_tb
-        ls -l 
+        $GHDL -a Serial2Parallel.vhd
+        $GHDL -a Serial2Parallel_tb.vhd
+        $GHDL -e serial2parallel_tb
         ./serial2parallel_tb
