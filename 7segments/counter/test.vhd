@@ -56,7 +56,7 @@ begin
        tempNibble := (others => '0');
        tempNibble(enabledDigit) := '1';
        cableSelect <= not tempNibble;
-       currentDigitValue <= numberToDisplay((enabledDigit+1)*(BITS_PER_NIBBLE) downto (enabledDigit)*(BITS_PER_NIBBLE));
+       currentDigitValue <= numberToDisplay((enabledDigit+1)*(BITS_PER_NIBBLE)-1 downto (enabledDigit)*(BITS_PER_NIBBLE));
    end process;
 
    sevenSegments <= "1000000" when currentDigitValue = "0000" else
