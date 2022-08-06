@@ -20,9 +20,9 @@ signal counterForCounter: CounterForCounterType := 0; -- ticks every 3.125E6 / 5
 type CounterForMuxType is range 0 to 100000;
 signal counterForMux: CounterForMuxType := 0; -- ticks every 100E3 / 50E6 = 2ms
 
-signal numberToDisplay: std_logic_vector ((NUMBER_OF_DIGITS*BITS_PER_NIBBLE - 1) downto 0);
+signal numberToDisplay: std_logic_vector ((NUMBER_OF_DIGITS*BITS_PER_NIBBLE - 1) downto 0) := (others => '0');
 signal enabledDigit: integer range 0 to NUMBER_OF_DIGITS-1 := 0;
-signal currentDigitValue: std_logic_vector (BITS_PER_NIBBLE-1 downto 0);
+signal currentDigitValue: std_logic_vector (BITS_PER_NIBBLE-1 downto 0) := (others => '0');
 
 begin
    counter: process(clock)
