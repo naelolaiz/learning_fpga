@@ -39,8 +39,6 @@ def prog_shot(cmd, f, wait, timeout, screen_size, visible, bgcolor):
 
     :param wait: int
     '''
-    # disp = SmartDisplay(visible=visible, size=screen_size, bgcolor=bgcolor)
-    # proc = EasyProcess(cmd)
 
     def cb_imgcheck(img):
         """accept img if height > minimum."""
@@ -49,22 +47,18 @@ def prog_shot(cmd, f, wait, timeout, screen_size, visible, bgcolor):
             return False
         left, upper, right, lower = rec
         accept = lower - upper > 30  # pixel
-        #log.debug('cropped img size=' + str(
-        #    (left, upper, right, lower)) + ' accepted=' + str(accept))
+        print('cropped img size={},{},{},{} accepted={}'.format(left, upper, right, lower, accept))
         return accept
 
     with  SmartDisplay(visible=visible, size=screen_size, bgcolor=bgcolor, backend='xvfb') as disp:
      with EasyProcess(cmd) as proc:
-    # def func():
         if wait:
             proc.sleep(wait)
         try:
             img = disp.waitgrab(timeout=timeout, cb_imgcheck=cb_imgcheck)
         except DisplayTimeoutError as e:
             raise DisplayTimeoutError(str(e) + ' ' + str(proc))
-        # return img
 
-    # img = disp.wrap(proc.wrap(func))()
     if img:
         bbox = get_black_box(img)
         assert bbox
@@ -131,15 +125,12 @@ enable_vert_grid 0
                 vcdFilename,
                 rcfile,
                 ]
-
-            global image_id
-            f = 'gtkwave_id%s.png' % (str(image_id))
-            image_id += 1
+            f = 'gtkwave_{}.png'.format(os.path.splitext(os.path.basename(vcdFilename))[0])
             fabs = Path(vcdFilename).dirname() / (f)
             images_to_delete.append(fabs)
 
             prog_shot(cmd, fabs, screen_size=(1024,768), wait=0,
-                    timeout=200, visible=True, bgcolor='white')
+                    timeout=12, visible=True, bgcolor='white')
             print('Saved screenshot of {} in {}'.format(vcdFilename, fabs))
 
 
