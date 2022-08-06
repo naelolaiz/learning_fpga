@@ -12,21 +12,27 @@ entity test is
 end test;
 
 architecture behavior of test is
-signal counterForCounter: integer range 0 to 3125000 := 0; -- ticks every 3.125E6 / 50E6 = 62.5 ms (0.0625*16 = 1, so the second digit increases every second)
-signal counterForMux: integer range 0 to 100000 := 0; -- ticks every 100E3 / 50E6 = 2ms
+constant NUMBER_OF_DIGITS : integer := 4;
+constant BITS_PER_NIBBLE  : integer := 4;
+	
+type CounterForCounterType is range 0 to 3125000 ;
+signal counterForCounter: CounterForCounterType := 0; -- ticks every 3.125E6 / 50E6 = 62.5 ms (0.0625*16 = 1, so the second digit increases every second)
 
-signal numberToDisplay: std_logic_vector (15 downto 0);
-signal enabledDigit: integer range 0 to 3:= 0;
-signal currentDigitValue: std_logic_vector (3 downto 0);
+type CounterForMuxType is range 0 to 100000;
+signal counterForMux: CounterForMuxType := 0; -- ticks every 100E3 / 50E6 = 2ms
+
+signal numberToDisplay: std_logic_vector ((NUMBER_OF_DIGITS*BITS_PER_NIBBLE - 1) downto 0);
+signal enabledDigit: integer range 0 to NUMBER_OF_DIGITS-1 := 0;
+signal currentDigitValue: std_logic_vector (BITS_PER_NIBBLE-1 downto 0);
 
 begin
    counter: process(clock)
    begin
       if clock'event and clock = '1' then
 
-         if counterForMux = counterForMux'HIGH-1 then
+         if counterForMux = CounterForMuxType'HIGH-1 then
             counterForMux <= 0;
-				if enabledDigit = enabledDigit'HIGH then
+				if enabledDigit = NUMBER_OF_DIGITS-1 then
 				   enabledDigit <= 0;
 				else
 				   enabledDigit <= enabledDigit + 1;
@@ -35,7 +41,7 @@ begin
             counterForMux <= counterForMux + 1;
          end if;
          
-         if counterForCounter = counterForCounter'HIGH-1 then
+         if counterForCounter = CounterForCounterType'HIGH-1 then
             counterForCounter <= 0;
             numberToDisplay <= std_logic_vector(unsigned(numberToDisplay) + 1);
          else
@@ -45,11 +51,13 @@ begin
    end process;
    
    -- MUX to generate anode activating signals for 4 LEDs 
-   process(enabledDigit)
-	constant nibbleToShift: std_logic_vector(3 downto 0) := "0001";
+   process(enabledDigit, numberToDisplay)
+	variable tempNibble : std_logic_vector(NUMBER_OF_DIGITS-1 downto 0);
    begin
-       cableSelect <= not std_logic_vector(unsigned(nibbleToShift) sll enabledDigit);
-		 currentDigitValue <= std_logic_vector(unsigned(numberToDisplay) srl (enabledDigit*4)) (3 downto 0);
+       tempNibble := (others => '0');
+       tempNibble(enabledDigit) := '1';
+       cableSelect <= not tempNibble;
+       currentDigitValue <= numberToDisplay((enabledDigit+1)*(BITS_PER_NIBBLE)-1 downto (enabledDigit)*(BITS_PER_NIBBLE));
    end process;
 
    sevenSegments <= "1000000" when currentDigitValue = "0000" else
