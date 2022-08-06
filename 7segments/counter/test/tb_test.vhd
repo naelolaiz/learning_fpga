@@ -7,7 +7,7 @@ entity tb_test is
 end tb_test;
 
 architecture testbench of tb_test is
-   constant TEST_DURATION : time := 400 ms;
+   constant TEST_DURATION : time := 150 ms;
    signal sClock50MHz : std_logic := '0';
    signal sSevenSegments : std_logic_vector (6 downto 0) := (others => '0');
    signal sCableSelect : std_logic_vector(3 downto 0) := (others => '0');
