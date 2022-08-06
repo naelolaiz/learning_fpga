@@ -66,6 +66,21 @@ jobs:
         mkdir  ../out_screenshots
         mv gtkwave_id0.png ../out_screenshots/serial2parallel_tb_signals.png # TODO: rename output filename in script
         ./serial2parallel_tb --assert-level=error
+        
+    - name: test_7segments_counter
+      run: |
+        echo "GHDL_PREFIX: $GHDL_PREFIX"
+        echo "GHDL: $GHDL"
+        echo "GHDL_LIBS: $GHDL_LIBS"
+        $GHDL --version
+        cd 7segments/counter/test
+        $GHDL -a ../test.vhd
+        $GHDL -a tb_test.vhd
+        $GHDL -e tb_test
+        $GHDL -r tb_test --assert-level=error --vcd=7segments_counter_tb.vcd
+        python3 ../scripts/gtkwave_export.py 7segments_counter_tb.vcd
+        mkdir  ../out_screenshots
+        mv gtkwave_id0.png ../out_screenshots/7segments_counter_tb.png # TODO: rename output filename in script
 
     - uses: actions/upload-artifact@v3
       with:
