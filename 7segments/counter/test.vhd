@@ -6,7 +6,6 @@ use ieee.numeric_std.ALL;
 entity test is
    port (
          clock : in std_logic;
-         inputButtons : in std_logic_vector(3 downto 0);
          sevenSegments : out std_logic_vector(6 downto 0);
          cableSelect : out std_logic_vector(3 downto 0));
 end test;
@@ -51,13 +50,13 @@ begin
    end process;
    
    -- MUX to generate anode activating signals for 4 LEDs 
-   process(enabledDigit, numberToDisplay)
+   process(enabledDigit)
 	variable tempNibble : std_logic_vector(NUMBER_OF_DIGITS-1 downto 0);
    begin
        tempNibble := (others => '0');
        tempNibble(enabledDigit) := '1';
        cableSelect <= not tempNibble;
-       currentDigitValue <= numberToDisplay((enabledDigit+1)*(BITS_PER_NIBBLE)-1 downto (enabledDigit)*(BITS_PER_NIBBLE));
+       currentDigitValue <= numberToDisplay((enabledDigit+1)*(BITS_PER_NIBBLE) downto (enabledDigit)*(BITS_PER_NIBBLE));
    end process;
 
    sevenSegments <= "1000000" when currentDigitValue = "0000" else
