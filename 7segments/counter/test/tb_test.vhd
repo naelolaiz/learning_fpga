@@ -7,9 +7,10 @@ entity tb_test is
 end tb_test;
 
 architecture testbench of tb_test is
-   signal sClock50MHz : std_logic;
-   signal sSevenSegments : std_logic_vector (6 downto 0);
-   signal sCableSelect : std_logic_vector(3 downto 0);
+   constant TEST_DURATION : time := 400 ms;
+   signal sClock50MHz : std_logic := '0';
+   signal sSevenSegments : std_logic_vector (6 downto 0) := (others => '0');
+   signal sCableSelect : std_logic_vector(3 downto 0) := (others => '0');
    signal sSimulationActive : boolean := true;
 begin
 
@@ -18,14 +19,16 @@ begin
          clock => sClock50MHz,
          sevenSegments => sSevenSegments,
          cableSelect   => sCableSelect);
+
    -- generate clock 
-   sClock50MHz <= not sClock50MHz after 20 ns when sSimulationActive;
+   sClock50MHz <= not sClock50MHz after 10 ns when sSimulationActive;
 
    TEST_TERMINATOR : process
    begin
      sSimulationActive <= true;
-     wait for 100 ms;
+     wait for TEST_DURATION;
      sSimulationActive <= false;
+     wait;
    end process;
 
 end testbench;

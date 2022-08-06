@@ -50,7 +50,7 @@ begin
    end process;
    
    -- MUX to generate anode activating signals for 4 LEDs 
-   process(enabledDigit)
+   process(enabledDigit, numberToDisplay)
 	variable tempNibble : std_logic_vector(NUMBER_OF_DIGITS-1 downto 0);
    begin
        tempNibble := (others => '0');
