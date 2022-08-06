@@ -130,7 +130,7 @@ enable_vert_grid 0
             images_to_delete.append(fabs)
 
             prog_shot(cmd, fabs, screen_size=(1024,768), wait=0,
-                    timeout=12, visible=True, bgcolor='white')
+                    timeout=40, visible=True, bgcolor='white')
             print('Saved screenshot of {} in {}'.format(vcdFilename, fabs))
 
 
