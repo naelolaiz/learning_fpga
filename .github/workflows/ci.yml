@@ -64,7 +64,7 @@ jobs:
         $GHDL -a Serial2Parallel_tb.vhd
         $GHDL -e serial2parallel_tb
         $GHDL -r serial2parallel_tb --vcd=serial2parallel_tb.vcd
-        python3 ../scripts/gtkwave_export.py serial2parallel_tb.vcd
+        python3 ${{ github.workspace }}/scripts/gtkwave_export.py serial2parallel_tb.vcd
         mv gtkwave_serial2parallel_tb.png ${{ github.workspace }}/out_screenshots/
         ./serial2parallel_tb --assert-level=error
         
@@ -79,7 +79,7 @@ jobs:
         $GHDL -a tb_test.vhd
         $GHDL -e tb_test
         $GHDL -r tb_test --assert-level=error --vcd=7segments_counter_tb.vcd
-        python3 ../scripts/gtkwave_export.py 7segments_counter_tb.vcd
+        python3 ${{ github.workspace }}/scripts/gtkwave_export.py 7segments_counter_tb.vcd
         mv gtkwave_7segments_counter_tb.png ${{ github.workspace }}/out_screenshots/
 
     - uses: actions/upload-artifact@v3
