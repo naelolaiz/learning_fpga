@@ -44,8 +44,12 @@ jobs:
         ghdl --version
         cd blink_led
         ghdl -a blink_led.vhd
-        ghdl -e blink_led
-        ./blink_led --assert-level=error
+        ghdl -a test/tb_test.vhd
+        ghdl -e tb_blink_led
+        ghdl -r tb_blink_led --assert_level=error --vcd=tb_blink_led.vcd
+        python3 /tools/vcd2png.py tb_blink_led.vcd
+        mv gtkwave_tb_blink_led.png /generated_images/
+
         ghdl -a --std=08 blink_led.vhd
         yosys -m ghdl -p 'ghdl --std=08 blink_led; prep -top blink_led; write_json -compat-int svg.json'
         netlistsvg svg.json -o /generated_images/blink_led_diagram.svg
