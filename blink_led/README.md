@@ -9,5 +9,5 @@ Since we are using a syncronic process, there are two D flip-flops: one for the 
 ![logic diagram](doc/blink_led_diagram.svg)
 
 ## Simulation
-Automatically generated view from gtkwave:
+Automatically generated view from gtkwave. Changing output led state every 200ns instead of 1s:
 ![tb simulation signals view](doc/gtkwave_tb_blink_led.png)
