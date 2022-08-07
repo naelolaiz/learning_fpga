@@ -46,6 +46,9 @@ jobs:
         ghdl -a blink_led.vhd
         ghdl -e blink_led
         ./blink_led --assert-level=error
+        ghdl -a --std=08 blink_led.vhd
+        yosys -m ghdl -p 'ghdl --std=08 blink_led; prep -top blink_led; write_json -compat-int svg.json'
+        netlistsvg svg.json -o /generated_images/blink_led_diagram.svg
 
     - name: test_serial2parallel
       run: |
