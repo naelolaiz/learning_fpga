@@ -46,7 +46,7 @@ Project containing tests for learning FPGA/VHDL.
    - [x] automatically run a simulation, and generate a .png file with the simulation signals view in gtkwave
    - [x] automatically create .svg diagram files for the selected .vhd files
    - all done in https://github.com/naelolaiz/hdltools and https://github.com/naelolaiz/fpga_tutorial. 
-     - TODO: merge here!
+     - [x] TODO: merge here! DONE!
      - TODO: clean up
    
   - TODO:
