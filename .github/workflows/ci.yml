@@ -75,7 +75,10 @@ jobs:
         python3 /tools/vcd2png.py 7segments_counter_tb.vcd
         mv gtkwave_7segments_counter_tb.png /generated_images/
         cd ..
-        /tools/vhd2svg.sh $(pwd)/test.vhd /generated_images/7_segments_counter_toplevel_diagram.svg
+        ghdl -a --std=08 test.vhd # TODO: rename it!
+        yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
+        netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
+        #/tools/vhd2svg.sh $(pwd)/test.vhd /generated_images/7_segments_counter_toplevel_diagram.svg
 
     - uses: actions/upload-artifact@v3
       with:
