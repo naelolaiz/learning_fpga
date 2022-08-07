@@ -42,6 +42,13 @@ Project containing tests for learning FPGA/VHDL.
         - simplify code to remove redundant timers
  - [x] create a CI github action to compile a vhdl file with ghdl : https://github.com/naelolaiz/learning_fpga/blob/main/.github/workflows/ci.yml
    - TODO: make other vhdl files compatible. At least " Clock" (they don't currently compile because of missing configurations and probably different standards used?)
+ - [x] create a CI github infrastructure allowing:
+   - [x] automatically run a simulation, and generate a .png file with the simulation signals view in gtkwave
+   - [x] automatically create .svg diagram files for the selected .vhd files
+   - all done in https://github.com/naelolaiz/hdltools and https://github.com/naelolaiz/fpga_tutorial. 
+     - TODO: merge here!
+     - TODO: clean up
+   
   - TODO:
     - create a simple game with the buttons and the 7 segments display (snake / space invaders)
       - learn how to generate random numbers with the FPGA
