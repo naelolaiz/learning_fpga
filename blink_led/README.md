@@ -7,3 +7,7 @@ A second led is handled by an active-low button XNOR the led1. So the led2 is no
 ## Generated logic diagram
 Since we are using a syncronic process, there are two D flip-flops: one for the counter, and the other for the output state signals.
 ![logic diagram](doc/blink_led_diagram.svg)
+
+## Simulation
+Automatically generated view from gtkwave:
+![tb simulation signals view](doc/gtkwave_tb_blink_led.png)
