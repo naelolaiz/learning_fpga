@@ -13,8 +13,6 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 jobs:
-
-
   ubuntu:
     strategy:
       fail-fast: false
@@ -24,65 +22,60 @@ jobs:
         #version: [ 18.04, 20.04, latest ] # TODO: put 18.04 back commenting screenshots generation on it
     runs-on: ubuntu-${{ matrix.version }}
     name: '🐧 Ubuntu ${{ matrix.version }} · ${{ matrix.backend }}'
-    steps:
 
+    container:
+      image: ghcr.io/naelolaiz/hdltools:release
+      credentials:
+         username: ${{ github.actor }}
+         password: ${{ secrets.github_token }}
+      volumes:
+        - src:/src
+        - generated_images:/generated_images
+
+    steps:
+    #- name: create output dir for images
+    #  run: mkdir generated_images
+      
     - name: '🧰 Checkout'
       uses: actions/checkout@v2
 
-    - uses: ghdl/setup-ghdl-ci@nightly
-      with: 
-        backend: llvm
-
-    - name: Install gtkwave and related tools for generating the simulation screenshots
-      run: | 
-        sudo apt-get install -y gtkwave scrot xvfb python-pil python3-pyvirtualdisplay python3-pip
-        pip3 install --user --upgrade setuptools wheel # ubuntu 18.04 apparently doesnt have proper setuptools
-        pip3 install --user pillow pyscreenshot path
-        # create dir for next jobs
-        mkdir ${{ github.workspace }}/out_screenshots/
-
-
     - name: test_blink_led
       run: |
-        echo "GHDL_PREFIX: $GHDL_PREFIX"
-        echo "GHDL: $GHDL"
-        echo "GHDL_LIBS: $GHDL_LIBS"
-        $GHDL --version
+        ghdl --version
         cd blink_led
-        $GHDL -a blink_led.vhd
-        $GHDL -e blink_led
+        ghdl -a blink_led.vhd
+        ghdl -e blink_led
         ./blink_led --assert-level=error
 
     - name: test_serial2parallel
       run: |
-        echo "GHDL_PREFIX: $GHDL_PREFIX"
-        echo "GHDL: $GHDL"
-        echo "GHDL_LIBS: $GHDL_LIBS"
-        $GHDL --version
+        echo "GHDL_PREFIX: ghdl_PREFIX"
+        echo "GHDL: ghdl"
+        echo "GHDL_LIBS: ghdl_LIBS"
+        ghdl --version
         cd general_components/
-        $GHDL -a Serial2Parallel.vhd
-        $GHDL -a Serial2Parallel_tb.vhd
-        $GHDL -e serial2parallel_tb
-        $GHDL -r serial2parallel_tb --vcd=serial2parallel_tb.vcd
-        python3 ${{ github.workspace }}/scripts/gtkwave_export.py serial2parallel_tb.vcd
-        mv gtkwave_serial2parallel_tb.png ${{ github.workspace }}/out_screenshots/
-        ./serial2parallel_tb --assert-level=error
+        ghdl -a Serial2Parallel.vhd
+        ghdl -a Serial2Parallel_tb.vhd
+        ghdl -e serial2parallel_tb
+        ghdl -r serial2parallel_tb --assert-level=error --vcd=serial2parallel_tb.vcd
+        python3 /tools/vcd2png.py serial2parallel_tb.vcd
+        mv gtkwave_serial2parallel_tb.png /generated_images/
         
     - name: test_7segments_counter
       run: |
-        echo "GHDL_PREFIX: $GHDL_PREFIX"
-        echo "GHDL: $GHDL"
-        echo "GHDL_LIBS: $GHDL_LIBS"
-        $GHDL --version
+        echo "GHDL_PREFIX: ghdl_PREFIX"
+        echo "GHDL: ghdl"
+        echo "GHDL_LIBS: ghdl_LIBS"
+        ghdl --version
         cd 7segments/counter/test
-        $GHDL -a ../test.vhd
-        $GHDL -a tb_test.vhd
-        $GHDL -e tb_test
-        $GHDL -r tb_test --assert-level=error --vcd=7segments_counter_tb.vcd
-        python3 ${{ github.workspace }}/scripts/gtkwave_export.py 7segments_counter_tb.vcd
-        mv gtkwave_7segments_counter_tb.png ${{ github.workspace }}/out_screenshots/
+        ghdl -a ../test.vhd
+        ghdl -a tb_test.vhd
+        ghdl -e tb_test
+        ghdl -r tb_test --assert-level=error --vcd=7segments_counter_tb.vcd
+        python3 /tools/vcd2png.py 7segments_counter_tb.vcd
+        mv gtkwave_7segments_counter_tb.png /generated_images/
 
     - uses: actions/upload-artifact@v3
       with:
         name: screenshots  ${{ matrix.version }}·${{ matrix.backend }}
-        path: ${{ github.workspace }}/out_screenshots/
+        path: /generated_images
