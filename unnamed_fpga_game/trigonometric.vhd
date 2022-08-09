@@ -102,10 +102,24 @@ package body trigonometric is
                                is
         constant sinIsNegative : boolean := index(4) = '1';
         constant indexForTable : std_logic_vector(3 downto 0) := std_logic_vector(to_unsigned(abs(to_integer(signed(index))), 4));
-
+        alias mostSignificativeNibble is inputValue (7 downto 4);
+        alias lessSignificativeNibble is inputValue (3 downto 0);
+        variable op   : std_logic_vector (7 downto 0)  := (others => '0');
+        variable sum  : std_logic_vector (15 downto 0) := (others => '0');
      begin
-           
-
+        if inputValue =  "0000"  then
+           sum := (others=> '0');
+        elsif indexForTable = "0001" then
+           sum := (others => '0') & inputValue;
+        else 
+           op := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN(to_integer(signed(indexForTable)))(to_integer(signed(lessSignificativeNibble)));
+           sum (11 downto 4) := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN(to_integer(signed(indexForTable)))(to_integer(signed(mostSignificativeNibble)));
+           sum := std_logic_vector(unsigned(sum) + unsigned(op))(16 downto 1); -- lets use the MSB for the sign...
+           if sinIsNegative then
+              sum := std_logic_vector(to_signed(-1 * to_integer(signed(sum)), 16)); -- flip the sign if needed
+           end if;
+        end if;
+        return sum;
      end function;
 
 
