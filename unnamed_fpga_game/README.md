@@ -49,7 +49,10 @@ and links two other documents:
  * [Implementing Multipliers in FPGA Devices](http://www.altera.com/literature/an/an306.pdf)
 
 So I will need to learn on how to do the LUT implementation to avoid using all multipliers, since I have a lot of available memory to use.
-More information: http://www.andraka.com/multipli.php
+More information: 
+ * http://www.andraka.com/multipli.php
+ * https://www.microchip.com/content/dam/mchp/documents/FPGA/pld-design-resources/Implementing%20a%20Single-coefficient%20Multiplier.pdf
+ * 
 
 
 ## TODO : 
