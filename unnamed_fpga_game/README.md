@@ -35,14 +35,14 @@ Then I tried to use the automatic optimizations with the optimization advisor:
 
 But the result is the same.
 
-So I found [Embedded multipliers in Cyclone IV Devices](https://www.intel.com/programmable/technical-pdfs/654776.pdf), which says:
+So I found the [Embedded multipliers in Cyclone IV Devices](https://www.intel.com/programmable/technical-pdfs/654776.pdf), which says:
 ```
 In addition to the embedded multipliers in Cyclone IV devices, you can implement
 soft multipliers by using the M9K memory blocks as look-up tables (LUTs). The LUTs
 contain partial results from the multiplication of input data with coefficients that
 implement variable depth and width high-performance soft multipliers for low-cost,
 high-volume DSP applications. The availability of soft multipliers increases the
-number of available multipliers in the device.
+number of available multipliers in the device.
 ```
 and links two other documents:
  * [Memory Blocks in Cyclone IV Devices](http://www.altera.com/literature/hb/cyclone-iv/cyiv-51003.pdf)
