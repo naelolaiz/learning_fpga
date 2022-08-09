@@ -55,8 +55,8 @@ So I will need to learn on how to do the LUT implementation to avoid using all m
 * optimize code 
   * try implementing my own multiplier with gates
   * try implementing my own multiplier with LUT
-* remove hardcoded values on boundaries for bouncing. Use sprites constants instead
+* [x] remove hardcoded values on boundaries for bouncing. Use sprites constants instead
 * integrate input buttons with debouncers
-* use vectors for sprites velocities. Instantiate several sprites.
+* [x] use vectors for sprites velocities. Instantiate several sprites.
 * animate sprites
 * add testbench
