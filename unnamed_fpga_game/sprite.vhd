@@ -7,6 +7,7 @@ use ieee_proposed.fixed_pkg.all;
 
 library work;
 use work.definitions.all;
+use work.trigonometric.all;
 
 entity sprite is
    generic (SCREEN_SIZE    : Size2D := (800,600);
