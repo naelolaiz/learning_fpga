@@ -90,7 +90,7 @@ cursorPosition <= (hpos - SCREEN_MARGINS.x, vpos - SCREEN_MARGINS.y);
 
 mySprite : sprite
 generic map(SCREEN_SIZE => SCREEN_SIZE,
-            INITIAL_ROTATION => 0,
+            INITIAL_ROTATION => 8,
             INITIAL_POSITION => (200,200),
             INITIAL_SPEED => (1, 1, 150000),
             SPRITE_WIDTH => 11,
@@ -106,7 +106,8 @@ generic map(SCREEN_SIZE => SCREEN_SIZE,
                              &"01001110010"
                              &"00100000100"
                              &"00011111000",
-            INITIAL_ROTATION_SPEED => (1, 4000000))
+            INITIAL_ROTATION_SPEED => (0,0))
+            --INITIAL_ROTATION_SPEED => (1, 4000000))
 port map (inClock       => vga_clk,
           inEnabled     => true,
           --inSpritePos   => spritePosition,
