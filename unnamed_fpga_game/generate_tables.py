@@ -45,7 +45,7 @@ sinTable=[round(math.sin(angle) * 2**bits_for_trig_output) for angle in float_an
 sinProductTables = []
 for sin in sinTable:
     sinProductTable = []
-    for i in range(2, 2**bits_for_multiplication_table_lut):  # skip trivial 0 and 1
+    for i in range(0, 2**bits_for_multiplication_table_lut):
         sinProductTable.append(format(round(sin * i) & (2**bits_for_trig_output * 2**bits_for_multiplication_table_lut -1), '08b')) # max value is +1 * 15
     sinProductTables.append(sinProductTable)
 #print(list(zip(float_angles,sinTable,cosTable)))
