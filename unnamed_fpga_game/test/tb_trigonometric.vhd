@@ -13,7 +13,7 @@ end tb_trigonometric;
 architecture testbench of tb_trigonometric is
      signal indexForTableStd : std_logic_vector(4 downto 0)  := (others => '0');
      signal inputStd         : std_logic_vector(7 downto 0)  := (others => '0');
-     signal sumStd           : std_logic_vector(15 downto 0) := (others => '0');
+     signal sumStd           : std_logic_vector(7 downto 0) := (others => '0');
 
 begin
    testing_values : process
