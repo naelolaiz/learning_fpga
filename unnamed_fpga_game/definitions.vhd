@@ -29,6 +29,12 @@ package definitions is
       height : integer;
    end record;
 
+   type GravityAcceleration is
+   record
+      y_increments  : integer;
+      update_period : integer;
+   end record;
+
 end package;
 
 package body definitions is

@@ -20,7 +20,8 @@ entity sprite is
             INITIAL_ROTATION         : integer := 0; -- 0 to 31
             INITIAL_ROTATION_SPEED           : RotationSpeed := ( 1, 0);
             INITIAL_POSITION         : Pos2D   := (0, 0);
-            INITIAL_SPEED            : Speed2D := (0, 0, 0)
+            INITIAL_SPEED            : Speed2D := (0, 0, 0);
+            GRAVITY                : GravityAcceleration := (0,0)
             );
    port( inClock : in  std_logic;
          inEnabled : in boolean;
@@ -81,42 +82,57 @@ outShouldDraw <= sShouldDraw;
        end if;
    end process;
 
-   moveSprite : process (inClock, sShouldDraw, inColision)
+   moveSprite : process (inClock, sShouldDraw, inColision, sCurrentSpeed)
       variable counterForSpritePositionUpdate : integer range 0 to INITIAL_SPEED.update_period := 0;
       variable nextPositionToTest : Pos2D := (0,0);
       variable collisionDetected : boolean := false;
+      variable counterForVelocityUpdateByGravity : integer range 0 to GRAVITY.update_period := 0;
+      variable currentSpeed : Speed2D := sCurrentSpeed;
    begin
       if rising_edge(inClock) then
+         currentSpeed := sCurrentSpeed;
+         if GRAVITY.y_increments /= 0 and GRAVITY.update_period > 0 then
+            if counterForVelocityUpdateByGravity = GRAVITY.update_period then
+               counterForVelocityUpdateByGravity := 0;
+               currentSpeed.y := currentSpeed.y + GRAVITY.y_increments;
+            else
+               counterForVelocityUpdateByGravity := counterForVelocityUpdateByGravity + 1;
+            end if;
+         end if;
          if counterForSpritePositionUpdate = INITIAL_SPEED.update_period then
             counterForSpritePositionUpdate := 0;
             collisionDetected := false;
            -- check for colission with the screen
             -- TODO: implement vectors sum
-            nextPositionToTest := ((sSpritePos.x + sCurrentSpeed.x),
-                                  (sSpritePos.y + sCurrentSpeed.y));
+            nextPositionToTest := ((sSpritePos.x + currentSpeed.x),
+                                  (sSpritePos.y + currentSpeed.y));
             if  nextPositionToTest.x - C_HALF_SCALED_WIDTH <= 0
              or nextPositionToTest.x + C_HALF_SCALED_WIDTH >= SCREEN_SIZE.width then
-               sCurrentSpeed.x <= sCurrentSpeed.x * (-1);
+               currentSpeed.x := currentSpeed.x * (-1);
                collisionDetected := true;
             end if;
             if  nextPositionToTest.y - C_HALF_SCALED_HEIGHT <= 0
              or nextPositionToTest.y + C_HALF_SCALED_HEIGHT >= SCREEN_SIZE.height then
-               sCurrentSpeed.y <= sCurrentSpeed.y * (-1);
+               currentSpeed.y := currentSpeed.y * (-1);
+               -- avoid supervelocities when  using gravity
+               if currentSpeed.y > 1 and GRAVITY.update_period > 0 and GRAVITY.y_increments > 0 then
+                   currentSpeed.y := 1;
+               end if;
                collisionDetected := true;
             end if;
-            sSpritePos <= ((sSpritePos.x + sCurrentSpeed.x),
-                           (sSpritePos.y + sCurrentSpeed.y));
+            sSpritePos <= ((sSpritePos.x + currentSpeed.x),
+                           (sSpritePos.y + currentSpeed.y));
             if collisionDetected or (inColision and sShouldDraw) then
                sCurrentRotationSpeed.index_inc <= sCurrentRotationSpeed.index_inc * (-1); 
             end if;
             if (inColision and sShouldDraw) then
-               sCurrentSpeed.x <= sCurrentSpeed.x * (-1);
-               sCurrentSpeed.y <= sCurrentSpeed.y * (-1);
+               currentSpeed.x := currentSpeed.x * (-1);
+               currentSpeed.y := currentSpeed.y * (-1);
             end if;
-
          else
             counterForSpritePositionUpdate := counterForSpritePositionUpdate + 1;
          end if;
+         sCurrentSpeed <= currentSpeed;
       end if;
    end process;
 

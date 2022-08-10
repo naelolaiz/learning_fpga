@@ -44,6 +44,7 @@ constant SCREEN_MARGINS : Pos2D  := (155,30);
   signal should_draw_square1 : boolean;
   signal should_draw_square2 : boolean;
   signal should_draw_square3 : boolean;
+  signal should_draw_ship1 : boolean;
 
   -- nael
   signal ticksForDynamicTextPositionUpdate : std_logic := '0';
@@ -74,7 +75,8 @@ constant SCREEN_MARGINS : Pos2D  := (155,30);
             INITIAL_ROTATION         : integer;
             INITIAL_ROTATION_SPEED           : RotationSpeed;
             INITIAL_POSITION         : Pos2D;
-            INITIAL_SPEED            : Speed2D
+            INITIAL_SPEED            : Speed2D;
+            GRAVITY : GravityAcceleration
             );
    port( inClock : in  std_logic;
          inEnabled : in boolean;
@@ -108,7 +110,8 @@ generic map(SCREEN_SIZE => SCREEN_SIZE,
                              &"00100000100"
                              &"00011111000",
             --INITIAL_ROTATION_SPEED => (0,0))
-            INITIAL_ROTATION_SPEED => (1, 1000000))
+            INITIAL_ROTATION_SPEED => (1, 1000000),
+            GRAVITY => (1,3000000))
 port map (inClock       => vga_clk,
           inEnabled     => true,
           --inSpritePos   => spritePosition,
@@ -134,7 +137,8 @@ port map (inClock       => vga_clk,
                                  &"01000000010"
                                  &"00100000100"
                                  &"00011111000",
-              INITIAL_ROTATION_SPEED => (-1, 1200000))
+              INITIAL_ROTATION_SPEED => (-1, 1200000),
+              GRAVITY => (0,0))
   port map (inClock       => vga_clk,
             inEnabled     => true,
             --inSpritePos   => spritePosition,
@@ -175,32 +179,67 @@ port map (inClock       => vga_clk,
 --square_x <= xPosSprite;
 --square_y <= yPosSprite;
 
-mySprite3 : sprite
+ -- mySprite3 : sprite
+ -- generic map(SCREEN_SIZE => SCREEN_SIZE,
+ --             INITIAL_ROTATION => 0,
+ --             INITIAL_POSITION => (320,240),
+ --             INITIAL_SPEED => (0, 0, 10000),
+ --             SPRITE_WIDTH => 11,
+ --             SCALE => 25,
+ --             SPRITE_CONTENT => "00011111000"
+ --                              &"00100000100"
+ --                              &"01000000010"
+ --                              &"10010001001"
+ --                              &"10000000001"
+ --                              &"10000100001"
+ --                              &"10100000101"
+ --                              &"10010001001"
+ --                              &"01001110010"
+ --                              &"00100000100"
+ --                              &"00011111000",
+ --             --INITIAL_ROTATION_SPEED => (0,0))
+ --             INITIAL_ROTATION_SPEED => (-1, 9000000))
+ -- port map (inClock       => vga_clk,
+ --           inEnabled     => true,
+ --           --inSpritePos   => spritePosition,
+ --           inCursorPos   => cursorPosition,
+ --           outShouldDraw => should_draw_square3,
+ --           inColision => should_draw_square2);
+
+
+
+mySpriteShip : sprite
 generic map(SCREEN_SIZE => SCREEN_SIZE,
-            INITIAL_ROTATION => 0,
+            INITIAL_ROTATION => 5,
             INITIAL_POSITION => (320,240),
-            INITIAL_SPEED => (0, 0, 10000),
+            INITIAL_SPEED => (2, 1, 1000000),
             SPRITE_WIDTH => 11,
-            SCALE => 25,
-            SPRITE_CONTENT => "00011111000"
-                             &"00100000100"
-                             &"01000000010"
-                             &"10010001001"
-                             &"10000000001"
-                             &"10000100001"
-                             &"10100000101"
-                             &"10010001001"
+            SCALE => 3,
+            SPRITE_CONTENT => "00000100000"
+                             &"00001110000"
+                             &"00011111000"
+                             &"00101110100"
                              &"01001110010"
-                             &"00100000100"
-                             &"00011111000",
+                             &"10110101101"
+                             &"11000100011"
+                             &"10001110001"
+                             &"00010101000"
+                             &"00100100100"
+                             &"01001110010",
             --INITIAL_ROTATION_SPEED => (0,0))
-            INITIAL_ROTATION_SPEED => (-1, 15000000))
+            INITIAL_ROTATION_SPEED => (-1, 9000000),
+            GRAVITY => (0,0))
 port map (inClock       => vga_clk,
           inEnabled     => true,
           --inSpritePos   => spritePosition,
           inCursorPos   => cursorPosition,
-          outShouldDraw => should_draw_square3,
+          outShouldDraw => should_draw_ship1,
           inColision => should_draw_square2);
+
+
+
+
+
   controller : VgaController port map(
     clk     => vga_clk,
     rgb_in  => rgb_input,
@@ -235,7 +274,10 @@ port map (inClock       => vga_clk,
         tempColorSum := tempColorSum or "001";
       end if;
       if should_draw_square3 then
-        tempColorSum := not tempColorSum; -- or "011";
+        tempColorSum := (not tempColorSum) and "110"; -- or "011";
+      end if;
+      if should_draw_ship1 then
+        tempColorSum := (not tempColorSum);
       end if;
     end if;
     rgb_input <= tempColorSum; 
