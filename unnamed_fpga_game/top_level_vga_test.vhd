@@ -43,6 +43,7 @@ constant SCREEN_MARGINS : Pos2D  := (155,30);
   signal should_move_square : boolean;
   signal should_draw_square1 : boolean;
   signal should_draw_square2 : boolean;
+  signal should_draw_square3 : boolean;
 
   -- nael
   signal ticksForDynamicTextPositionUpdate : std_logic := '0';
@@ -92,9 +93,9 @@ mySprite : sprite
 generic map(SCREEN_SIZE => SCREEN_SIZE,
             INITIAL_ROTATION => 8,
             INITIAL_POSITION => (200,200),
-            INITIAL_SPEED => (1, 1, 150000),
+            INITIAL_SPEED => (1, 1, 300000),
             SPRITE_WIDTH => 11,
-            SCALE => 7,
+            SCALE => 4,
             SPRITE_CONTENT => "00011111000"
                              &"00100000100"
                              &"01000000010"
@@ -107,7 +108,7 @@ generic map(SCREEN_SIZE => SCREEN_SIZE,
                              &"00100000100"
                              &"00011111000",
             --INITIAL_ROTATION_SPEED => (0,0))
-            INITIAL_ROTATION_SPEED => (1, 4000000))
+            INITIAL_ROTATION_SPEED => (1, 1000000))
 port map (inClock       => vga_clk,
           inEnabled     => true,
           --inSpritePos   => spritePosition,
@@ -119,9 +120,9 @@ port map (inClock       => vga_clk,
   generic map(SCREEN_SIZE => SCREEN_SIZE,
             INITIAL_ROTATION => 4,
               INITIAL_POSITION => (500,300),
-              INITIAL_SPEED => (1, -1, 180000),
+              INITIAL_SPEED => (1, -1, 600000),
               SPRITE_WIDTH => 11,
-              SCALE => 5,
+              SCALE => 3,
                 SPRITE_CONTENT => "00011111000"
                                  &"00100000100"
                                  &"01000000010"
@@ -133,7 +134,7 @@ port map (inClock       => vga_clk,
                                  &"01000000010"
                                  &"00100000100"
                                  &"00011111000",
-              INITIAL_ROTATION_SPEED => (-1, 8000000))
+              INITIAL_ROTATION_SPEED => (-1, 1200000))
   port map (inClock       => vga_clk,
             inEnabled     => true,
             --inSpritePos   => spritePosition,
@@ -174,6 +175,32 @@ port map (inClock       => vga_clk,
 --square_x <= xPosSprite;
 --square_y <= yPosSprite;
 
+mySprite3 : sprite
+generic map(SCREEN_SIZE => SCREEN_SIZE,
+            INITIAL_ROTATION => 0,
+            INITIAL_POSITION => (320,240),
+            INITIAL_SPEED => (0, 0, 10000),
+            SPRITE_WIDTH => 11,
+            SCALE => 25,
+            SPRITE_CONTENT => "00011111000"
+                             &"00100000100"
+                             &"01000000010"
+                             &"10010001001"
+                             &"10000000001"
+                             &"10000100001"
+                             &"10100000101"
+                             &"10010001001"
+                             &"01001110010"
+                             &"00100000100"
+                             &"00011111000",
+            --INITIAL_ROTATION_SPEED => (0,0))
+            INITIAL_ROTATION_SPEED => (-1, 15000000))
+port map (inClock       => vga_clk,
+          inEnabled     => true,
+          --inSpritePos   => spritePosition,
+          inCursorPos   => cursorPosition,
+          outShouldDraw => should_draw_square3,
+          inColision => should_draw_square2);
   controller : VgaController port map(
     clk     => vga_clk,
     rgb_in  => rgb_input,
@@ -206,6 +233,9 @@ port map (inClock       => vga_clk,
       end if;
       if should_draw_square2 then
         tempColorSum := tempColorSum or "001";
+      end if;
+      if should_draw_square3 then
+        tempColorSum := not tempColorSum; -- or "011";
       end if;
     end if;
     rgb_input <= tempColorSum; 
