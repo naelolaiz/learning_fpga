@@ -69,7 +69,11 @@ package trigonometric is
  ("00001100", "00010010", "00011000", "00011110", "00100100", "00101010", "00110000", "00110110", "00111100", "01000010", "01001000", "01001110", "01010100", "01011010"),
  ("00000110", "00001001", "00001100", "00001111", "00010010", "00010101", "00011000", "00011011", "00011110", "00100001", "00100100", "00100111", "00101010", "00101101"));
 
-     function multiplyBySinLUT(index      : std_logic_vector(3 downto 0);
+     function multiplyBySinLUT(index      : std_logic_vector(4 downto 0);
+                               inputValue : std_logic_vector(7 downto 0))  -- limited to 255 max value of input
+                               return  std_logic_vector; -- signed integer
+
+     function multiplyByCosLUT(index      : std_logic_vector(4 downto 0);
                                inputValue : std_logic_vector(7 downto 0))  -- limited to 255 max value of input
                                return  std_logic_vector; -- signed integer
 
@@ -94,8 +98,6 @@ end package;
 
 
 package body trigonometric is
-
-
      function multiplyBySinLUT(index      : std_logic_vector(4 downto 0); -- 32 samples (instead of the 16 I was using)
                                inputValue : std_logic_vector(7 downto 0))  -- limited to 255 max value of input
                                return std_logic_vector -- signed integer
@@ -120,6 +122,15 @@ package body trigonometric is
            end if;
         end if;
         return sum;
+     end function;
+
+     function multiplyByCosLUT(index      : std_logic_vector(4 downto 0); -- 32 samples (instead of the 16 I was using)
+                               inputValue : std_logic_vector(7 downto 0))  -- limited to 255 max value of input
+                               return std_logic_vector -- signed integer
+                               is
+         constant indexForCos : std_logic_vector (4 downto 0) := std_logic_vector((unsigned(index) + 8) mod 32);
+     begin
+        return multiplyBySinLUT(indexForCos, inputValue);
      end function;
 
 
