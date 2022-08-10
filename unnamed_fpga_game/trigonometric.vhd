@@ -120,11 +120,11 @@ package body trigonometric is
      begin
         newPos.x := (to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_signed(position.x, 8)))))
                      -
-                     to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_signed(position.y, 8)))))) / WIDTH_DIVISOR;
+                     to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_signed(position.y, 8))))));  -- / 2; -- / WIDTH_DIVISOR;
 
         newPos.y := (to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_signed(position.x, 8)))))
                      +
-                     to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_signed(position.y, 8)))))) / HEIGHT_DIVISOR;
+                     to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_signed(position.y, 8)))))); -- / 2; -- / HEIGHT_DIVISOR;
 
         return newPos;
      end function;
