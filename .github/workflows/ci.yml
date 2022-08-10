@@ -87,6 +87,25 @@ jobs:
         yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
         netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
         #/tools/vhd2svg.sh $(pwd)/test.vhd /generated_images/7_segments_counter_toplevel_diagram.svg
+    - name: test_7segments_counter
+      run: |
+        echo "GHDL_PREFIX: ghdl_PREFIX"
+        echo "GHDL: ghdl"
+        echo "GHDL_LIBS: ghdl_LIBS"
+        ghdl --version
+        cd unnamed_fpga_game/test
+        ghdl -a ../definitions.vhd
+        ghdl -a ../sprite.vhd
+        ghdl -a ../trigonometric.vhd
+        ghdl -a tb_trigonometric.vhd
+        ghdl -e tb_trigonometric
+        ghdl -r tb_trigonometric --assert-level=error --vcd=tb_trigonometric.vcd
+        python3 /tools/vcd2png.py tb_trigonometric.vcd
+        mv gtkwave_tb_trigonometric.png /generated_images/
+        #cd ..
+        #ghdl -a --std=08 test.vhd # TODO: rename it!
+        #yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
+        #netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
 
     - uses: actions/upload-artifact@v3
       with:
