@@ -95,8 +95,8 @@ jobs:
         ghdl --version
         cd unnamed_fpga_game/test
         ghdl -a ../definitions.vhd
-        ghdl -a ../sprite.vhd
         ghdl -a ../trigonometric.vhd
+        ghdl -a ../sprite.vhd
         ghdl -a tb_trigonometric.vhd
         ghdl -e tb_trigonometric
         ghdl -r tb_trigonometric --assert-level=error --vcd=tb_trigonometric.vcd
