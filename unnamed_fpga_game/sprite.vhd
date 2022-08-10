@@ -46,7 +46,12 @@ architecture logic of sprite is
                                   INITIAL_POSITION.y);
    signal sCurrentSpeed : Speed2D := INITIAL_SPEED;
    signal sCurrentRotationSpeed : RotationSpeed := INITIAL_ROTATION_SPEED;
+   signal sShouldDraw : boolean := false;
 begin
+
+ -- TODO: remove hardcoded 31
+
+outShouldDraw <= sShouldDraw;
 
    rotateSprite : process  (inClock)
       variable counterForSpriteRotationUpdate : integer := 0;
@@ -56,14 +61,14 @@ begin
           if counterForSpriteRotationUpdate = sCurrentRotationSpeed.update_period then
              counterForSpriteRotationUpdate := 0;
              if sCurrentRotationSpeed.index_inc > 0 then
-                 if indexForSpriteRotation = indexForSpriteRotation'HIGH then
+                 if indexForSpriteRotation = 31 then
                     indexForSpriteRotation := 0;
                  else
                     indexForSpriteRotation := indexForSpriteRotation + sCurrentRotationSpeed.index_inc;
                  end if;
              elsif sCurrentRotationSpeed.index_inc < 0 then
                  if indexForSpriteRotation = 0 then
-                    indexForSpriteRotation := indexForSpriteRotation'HIGH;
+                    indexForSpriteRotation := 31;
                  else
                     indexForSpriteRotation := indexForSpriteRotation + sCurrentRotationSpeed.index_inc;
                  end if;
@@ -76,13 +81,13 @@ begin
        end if;
    end process;
 
-   moveSprite : process (inClock)
+   moveSprite : process (inClock, sShouldDraw, inColision)
       variable counterForSpritePositionUpdate : integer range 0 to INITIAL_SPEED.update_period := 0;
       variable nextPositionToTest : Pos2D := (0,0);
       variable collisionDetected : boolean := false;
    begin
       if rising_edge(inClock) then
-         if counterForSpritePositionUpdate = counterForSpritePositionUpdate'HIGH then
+         if counterForSpritePositionUpdate = INITIAL_SPEED.update_period then
             counterForSpritePositionUpdate := 0;
             collisionDetected := false;
            -- check for colission with the screen
@@ -101,10 +106,10 @@ begin
             end if;
             sSpritePos <= ((sSpritePos.x + sCurrentSpeed.x),
                            (sSpritePos.y + sCurrentSpeed.y));
-            if collisionDetected or (inColision and outShouldDraw) then
+            if collisionDetected or (inColision and sShouldDraw) then
                sCurrentRotationSpeed.index_inc <= sCurrentRotationSpeed.index_inc * (-1); 
             end if;
-            if (inColision and outShouldDraw) then
+            if (inColision and sShouldDraw) then
                sCurrentSpeed.x <= sCurrentSpeed.x * (-1);
                sCurrentSpeed.y <= sCurrentSpeed.y * (-1);
             end if;
@@ -136,7 +141,7 @@ begin
     variable vTranslatedCursor: Pos2D := (0, 0);
   begin
       if not inEnabled then
-          outShouldDraw <= false;
+          sShouldDraw <= false;
       elsif rising_edge(inClock) then
           sCenterPos <= sSpritePos;
 
@@ -147,7 +152,7 @@ begin
             or vCursor.y < (sCenterPos.y - C_HALF_SCALED_HEIGHT)
             or vCursor.y > (sCenterPos.y + C_HALF_SCALED_HEIGHT)
             then
-              outShouldDraw <= false;
+              sShouldDraw <= false;
           else
              vTranslatedCursor := (((vCursor.x - (sCenterPos.x - C_HALF_SCALED_WIDTH))  / SCALE), 
                                    ((vCursor.y - (sCenterPos.y - C_HALF_SCALED_HEIGHT)) / SCALE));
@@ -160,11 +165,11 @@ begin
              -- now we check the sprite content with the transformed cursor
              if vTranslatedCursor.x < 0 or vTranslatedCursor.x > SPRITE_SIZE.width-1
                 or vTranslatedCursor.y <0 or vTranslatedCursor.y > SPRITE_SIZE.height-1 then
-                outShouldDraw <= false;
+                sShouldDraw <= false;
              elsif sSpriteContent(vTranslatedCursor.y)(vTranslatedCursor.x) = '1' then
-                outShouldDraw <= true;
+                sShouldDraw <= true;
              else
-                outShouldDraw <= false;
+                sShouldDraw <= false;
              end if;
           end if;
       end if;

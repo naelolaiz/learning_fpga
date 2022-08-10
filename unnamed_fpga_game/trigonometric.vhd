@@ -111,8 +111,7 @@ package body trigonometric is
 
      function rotate(sprite_size : Size2D;
                      position    : Pos2D;
-                     rotation    : std_logic_vector(4 downto 0))
---                     rotation    : AngleType := ( others => '0' )) 
+                     rotation    : std_logic_vector(4 downto 0) := (others => '0'))
                     return Pos2D is
         variable newPos : Pos2D;
      begin
