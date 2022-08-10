@@ -66,12 +66,13 @@ package body trigonometric is
 
         alias mostSignificativeNibble is absInputValue (7 downto 4);
         alias lessSignificativeNibble is absInputValue (3 downto 0);
+        alias indexForTable is index(3 downto 0);
         variable op   : std_logic_vector (7 downto 0)  := (others => '0');
         variable sum  : std_logic_vector (15 downto 0) := (others => '0');
      begin
         sum := (others => '0');
-        op := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN(to_integer(unsigned(index))) (to_integer(signed(lessSignificativeNibble)));
-        sum (11 downto 4) := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN(to_integer(unsigned(index)))(to_integer(signed(mostSignificativeNibble)));
+        op := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN (to_integer(unsigned(indexForTable))) (to_integer(unsigned(lessSignificativeNibble)));
+        sum (11 downto 4) := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN (to_integer(unsigned(indexForTable))) (to_integer(unsigned(mostSignificativeNibble)));
         sum := std_logic_vector(unsigned(sum) + unsigned(op));
         if sinIsNegative then
            sum := std_logic_vector(to_signed(-1 * to_integer(signed(sum)), 16)); -- flip the sign if needed

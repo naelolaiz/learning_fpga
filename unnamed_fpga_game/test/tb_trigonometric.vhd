@@ -28,8 +28,8 @@ begin
 
       for indexForTable in 0 to 31 loop
           indexForTableStd <= std_logic_vector(to_unsigned(indexForTable, 5));
-          for inputValue in -128 to 128 loop
-              inputStd <=  std_logic_vector(to_unsigned(inputValue, 8)); -- this should be signed!
+          for inputValue in -128 to 127 loop
+              inputStd <= std_logic_vector(to_signed(inputValue, 8));
               sumStd <= multiplyBySinLUT(indexForTableStd,
                                          inputStd);
               wait for 1 ns;
