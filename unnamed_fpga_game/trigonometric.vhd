@@ -116,13 +116,13 @@ package body trigonometric is
                     return Pos2D is
         variable newPos : Pos2D;
      begin
-        newPos.x := (to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_unsigned(position.x, 8)))))
+        newPos.x := to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_unsigned(position.x, 8)))))
                      -
-                     to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_unsigned(position.y, 8)))))) / 64;
+                     to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_unsigned(position.y, 8))))); -- / 64;
 
-        newPos.y := (to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_unsigned(position.x, 8)))))
+        newPos.y := to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_unsigned(position.x, 8)))))
                      +
-                     to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_unsigned(position.y, 8)))))) / 64;
+                     to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_unsigned(position.y, 8))))); --/ 64;
 
         return newPos;
      end function;
