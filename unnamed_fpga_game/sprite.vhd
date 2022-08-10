@@ -77,7 +77,7 @@ outShouldDraw <= sShouldDraw;
           else
              counterForSpriteRotationUpdate := counterForSpriteRotationUpdate + 1;
           end if;
-   
+       sRotation <= indexForSpriteRotation;
        end if;
    end process;
 
