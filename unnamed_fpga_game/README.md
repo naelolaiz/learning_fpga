@@ -60,13 +60,14 @@ Using LUTs for multiplication tables for the sin and cos at the specific angles:
 * No 9-bit multipliers used.
 * 70% logic elements. To optimize. (note that now I am using 3 sprites instead of 2. Before was not even possible)
 
-This is how the demo looks now:
+Thisall_multipliers_used is how the demo looks now:
 
 ![rotating smileys](doc/rotating_with_lut_trigonometric.gif)
 
 ## TODO : 
 * optimize code 
   * [x]try implementing my own multiplier with LUT
+  * improve rotation (better resolution, fix something?)
 * [x] remove hardcoded values on boundaries for bouncing. Use sprites constants instead
 * integrate input buttons with debouncers
 * [x] use vectors for sprites velocities. Instantiate several sprites.
