@@ -94,7 +94,7 @@ generic map(SCREEN_SIZE => SCREEN_SIZE,
             INITIAL_POSITION => (200,200),
             INITIAL_SPEED => (1, 1, 150000),
             SPRITE_WIDTH => 11,
-            SCALE => 3,
+            SCALE => 7,
             SPRITE_CONTENT => "00011111000"
                              &"00100000100"
                              &"01000000010"
@@ -106,8 +106,8 @@ generic map(SCREEN_SIZE => SCREEN_SIZE,
                              &"01001110010"
                              &"00100000100"
                              &"00011111000",
-            INITIAL_ROTATION_SPEED => (0,0))
-            --INITIAL_ROTATION_SPEED => (1, 4000000))
+            --INITIAL_ROTATION_SPEED => (0,0))
+            INITIAL_ROTATION_SPEED => (1, 4000000))
 port map (inClock       => vga_clk,
           inEnabled     => true,
           --inSpritePos   => spritePosition,
@@ -117,11 +117,11 @@ port map (inClock       => vga_clk,
 
   mySprite2 : sprite
   generic map(SCREEN_SIZE => SCREEN_SIZE,
-            INITIAL_ROTATION => 0,
+            INITIAL_ROTATION => 4,
               INITIAL_POSITION => (500,300),
               INITIAL_SPEED => (1, -1, 180000),
               SPRITE_WIDTH => 11,
-              SCALE => 7,
+              SCALE => 5,
                 SPRITE_CONTENT => "00011111000"
                                  &"00100000100"
                                  &"01000000010"
