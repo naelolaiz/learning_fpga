@@ -52,13 +52,21 @@ So I will need to learn on how to do the LUT implementation to avoid using all m
 More information: 
  * http://www.andraka.com/multipli.php
  * https://www.microchip.com/content/dam/mchp/documents/FPGA/pld-design-resources/Implementing%20a%20Single-coefficient%20Multiplier.pdf
- * 
 
+Using LUTs for multiplication tables for the sin and cos at the specific angles:
+
+![summary using LUT multipliers](doc/quartus_summary_lut_for_trigonometric_3_sprites.png)
+
+* No 9-bit multipliers used.
+* 70% logic elements. To optimize. (note that now I am using 3 sprites instead of 2. Before was not even possible)
+
+This is how the demo looks now:
+
+![rotating smileys](doc/rotating_with_lut_trigonometric.gif)
 
 ## TODO : 
 * optimize code 
-  * try implementing my own multiplier with gates
-  * try implementing my own multiplier with LUT
+  * [x]try implementing my own multiplier with LUT
 * [x] remove hardcoded values on boundaries for bouncing. Use sprites constants instead
 * integrate input buttons with debouncers
 * [x] use vectors for sprites velocities. Instantiate several sprites.
