@@ -1,6 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
+library work;
 use work.VgaUtils.all;
 use work.definitions.all;
 
@@ -62,12 +64,33 @@ constant SCREEN_MARGINS : Pos2D  := (155,30);
       vpos    : out integer
     );
   end component;
+
+  component sprite is
+   generic (SCREEN_SIZE    : Size2D;
+            SPRITE_WIDTH   : integer;
+            SCALE          : integer;
+            SPRITE_CONTENT : std_logic_vector;
+            INITIAL_ROTATION         : integer;
+            INITIAL_ROTATION_SPEED           : RotationSpeed;
+            INITIAL_POSITION         : Pos2D;
+            INITIAL_SPEED            : Speed2D
+            );
+   port( inClock : in  std_logic;
+         inEnabled : in boolean;
+         --inSpritePos   : Pos2D; -- center position of sprite
+         inCursorPos   : Pos2D; -- position to check
+         --inRotation    : in AngleType;
+         inColision : in boolean; --TODO direction
+         outShouldDraw : out boolean);
+  end component;
+
 begin
 
 cursorPosition <= (hpos - SCREEN_MARGINS.x, vpos - SCREEN_MARGINS.y);
 
-mySprite : entity work.sprite(logic)
+mySprite : sprite
 generic map(SCREEN_SIZE => SCREEN_SIZE,
+            INITIAL_ROTATION => 0,
             INITIAL_POSITION => (200,200),
             INITIAL_SPEED => (1, 1, 150000),
             SPRITE_WIDTH => 11,
@@ -91,8 +114,9 @@ port map (inClock       => vga_clk,
           outShouldDraw => should_draw_square1,
           inColision => should_draw_square2);
 
-  mySprite2 : entity work.sprite(logic)
+  mySprite2 : sprite
   generic map(SCREEN_SIZE => SCREEN_SIZE,
+            INITIAL_ROTATION => 0,
               INITIAL_POSITION => (500,300),
               INITIAL_SPEED => (1, -1, 180000),
               SPRITE_WIDTH => 11,
