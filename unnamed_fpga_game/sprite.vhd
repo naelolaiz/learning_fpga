@@ -48,6 +48,9 @@ architecture logic of sprite is
    signal sCurrentSpeed : Speed2D := INITIAL_SPEED;
    signal sCurrentRotationSpeed : RotationSpeed := INITIAL_ROTATION_SPEED;
    signal sShouldDraw : boolean := false;
+
+   signal sUnscaledCursorPosition : Pos2D := (0,0);
+   signal sRotatedPosition : Pos2D := (0,0);
 begin
 
  -- TODO: remove hardcoded 31
@@ -149,6 +152,28 @@ outShouldDraw <= sShouldDraw;
     end loop;
   end process;
 
+
+RotateSprite : entity work.SpriteRotator(logic)
+generic map(SPRITE_SIZE => SPRITE_SIZE,
+            SCALE => SCALE)
+port map(--inClock => inClock, -- TODO!
+         inPosition => sUnscaledCursorPosition,
+         inRotation => sRotation,
+         outPosition => sRotatedPosition
+        );
+
+
+
+
+   ---                  -- for rotation, first we do a translation to have the origin in the center of the sprite
+   ---          vTranslatedCursor := translateOriginToCenterOfSprite(SPRITE_SIZE, vTranslatedCursor);
+   ---          -- then we apply the rotation
+   ---          vTranslatedCursor := rotate(SPRITE_SIZE, vTranslatedCursor, std_logic_vector(to_unsigned(sRotation, 5)));
+   ---          -- and translate the origin back
+   ---          vTranslatedCursor := translateOriginBackToFirstBitCorner(SPRITE_SIZE, vTranslatedCursor);
+   ---          -- now we check the sprite content with the transformed cursor
+
+
   ProcessPosition : process(inClock,
                             sSpritePos,
                             inCursorPos,
@@ -170,14 +195,9 @@ outShouldDraw <= sShouldDraw;
             then
               sShouldDraw <= false;
           else
-             vTranslatedCursor := (((vCursor.x - (sCenterPos.x - C_HALF_SCALED_WIDTH))  / SCALE), 
+             sUnscaledCursorPosition := (((vCursor.x - (sCenterPos.x - C_HALF_SCALED_WIDTH))  / SCALE), 
                                    ((vCursor.y - (sCenterPos.y - C_HALF_SCALED_HEIGHT)) / SCALE));
-             -- for rotation, first we do a translation to have the origin in the center of the sprite
-             vTranslatedCursor := translateOriginToCenterOfSprite(SPRITE_SIZE, vTranslatedCursor);
-             -- then we apply the rotation
-             vTranslatedCursor := rotate(SPRITE_SIZE, vTranslatedCursor, std_logic_vector(to_unsigned(sRotation, 5)));
-             -- and translate the origin back
-             vTranslatedCursor := translateOriginBackToFirstBitCorner(SPRITE_SIZE, vTranslatedCursor);
+--        wait  
              -- now we check the sprite content with the transformed cursor
              if vTranslatedCursor.x < 0 or vTranslatedCursor.x > SPRITE_SIZE.width-1
                 or vTranslatedCursor.y <0 or vTranslatedCursor.y > SPRITE_SIZE.height-1 then

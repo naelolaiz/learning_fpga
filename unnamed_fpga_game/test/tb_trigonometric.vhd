@@ -67,6 +67,9 @@ begin
        --     report "Wrong rotation @(0,11), rotation pi/2"; 
 
        -- wait for 1 ns;
+
+
+
      for indexForTableRotate in 0 to 31 loop
          indexForTableStdTestRotate <= std_logic_vector(to_unsigned(indexForTableRotate, 5));
          for inputX in -5 to 5 loop
@@ -75,8 +78,8 @@ begin
                   wait for 500 ns;
                   vInputPos := (inputX, inputY);
                   sInputPos <= (inputX, inputY);
-                  vOutputPos := rotate(sprite_size, vInputPos, indexForTableStdTestRotate);
-                  sOutputPos <= rotate(sprite_size, sInputPos, indexForTableStdTestRotate);
+                  rotate(sClock sprite_size, vInputPos, indexForTableStdTestRotate, vOutputPos);
+                  sOutputPos <= vOutputPos; --rotate(sprite_size, sInputPos, indexForTableStdTestRotate);
                   sClock <= '1';
                   wait for 1 us;
              end loop;

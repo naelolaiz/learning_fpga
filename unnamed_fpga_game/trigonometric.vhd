@@ -45,11 +45,6 @@ package trigonometric is
                                                   position      : Pos2D)
               return Pos2D;
 
-     function rotate(sprite_size : Size2D;
-                     position    : Pos2D;
-                     rotation    : std_logic_vector(4 downto 0) := (others => '0'))
-              return Pos2D;
-
 end package;
 
 
@@ -107,25 +102,6 @@ package body trigonometric is
      begin
         return (position.x + HALF_SPRITE_WIDTH,
                 position.y + HALF_SPRITE_HEIGHT);
-     end function;
-
-     function rotate(sprite_size : Size2D;
-                     position    : Pos2D;
-                     rotation    : std_logic_vector(4 downto 0) := (others => '0'))
-                    return Pos2D is
-        constant WIDTH_DIVISOR  : integer := 127 * 2 / sprite_size.width ;
-        constant HEIGHT_DIVISOR : integer := 127 * 2 / sprite_size.height;
-        variable newPos : Pos2D;
-     begin
-        newPos.x := (to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_signed(position.x, 8)))))
-                     -
-                     to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_signed(position.y, 8))))));  -- / 2; -- / WIDTH_DIVISOR;
-
-        newPos.y := (to_integer(signed(multiplyBySinLUT(rotation, std_logic_vector(to_signed(position.x, 8)))))
-                     +
-                     to_integer(signed(multiplyByCosLUT(rotation, std_logic_vector(to_signed(position.y, 8)))))); -- / 2; -- / HEIGHT_DIVISOR;
-
-        return newPos;
      end function;
     
 end trigonometric;
