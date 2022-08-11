@@ -33,9 +33,9 @@ begin
 
   ROM_INSTANCE : single_clock_rom
   generic map(
-           ARRAY_SIZE          => 256,
+           ARRAY_SIZE          => 32,
            ELEMENTS_BITS_COUNT => 8,
-           initFile            => "dummy_file_name.hex"
+           initFile            => "MY_ROM.hex"
    )
   port map(clock => inClock50Mhz,
            data => (others => '0'),
