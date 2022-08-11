@@ -44,8 +44,12 @@ ARCHITECTURE rtl OF single_clock_rom IS
  begin
  -- read file with tables and fill in ROM
     for I in romType'range loop
-       readline(data_file, data_fileLine); 
-       hread(data_fileLine, ROM(I)); -- vhdl 2008
+       if(not endfile(data_file)) then
+           readline(data_file, data_fileLine); 
+           hread(data_fileLine, ROM(I)); -- vhdl 2008
+       else
+          ROM(I) := (others => '1'); -- ???????
+       end if;
     end loop;
     return ROM;
  end function;
