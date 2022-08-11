@@ -75,8 +75,8 @@ jobs:
         ghdl -a --std=08 ../ROM_LUT.vhd
         ghdl -a --std=08 ../tl_rom_lut.vhd
         ghdl -a --std=08 tb_rom_lut.vhd
-        ghdl -e tb_rom_lut
-        ghdl -r tb_rom_lut --assert-level=error --vcd=tb_rom_lut.vcd
+        ghdl -e --std=08 tb_rom_lut
+        ghdl -r --std=08 tb_rom_lut --assert-level=error --vcd=tb_rom_lut.vcd
         python3 /tools/vcd2png.py tb_rom_lut.vcd
         mv gtkwave_tb_rom_lut.png /generated_images/
         cd ..
