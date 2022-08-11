@@ -69,6 +69,21 @@ jobs:
         python3 /tools/vcd2png.py serial2parallel_tb.vcd
         mv gtkwave_serial2parallel_tb.png /generated_images/
         
+    - name: test_ROM
+      run: |
+        cd rom_lut/test
+        ghdl -a --std=08 ../ROM_LUT.vhd
+        ghdl -a --std=08 ../tl_rom_lut.vhd
+        ghdl -a --std=08 tb_rom_lut.vhd
+        ghdl -e tb_rom_lut
+        ghdl -r tb_rom_lut --assert-level=error --vcd=tb_rom_lut.vcd
+        python3 /tools/vcd2png.py tb_rom_lut.vcd
+        mv gtkwave_tb_rom_lut.png /generated_images/
+        cd ..
+        ghdl -a --std=08 ROM_LUT.vhd
+        yosys -m ghdl -p 'ghdl --std=08 single_clock_rom; prep -top single_clock_rom; write_json -compat-int svg.json'
+        netlistsvg svg.json -o /generated_images/single_clock_rom_diagram.svg
+        
     - name: test_7segments_counter
       run: |
         echo "GHDL_PREFIX: ghdl_PREFIX"
