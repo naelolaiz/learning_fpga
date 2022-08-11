@@ -19,9 +19,9 @@ use IEEE.numeric_std.all;
 
 ENTITY single_clock_rom IS
    GENERIC(
-           ARRAY_SIZE          : integer := 256;
+           ARRAY_SIZE          : integer := 255;
            ELEMENTS_BITS_COUNT : integer := 8;
-           initFile            : string  := "dummy_file_name.hex"
+           initFile            : string  := "MY_ROM.hex"
    );
    PORT (
          clock: IN STD_LOGIC;
@@ -44,8 +44,6 @@ ARCHITECTURE rtl OF single_clock_rom IS
  begin
   for I in romType'range loop
    readline(data_file, data_fileLine); 
-
-   read(data_fileLine, discartedChar);
    hread(data_fileLine, ROM(I)); -- vhdl 2008
   end loop;
   return ROM;
