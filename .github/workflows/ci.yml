@@ -130,7 +130,7 @@ jobs:
         #netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
     - name: find and publish all .vcd files
       run: |
-        find . -name "*.vcd" -exec cp {} /generated_signals/ \;
+        find . -name "*.vcd" -size -80M -exec cp {} /generated_signals/ \;
         find . -name "*.svg.json" -exec cp {} /generated_netlists/ \;
 
     - uses: actions/upload-artifact@v3
