@@ -84,6 +84,10 @@ jobs:
         ghdl -a --std=08 ROM_LUT.vhd
         yosys -m ghdl -p 'ghdl --std=08 single_clock_rom; prep -top single_clock_rom; write_json -compat-int svg.json'
         netlistsvg svg.json -o /generated_images/single_clock_rom_diagram.svg
+        ghdl -a --std=08 ROM_LUT.vhd
+        ghdl -a --std=08 tl_rom_lut.vhd
+        yosys -m ghdl -p 'ghdl --std=08 tl_rom_lut; prep -top tl_rom_lut; write_json -compat-int tl_rom_lut_svg.json'
+        netlistsvg tl_rom_lut_svg.json -o /generated_images/tl_rom_lut_diagram.svg
         
     - name: test_7segments_counter
       run: |
