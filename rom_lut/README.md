@@ -11,5 +11,5 @@ This is the testbench testing a single array of 32 values from ROM.
 
 ## Logic diagram
 This is the diagram of the entity which instantiates the memory block
-![diagram](single_clock_rom_diagram.svg)
+![diagram](doc/single_clock_rom_diagram.svg)
 
