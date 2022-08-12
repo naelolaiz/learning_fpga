@@ -86,7 +86,7 @@ BEGIN
          --output <= rom(read_address);
          tableOfTablesIdx := read_address / 16;
          tableIdx := read_address mod 16;
-         output <= rom2(tableOfTablesIdx)(tableIdx);
+         output <= rom2(tableOfTablesIdx)(15 - tableIdx); -- the words in memory are read from "right to left"
 
       END IF;
    END PROCESS;

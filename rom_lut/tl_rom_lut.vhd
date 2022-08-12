@@ -11,7 +11,7 @@ end tl_rom_lut;
 
 architecture logic of tl_rom_lut is
    signal sMemoryOutput : std_logic_vector(7 downto 0);
-   signal sInAddress    : integer range 0 to 31;
+   signal sInAddress    : integer range 0 to 32*16-1;
 
 component single_clock_rom is
    GENERIC(

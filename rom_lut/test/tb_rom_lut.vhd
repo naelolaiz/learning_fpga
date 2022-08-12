@@ -7,7 +7,7 @@ end tb_rom_lut;
 
 architecture testbench of tb_rom_lut is
    signal sClock        : std_logic                    := '0';
-   signal sInAddress    : integer range 0 to 31        := 0;
+   signal sInAddress    : integer range 0 to 32*16-1        := 0;
    signal sReadByte     : std_logic_vector(7 downto 0) := (others=>'0');
    signal sTestRunning  : boolean                      := true;
    constant CLOCK_PERIOD : time := 4 ns;
