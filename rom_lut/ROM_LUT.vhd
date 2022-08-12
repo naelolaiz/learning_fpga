@@ -1,12 +1,3 @@
--- library ieee;
--- use ieee.std_logic_1164.all;
--- 
--- package definitions is
---     type arrayOfWords is array (natural range <>) of std_logic_vector; -- requires vhdl-08
--- end package;
---library work;
---use work.definitions.all;
-
 -- http://www.markharvey.info/rtl/mem_init_21.02.2017/mem_init_21.02.2017.html
 library std ;
 use std.textio.all; 
