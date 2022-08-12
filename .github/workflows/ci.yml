@@ -31,6 +31,7 @@ jobs:
       volumes:
         - src:/src
         - generated_images:/generated_images
+        - generated_signals:/generated_signals
 
     steps:
     #- name: create output dir for images
@@ -126,8 +127,13 @@ jobs:
         #ghdl -a --std=08 test.vhd # TODO: rename it!
         #yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
         #netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
+    - name: find and publish all .vcd files
+      run: |
+        find . -name "*.vcd" -exec cp {} /generated_signals/ \;
 
     - uses: actions/upload-artifact@v3
       with:
         name: screenshots  ${{ matrix.version }}·${{ matrix.backend }}
-        path: /generated_images
+        path: |
+          /generated_images
+          /generated_signals
