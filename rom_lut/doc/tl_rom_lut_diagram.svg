@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="472"
+   height="160"
+   version="1.1"
+   id="svg88"
+   sodipodi:docname="tl_rom_lut_diagram.svg"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:s="https://github.com/nturley/netlistsvg">
+  <defs
+     id="defs92" />
+  <sodipodi:namedview
+     id="namedview90"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="3.7842198"
+     inkscape:cx="238.09399"
+     inkscape:cy="63.289136"
+     inkscape:window-width="3840"
+     inkscape:window-height="2095"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg88" />
+  <style
+     id="style2">svg {
+    stroke:#000;
+    fill:none;
+  }
+  text {
+    fill:#000;
+    stroke:none;
+    font-size:10px;
+    font-weight: bold;
+    font-family: &quot;Courier New&quot;, monospace;
+  }
+  .nodelabel {
+    text-anchor: middle;
+  }
+  .inputPortLabel {
+    text-anchor: end;
+  }
+  .splitjoinBody {
+    fill:#000;
+  }</style>
+  <g
+     s:type="dff"
+     transform="translate(137,108)"
+     s:width="30"
+     s:height="40"
+     id="cell_\9">
+    <s:alias
+       val="$dff" />
+    <s:alias
+       val="$_DFF_" />
+    <s:alias
+       val="$_DFF_P_" />
+    <rect
+       width="30"
+       height="40"
+       x="0"
+       y="0"
+       class="cell_\9"
+       id="rect4" />
+    <path
+       d="M0,35 L5,30 L0,25"
+       class="cell_\9"
+       id="path6" />
+    <g
+       s:x="30"
+       s:y="10"
+       s:pid="Q"
+       id="g8" />
+    <g
+       s:x="0"
+       s:y="30"
+       s:pid="CLK"
+       id="g10" />
+    <g
+       s:x="0"
+       s:y="30"
+       s:pid="C"
+       id="g12" />
+    <g
+       s:x="0"
+       s:y="10"
+       s:pid="D"
+       id="g14" />
+  </g>
+  <g
+     s:type="generic"
+     transform="translate(275,32.5)"
+     s:width="30"
+     s:height="40"
+     id="cell_rom_instance">
+    <text
+       x="-0.43848166"
+       y="-16.722237"
+       class="nodelabel cell_rom_instance"
+       s:attribute="ref"
+       id="text17">single_clock_rom_32_8_aa2c2abec6d85d8c63a17f6130da52ea58064a07</text>
+    <rect
+       width="30"
+       height="60"
+       s:generic="body"
+       class="cell_rom_instance"
+       id="rect19" />
+    <g
+       transform="translate(0,10)"
+       s:x="0"
+       s:y="10"
+       s:pid="in0"
+       id="port_rom_instance~clock">
+      <text
+         x="-3"
+         y="-4"
+         class="inputPortLabel cell_rom_instance"
+         id="text21">clock</text>
+    </g>
+    <g
+       transform="translate(0,30)"
+       s:x="0"
+       s:y="10"
+       s:pid="in0"
+       id="port_rom_instance~data">
+      <text
+         x="-3"
+         y="-4"
+         class="inputPortLabel cell_rom_instance"
+         id="text24">data</text>
+    </g>
+    <g
+       transform="translate(0,50)"
+       s:x="0"
+       s:y="10"
+       s:pid="in0"
+       id="port_rom_instance~read_address">
+      <text
+         x="-3"
+         y="-4"
+         class="inputPortLabel cell_rom_instance"
+         id="text27">read_address</text>
+    </g>
+    <g
+       transform="translate(30,10)"
+       s:x="30"
+       s:y="10"
+       s:pid="out0"
+       id="port_rom_instance~output">
+      <text
+         x="5"
+         y="-4"
+         style="fill:#000; stroke:none"
+         class="cell_rom_instance"
+         id="text30">output</text>
+    </g>
+  </g>
+  <g
+     s:type="inputExt"
+     transform="translate(12,22)"
+     s:width="30"
+     s:height="20"
+     id="cell_inClock50Mhz">
+    <text
+       x="15"
+       y="-4"
+       class="nodelabel cell_inClock50Mhz"
+       s:attribute="ref"
+       id="text34">inClock50Mhz</text>
+    <s:alias
+       val="$_inputExt_" />
+    <path
+       d="M0,0 L0,20 L15,20 L30,10 L15,0 Z"
+       class="cell_inClock50Mhz"
+       id="path36" />
+    <g
+       s:x="28"
+       s:y="10"
+       s:pid="Y"
+       id="g38" />
+  </g>
+  <g
+     s:type="inputExt"
+     transform="translate(12,108)"
+     s:width="30"
+     s:height="20"
+     id="cell_inAddressToRead">
+    <text
+       x="15"
+       y="-4"
+       class="nodelabel cell_inAddressToRead"
+       s:attribute="ref"
+       id="text41">inAddressToRead</text>
+    <s:alias
+       val="$_inputExt_" />
+    <path
+       d="M0,0 L0,20 L15,20 L30,10 L15,0 Z"
+       class="cell_inAddressToRead"
+       id="path43" />
+    <g
+       s:x="28"
+       s:y="10"
+       s:pid="Y"
+       id="g45" />
+  </g>
+  <g
+     s:type="outputExt"
+     transform="translate(382,33)"
+     s:width="30"
+     s:height="20"
+     id="cell_outReadMemory">
+    <text
+       x="15"
+       y="-4"
+       class="nodelabel cell_outReadMemory"
+       s:attribute="ref"
+       id="text48">outReadMemory</text>
+    <s:alias
+       val="$_outputExt_" />
+    <path
+       d="M30,0 L30,20 L15,20 L0,10 L15,0 Z"
+       class="cell_outReadMemory"
+       id="path50" />
+    <g
+       s:x="0"
+       s:y="10"
+       s:pid="A"
+       id="g52" />
+  </g>
+  <g
+     s:type="constant"
+     transform="translate(137,53)"
+     s:width="30"
+     s:height="20"
+     id="cell_00000000">
+    <text
+       x="15"
+       y="-4"
+       class="nodelabel cell_00000000"
+       s:attribute="ref"
+       id="text55">0x0</text>
+    <s:alias
+       val="$_constant_" />
+    <rect
+       width="30"
+       height="20"
+       class="cell_00000000"
+       id="rect57" />
+    <g
+       s:x="30"
+       s:y="10"
+       s:pid="Y"
+       id="g59" />
+  </g>
+  <line
+     x1="40"
+     x2="112"
+     y1="32"
+     y2="32"
+     class="net_2"
+     id="line62" />
+  <line
+     x1="112"
+     x2="112"
+     y1="32"
+     y2="138"
+     class="net_2"
+     id="line64" />
+  <circle
+     cx="112"
+     cy="32"
+     r="2"
+     style="fill:#000"
+     class="net_2"
+     id="circle66" />
+  <line
+     x1="112"
+     x2="137"
+     y1="138"
+     y2="138"
+     class="net_2"
+     id="line68" />
+  <line
+     x1="40"
+     x2="177"
+     y1="32"
+     y2="32"
+     class="net_2"
+     id="line70" />
+  <line
+     x1="177"
+     x2="177"
+     y1="32"
+     y2="43"
+     class="net_2"
+     id="line72" />
+  <line
+     x1="177"
+     x2="275"
+     y1="43"
+     y2="43"
+     class="net_2"
+     id="line74" />
+  <line
+     x1="40"
+     x2="137"
+     y1="118"
+     y2="118"
+     class="net_3,4,5,6,7"
+     id="line76" />
+  <line
+     x1="167"
+     x2="275"
+     y1="63"
+     y2="63"
+     class="net_21,22,23,24,25,26,27,28"
+     id="line78" />
+  <line
+     x1="167"
+     x2="177"
+     y1="118"
+     y2="118"
+     class="net_16,17,18,19,20"
+     id="line80" />
+  <line
+     x1="177"
+     x2="177"
+     y1="118"
+     y2="83"
+     class="net_16,17,18,19,20"
+     id="line82" />
+  <line
+     x1="177"
+     x2="275"
+     y1="83"
+     y2="83"
+     class="net_16,17,18,19,20"
+     id="line84" />
+  <line
+     x1="306"
+     x2="382"
+     y1="43"
+     y2="43"
+     class="net_8,9,10,11,12,13,14,15"
+     id="line86" />
+</svg>
