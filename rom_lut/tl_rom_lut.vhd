@@ -4,7 +4,7 @@ use IEEE.numeric_std.all;
 
 entity tl_rom_lut is
 port (inClock50Mhz    : in std_logic;
-      inAddressToRead : in integer range 0 to 31; --std_logic_vector (3 downto 0);
+      inAddressToRead : in integer range 0 to 32*16 -1; --std_logic_vector (3 downto 0);
       outReadMemory   : out std_logic_vector(7 downto 0)
      );
 end tl_rom_lut;
@@ -21,8 +21,7 @@ component single_clock_rom is
    );
    PORT (
          clock: IN STD_LOGIC;
-         data: IN STD_LOGIC_VECTOR (ELEMENTS_BITS_COUNT-1 DOWNTO 0);
-         read_address: IN INTEGER RANGE 0 to ARRAY_SIZE-1;
+         read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*16-1;
          output: OUT STD_LOGIC_VECTOR (ELEMENTS_BITS_COUNT-1 DOWNTO 0)
    );
 end component;
@@ -38,7 +37,6 @@ begin
            initFile            => "MY_ROM.hex"
    )
   port map(clock => inClock50Mhz,
-           data => (others => '0'),
            read_address => sInAddress,
            output => sMemoryOutput);
 
