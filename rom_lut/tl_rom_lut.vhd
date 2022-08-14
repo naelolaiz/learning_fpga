@@ -81,7 +81,7 @@ port map (inClock50Mhz    => sClock,
 
 syncProcess : process (inClock50Mhz)
    variable vAddressForLUT : integer range 0 to 31;
-   variable vTempToReturn  : std_logic_vector (9 downto 0); -- adding a sign to the table 8 bit unsigned
+   variable vTempToReturn  : std_logic_vector (17 downto 0); -- adding a sign to the table 8 bit unsigned
 begin
    if rising_edge(inClock50Mhz) then
       case sMachineState is
@@ -98,12 +98,12 @@ begin
          when WAITING_READ => -- since we have only one clock of latency, we can already take the output value
             if inAddressToRead(6) = '1' -- negative part of the sine (PI..2PI)
                xor inFactor < 0 then -- xor negative input : negative result
-                  vTempToReturn := std_logic_vector(inFactor * signed(sOutputLUT) * (-1) / 256 );
+                  vTempToReturn := std_logic_vector(inFactor * signed(sOutputLUT) * (-1));
             else  -- else, positive
-                  vTempToReturn := std_logic_vector(inFactor * unsigned(sOutputLUT) / 256);
+                  vTempToReturn := std_logic_vector(inFactor * unsigned(sOutputLUT));
             end if;
 
-            outProduct <= to_integer(signed(vTempToReturn));
+            outProduct <= to_integer(signed(vTempToReturn(17 downto 8)));
              
             outDone <= '1';
             sMachineState <= IDLE;
