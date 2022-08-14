@@ -28,7 +28,7 @@ ARCHITECTURE rtl OF single_clock_rom IS
    type TableOfTablesType is array (0 to ARRAY_SIZE-1) of HexMultiplicationTableType;
 
 
- impure function initRom2FromFile return TableOfTablesType is
+ impure function initRomFromFile return TableOfTablesType is
     file data_file : text open read_mode is initFile;
     variable data_fileLine : line;
     variable ROM : TableOfTablesType;
@@ -44,8 +44,6 @@ ARCHITECTURE rtl OF single_clock_rom IS
            for o in 0 to 15 loop
                tempValueCompleteNibbles := tempLineHexNumber((o+1)*wordSizeCompleteNibbles-1 downto o*wordSizeCompleteNibbles);
                ROM(I)(o) := tempValueCompleteNibbles (ELEMENTS_BITS_COUNT-1 downto 0);
-               --ROM(I)(o) := tempLineHexNumber((o+1)*wordSizeCompleteNibbles-1 downto o*wordSizeCompleteNibbles) (ELEMENTS_BITS_COUNT-1 downto 0);
-               --report integer'image(to_integer(unsigned(ROM(I)(o)))) severity note;
            end loop;
        else
           ROM(I) := (others => (others => '1') ); -- ???????
@@ -54,9 +52,9 @@ ARCHITECTURE rtl OF single_clock_rom IS
     return ROM;
  end function;
 
- constant rom2 : TableOfTablesType := initRom2FromFile;
+ constant rom : TableOfTablesType := initRomFromFile;
  attribute rom_style : string;
- attribute rom_style of rom2 : constant is "M9K";
+ attribute rom_style of rom : constant is "M9K";
 
 BEGIN
    PROCESS (clock)
@@ -65,13 +63,9 @@ BEGIN
 
    BEGIN
       IF (clock'event AND clock = '1') THEN
-         --output <= rom(read_address);
          tableOfTablesIdx := read_address / 16;
          tableIdx := read_address mod 16;
-         output <= rom2(tableOfTablesIdx)(tableIdx);
-         --output <= rom2(tableOfTablesIdx)(tableIdx);
-         --output <= rom2(tableOfTablesIdx)(15 - tableIdx); -- the words in memory are read from "right to left"
-
+         output <= rom(tableOfTablesIdx)(tableIdx); -- note that this read the numbers of the file from right to left
       END IF;
    END PROCESS;
 END rtl;
