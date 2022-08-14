@@ -98,7 +98,7 @@ begin
          when WAITING_READ => -- since we have only one clock of latency, we can already take the output value
             if inAddressToRead(6) = '1' -- negative part of the sine (PI..2PI)
                xor inFactor < 0 then -- xor negative input : negative result
-                  vTempToReturn := std_logic_vector(inFactor * signed(sOutputLUT) * (-1));
+                  vTempToReturn := std_logic_vector(inFactor * (-1) * unsigned(sOutputLUT));
             else  -- else, positive
                   vTempToReturn := std_logic_vector(inFactor * unsigned(sOutputLUT));
             end if;
