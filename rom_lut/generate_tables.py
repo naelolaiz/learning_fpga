@@ -56,10 +56,17 @@ for sinFloat in sinTableFloat:
     sinProductTables.append(sinProductTable)
 
 
+print ("(")
 for table in sinProductTables:
-    print ("".join(table[::-1]))
+    print ("(", end="")
+    for productResult in table:
+       print ( "x\"{}\", ".format(productResult), end="")
+    print ("), ")
+print (")")
 
 
+
+#print ("".join(table[::-1]))
 #print(sinProductTables)
 #print(float_angles)
 #print(sinTable)
