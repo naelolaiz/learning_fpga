@@ -48,10 +48,10 @@ port map (inClock50Mhz    => sClock,
           outProduct      => sOutProduct,
           outDone         => sOutDone);
    
-   read_all_addresses : process
+read_sin_values : process
    begin
       for address in 0 to 4*32*16-1 loop
-         sInAddressForSin  <= address;
+         sInAddressForSin  <= std_logic_vector(to_unsigned(address, 7));
          wait for CLOCK_PERIOD * 2;
          -- assert (to_integer(unsigned(sReadByte)) = 31 - address)
          --   report "wrong read value" severity error;
