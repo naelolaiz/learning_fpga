@@ -33,15 +33,19 @@ ARCHITECTURE rtl OF single_clock_rom IS
     variable data_fileLine : line;
     variable ROM : TableOfTablesType;
     constant wordSizeCompleteNibbles : integer := natural(ceil(real(ELEMENTS_BITS_COUNT)/real(4)))*4;
-    variable temp : std_logic_vector (16*wordSizeCompleteNibbles - 1 downto 0); -- read by nibbles
+    variable tempLineHexNumber : std_logic_vector (16*wordSizeCompleteNibbles - 1 downto 0); -- read by nibbles
+    variable tempValueCompleteNibbles :  std_logic_vector (wordSizeCompleteNibbles-1 downto 0) := (others=>'0');
  begin
  -- read file with tables and fill in ROM
     for I in TableOfTablesType'range loop
        if(not endfile(data_file)) then
            readline(data_file, data_fileLine); 
-           hread(data_fileLine, temp); -- vhdl 2008
+           hread(data_fileLine, tempLineHexNumber); -- vhdl 2008
            for o in 0 to 15 loop
-               ROM(I)(o) := temp((o+1)*ELEMENTS_BITS_COUNT-1 downto o*ELEMENTS_BITS_COUNT);
+               tempValueCompleteNibbles := tempLineHexNumber((o+1)*wordSizeCompleteNibbles-1 downto o*wordSizeCompleteNibbles);
+               ROM(I)(o) := tempValueCompleteNibbles (ELEMENTS_BITS_COUNT-1 downto 0);
+               --ROM(I)(o) := tempLineHexNumber((o+1)*wordSizeCompleteNibbles-1 downto o*wordSizeCompleteNibbles) (ELEMENTS_BITS_COUNT-1 downto 0);
+               --report integer'image(to_integer(unsigned(ROM(I)(o)))) severity note;
            end loop;
        else
           ROM(I) := (others => (others => '1') ); -- ???????
