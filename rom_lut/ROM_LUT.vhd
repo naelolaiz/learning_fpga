@@ -7,7 +7,7 @@ LIBRARY ieee;
 use ieee.STD_LOGIC_TEXTIO.all;
 USE ieee.std_logic_1164.all;
 use IEEE.numeric_std.all;
-use IEEE.MATH_REAL.ALL;
+--use IEEE.MATH_REAL.ALL;
 
 ENTITY single_clock_rom IS
    GENERIC(
