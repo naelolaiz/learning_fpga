@@ -2,18 +2,8 @@ Testing how to force using a ROM (from file) for a LUT.
 
 I did a LUT for the game tests for the trigonometric multiplications, to avoid using all 9-bit multipliers. But I ended using all the logic cells. So I wanted to force using memory cells, which needs to be syncronic.
 
-This example creates a memory block as ROM. The content is read from a hex-text file.
+This is an implementation of a sine table in LUT (128 values with only 32 stored samples), including multiplication tables up to 16 per each LUT position, used for multiplying and add numbers bigger than one nibble.
 
-## Simulation
-This is the testbench testing a single array of 32 values from ROM.
+BRAM used as ROM for 32 multiplications tables with numbers 1 to 16, between 0 and PI/2.
 
-![simulation](doc/gtkwave_tb_rom_lut.png)
-
-## Logic diagram
-This is the diagram of the entity which instantiates the memory block
-
-![diagram](doc/single_clock_rom_diagram.svg)
-
-And this is the top-level entity
-
-![diagram top-level entity](doc/tl_rom_lut_diagram.svg)
+User inputs a factor, which will be multiplied by the sin of an angle (0<= angle <=128=2PI) using the LUT multiplication tables and adding them with the proper shift on the MSB.
