@@ -65,7 +65,7 @@ port (inClock50MHz    : in std_logic;
 end tl_sin_lut_reader;
 
 architecture logic_sin_lut_reader of tl_sin_lut_reader is
-  type  STATE_MACHINE_ENUM is (IDLE, WAITING_READ, WAITING_PROCESSING);
+  type  STATE_MACHINE_ENUM is (IDLE, WAITING_READ);
 
   signal sClock         : std_logic;
   --signal sReadAddress : integer range 0 to 32*16-1;
@@ -91,20 +91,20 @@ begin
                   vAddressForLUT := to_integer(unsigned(inAddressToRead(4 downto 0)));
                when '1' =>  -- PI/2 to PI or 3/2PI to 2PI : read from inverted table
                   vAddressForLUT := 31 - to_integer(unsigned(inAddressToRead(4 downto 0)));
+               when others => report "WTF, MAN?" severity error;
             end case;
             outDone <= '0';
             sMachineState <= WAITING_READ;
          when WAITING_READ => -- since we have only one clock of latency, we can already take the output value
             if inAddressToRead(6) = '1' -- negative part of the sine (PI..2PI)
                xor inFactor < 0 then -- xor negative input : negative result
-                  outProduct <= to_integer(signed(std_logic_vector(inFactor * signed(sOutputLUT) * (-1)) (16 downto 8)));
+                  vTempToReturn := std_logic_vector(inFactor * signed(sOutputLUT) * (-1) / 256 );
             else  -- else, positive
-                  outProduct <= to_integer(unsigned(std_logic_vector(inFactor * unsigned(sOutputLUT)) (16 downto 8)));
+                  vTempToReturn := std_logic_vector(inFactor * unsigned(sOutputLUT) / 256);
             end if;
-            -- TODO: start processing
-            sMachineState <= WAITING_PROCESSING;
-         when WAITING_PROCESSING =>
-            --sOutputLUT
+
+            outProduct <= to_integer(signed(vTempToReturn));
+             
             outDone <= '1';
             sMachineState <= IDLE;
       end case;
