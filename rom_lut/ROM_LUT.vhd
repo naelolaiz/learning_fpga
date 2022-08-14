@@ -12,8 +12,8 @@ use IEEE.MATH_REAL.ALL;
 ENTITY single_clock_rom IS
    GENERIC(
            ARRAY_SIZE          : integer := 32;
-           ELEMENTS_BITS_COUNT : integer := 9;
-           initFile            : string  := "SIN_TABLES_MULT_0_TO_HALF_PI_NORMALIZED_TO_UNSIGNED_9_BIT_ON_12_BIT_WORDS.hex"
+           ELEMENTS_BITS_COUNT : integer := 9
+--           initFile            : string  := "SIN_TABLES_MULT_0_TO_HALF_PI_NORMALIZED_TO_UNSIGNED_9_BIT_ON_12_BIT_WORDS.hex"
    );
    PORT (
          clock: IN STD_LOGIC;
@@ -53,7 +53,8 @@ ARCHITECTURE rtl OF single_clock_rom IS
  -- end function;
  --constant rom : TableOfTablesType := initRomFromFile;
 
- constant rom : TableOfTablesType :=
+-- IMPORTANT!!!!!! In order to synthesize this as BRAM THIS NEEDS TO BE SIGNAL, NOT CONSTANT! Otherwise it will use logic elements instead of BRAM.
+ signal rom : TableOfTablesType :=
 ((9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000"), -- sin(0) (redundant... TODO: remove) 
  (9x"000", 9x"002", 9x"003", 9x"005", 9x"006", 9x"008", 9x"009", 9x"00b", 9x"00c", 9x"00e", 9x"00f", 9x"011", 9x"012", 9x"014", 9x"015", 9x"017"),
  (9x"000", 9x"003", 9x"006", 9x"009", 9x"00c", 9x"00f", 9x"012", 9x"015", 9x"018", 9x"01b", 9x"01e", 9x"021", 9x"024", 9x"028", 9x"02b", 9x"02e"),
@@ -88,8 +89,9 @@ ARCHITECTURE rtl OF single_clock_rom IS
  (9x"000", 9x"01f", 9x"03e", 9x"05d", 9x"07c", 9x"09b", 9x"0ba", 9x"0d9", 9x"0f8", 9x"117", 9x"136", 9x"155", 9x"174", 9x"193", 9x"1b1", 9x"1d0")); -- sin PI/2 [*0,*1,..,*15]
 
 
- attribute rom_style : string;
- attribute rom_style of rom : constant is "M9K";
+ -- Not really needed. Commented to make it more generic. 
+ --attribute rom_style : string;
+ --attribute rom_style of rom : signal is "M9K";
 
 BEGIN
    PROCESS (clock)
