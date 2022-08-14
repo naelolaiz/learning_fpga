@@ -5,12 +5,12 @@ use IEEE.numeric_std.all;
 entity tl_rom_lut is
 port (inClock50Mhz    : in std_logic;
       inAddressToRead : in integer range 0 to 32*16 -1; --std_logic_vector (3 downto 0);
-      outReadMemory   : out std_logic_vector(7 downto 0)
+      outReadMemory   : out std_logic_vector(8 downto 0)
      );
 end tl_rom_lut;
 
 architecture logic of tl_rom_lut is
-   signal sMemoryOutput : std_logic_vector(7 downto 0);
+   signal sMemoryOutput : std_logic_vector(8 downto 0);
    signal sInAddress    : integer range 0 to 32*16-1;
 
 component single_clock_rom is
@@ -33,8 +33,8 @@ begin
   ROM_INSTANCE : single_clock_rom
   generic map(
            ARRAY_SIZE          => 32,
-           ELEMENTS_BITS_COUNT => 8,
-           initFile            => "MY_ROM.hex"
+           ELEMENTS_BITS_COUNT => 9,
+           initFile            => "SIN_TABLES_MULT_0_TO_HALF_PI_NORMALIZED_TO_UNSIGNED_9_BIT_ON_12_BIT_WORDS.hex"
    )
   port map(clock => inClock50Mhz,
            read_address => sInAddress,
