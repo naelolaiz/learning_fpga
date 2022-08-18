@@ -7,12 +7,12 @@ generic(ARRAY_SIZE          : integer := 32;
         ELEMENTS_BITS_COUNT : integer := 9);
 port (inClock50Mhz    : in std_logic;
       inAddressToRead : in integer range 0 to ARRAY_SIZE*16 -1;
-      outReadMemory   : out std_logic_vector(ELEMENTS_BITS_COUNT-1 downto 0)
+      outReadMemory   : out std_logic_vector(ELEMENTS_BITS_COUNT downto 0)
      );
 end tl_rom_lut;
 
 architecture logic of tl_rom_lut is
-   signal sLUTDataOut : std_logic_vector(ELEMENTS_BITS_COUNT-1 downto 0);
+   signal sLUTDataOut : std_logic_vector(ELEMENTS_BITS_COUNT downto 0);
    signal sInAddress    : integer range 0 to ARRAY_SIZE*16-1;
 
 component single_clock_rom is
@@ -23,7 +23,7 @@ component single_clock_rom is
    PORT (
          clock: IN STD_LOGIC;
          read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*16-1;
-         output: OUT STD_LOGIC_VECTOR (ELEMENTS_BITS_COUNT-1 DOWNTO 0)
+         output: OUT STD_LOGIC_VECTOR (ELEMENTS_BITS_COUNT DOWNTO 0)
    );
 end component;
 

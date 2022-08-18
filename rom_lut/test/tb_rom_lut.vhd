@@ -41,24 +41,24 @@ port map (inClock50Mhz => sClock,
 
 
 
-DUT2 : entity work.tl_sin_lut_reader(logic_sin_lut_reader)
-port map (inClock50Mhz    => sClock,
-          inAddressToRead => sInAddressForSin,
-          inFactor        => sInFactor,
-          outProduct      => sOutProduct,
-          outDone         => sOutDone);
-   
-read_sin_values : process
-   begin
-      for address in 0 to 4*32*16-1 loop
-         sInAddressForSin  <= std_logic_vector(to_unsigned(address, 7));
-         wait for CLOCK_PERIOD * 2;
-         -- assert (to_integer(unsigned(sReadByte)) = 31 - address)
-         --   report "wrong read value" severity error;
-      end loop;
-      sTestRunning <= false;
-      report "simulation done!" severity note;
-      wait;
-   end process;
+ -- DUT2 : entity work.tl_sin_lut_reader(logic_sin_lut_reader)
+ -- port map (inClock50Mhz    => sClock,
+ --           inAddressToRead => sInAddressForSin,
+ --           inFactor        => sInFactor,
+ --           outProduct      => sOutProduct,
+ --           outDone         => sOutDone);
+ --    
+ -- read_sin_values : process
+ --    begin
+ --       for address in 0 to 4*32*16-1 loop
+ --          sInAddressForSin  <= std_logic_vector(to_unsigned(address, 12));
+ --          wait for CLOCK_PERIOD * 2;
+ --          -- assert (to_integer(unsigned(sReadByte)) = 31 - address)
+ --          --   report "wrong read value" severity error;
+ --       end loop;
+ --       sTestRunning <= false;
+ --       report "simulation done!" severity note;
+ --       wait;
+ --    end process;
 
 end testbench;
