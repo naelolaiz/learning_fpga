@@ -45,7 +45,7 @@ begin
 
    outReadMemory <= sLUTDataOut;
 
-   syncProcess : process (inClock50Mhz)
+   syncProcess : process (inClock50Mhz, inAngleIdxToRead, inNibbleProductIdx)
    begin
       if rising_edge(inClock50Mhz) then
          sAngleIdx         <= inAngleIdxToRead;

@@ -10,7 +10,7 @@ architecture testbench of tb_rom_lut is
    signal sAngleIdx         : std_logic_vector(6 downto 0) := (others => '0');
    signal sNibbleProductIdx : std_logic_vector(3 downto 0) := (others => '0');
    --signal sInAddress      : integer range 0 to 32*16-1   := 0;
-   signal sReadByte         : std_logic_vector(8 downto 0) := (others=>'0');
+   signal sReadByte         : std_logic_vector(9 downto 0) := (others=>'0');
    signal sTestRunning      : boolean                      := true;
    constant CLOCK_PERIOD    : time                         := 4 ns;
   ---
@@ -35,10 +35,14 @@ port map (inClock50Mhz       => sClock,
    begin
       for address in 0 to 127 loop
          sAngleIdx <= std_logic_vector(to_unsigned(address, 7));
-         wait for CLOCK_PERIOD * 2;
-         -- assert (to_integer(unsigned(sReadByte)) = 31 - address)
-         --   report "wrong read value" severity error;
+         for multiplier in 0 to 15 loop
+             sNibbleProductIdx <= std_logic_vector(to_unsigned(multiplier, 4));
+             wait for CLOCK_PERIOD * 2;
+             -- assert (to_integer(unsigned(sReadByte)) = 31 - address)
+             --   report "wrong read value" severity error;
+         end loop;
       end loop;
+      sTestRunning <= false;
       wait;
    end process;
 

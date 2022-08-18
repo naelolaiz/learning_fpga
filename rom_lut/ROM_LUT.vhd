@@ -80,17 +80,18 @@ BEGIN
    BEGIN
       IF (clock'event AND clock = '1') THEN
          case secondOrFourthCuadrant is
-           when '1' => 
-             tableOfTablesIdx := 31 - unsigned(firstQuadrantTableIndex) / 16;
-           when '0' =>
-             tableOfTablesIdx := unsigned(firstQuadrantTableIndex) / 16;
+           when '1'    => 
+             tableOfTablesIdx := 31 - unsigned(firstQuadrantTableIndex);
+           when '0'    =>
+             tableOfTablesIdx := unsigned(firstQuadrantTableIndex);
+           when others => 
          end case;
-         --tableIdx := unsigned(read_angle_idx) mod 16;
          case thirdOrFourthCuadrant is
-            when '1' =>
+            when '1'    =>
                output <= std_logic_vector(to_signed(to_integer(signed(rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx))))) * (-1), ELEMENTS_BITS_COUNT+1)) ;
-            when '0' =>
+            when '0'    =>
                output <= "0" & rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx)));
+            when others =>
          end case;
       END IF;
    END PROCESS;
