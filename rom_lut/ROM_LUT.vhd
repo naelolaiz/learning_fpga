@@ -16,9 +16,9 @@ ENTITY single_clock_rom IS
    );
    PORT (
          clock: IN STD_LOGIC;
-         read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*16 - 1 ; -- we store hexadecimal numbers for a table for each index
-         --read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*4 ; -- we store hexadecimal numbers for a table for each index
-         output: OUT STD_LOGIC_VECTOR (ELEMENTS_BITS_COUNT-1 DOWNTO 0)
+         --read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*16 - 1 ; -- we store hexadecimal numbers for a table for each index
+         read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*4*16 - 1 ; -- we store hexadecimal numbers for a table for each index
+         output: OUT STD_LOGIC_VECTOR (ELEMENTS_BITS_COUNT DOWNTO 0) -- extra bit for sign. Currently 9 + sign
    );
 END single_clock_rom;
 
@@ -69,14 +69,26 @@ ARCHITECTURE rtl OF single_clock_rom IS
 
 BEGIN
    PROCESS (clock)
-     variable tableOfTablesIdx : natural := 0;
-     variable tableIdx         : natural := 0;
+     variable tableOfTablesIdx       : unsigned (4 downto 0) := (others => '0');
+     variable tableIdx               : unsigned (3 downto 0) := (others => '0');
+     alias    secondOrFourthCuadrant : std_logic is std_logic_vector(tableOfTablesIdx)(5); -- on HIGH the index should be inverted
+     alias    thirdOrFourthCuadrant  : std_logic is std_logic_vector(tableOfTablesIdx)(6); -- on HIGH the output should be negative
 
    BEGIN
       IF (clock'event AND clock = '1') THEN
-         tableOfTablesIdx := read_address / 16;
-         tableIdx := read_address mod 16;
-         output <= rom(tableOfTablesIdx)(tableIdx);
+         case secondOrFourthCuadrant is
+           when '1' => 
+             tableOfTablesIdx := 31 - (unsigned(std_logic_vector(read_address) and 31) / 16);
+           when '0' =>
+             tableOfTablesIdx := (read_address and 31) / 16;
+         end case;
+         tableIdx := (read_address and 31) mod 16;
+         case thirdOrFourthCuadrant is
+            when '1' =>
+               output <= rom(tableOfTablesIdx)(tableIdx);
+            when '0' =>
+               output <= "0" & rom(tableOfTablesIdx)(tableIdx);
+         end case;
       END IF;
    END PROCESS;
 END rtl;
