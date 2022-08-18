@@ -88,9 +88,9 @@ BEGIN
          end case;
          case thirdOrFourthCuadrant is
             when '1'    =>
-               output <= std_logic_vector(to_signed(to_integer(signed(rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx))))) * (-1), ELEMENTS_BITS_COUNT+1)) ;
+               output <= std_logic_vector(0-to_signed(to_integer(unsigned(rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx))))) , ELEMENTS_BITS_COUNT+1));
             when '0'    =>
-               output <= "0" & rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx)));
+               output <= "0" & rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx))); --(ELEMENTS_BITS_COUNT-1 downto 1);
             when others =>
          end case;
       END IF;
