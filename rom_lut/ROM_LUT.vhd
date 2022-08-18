@@ -15,9 +15,11 @@ ENTITY single_clock_rom IS
            ELEMENTS_BITS_COUNT : integer := 9
    );
    PORT (
-         clock: IN STD_LOGIC;
-         --read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*16 - 1 ; -- we store hexadecimal numbers for a table for each index
-         read_address: IN INTEGER RANGE 0 to ARRAY_SIZE*4*16 - 1 ; -- we store hexadecimal numbers for a table for each index
+         clock              : in std_logic;
+         read_angle_idx     : in std_logic_vector(6 downto 0); -- table of 32 elements, * 4 quadrants (0-127)
+         nibble_product_idx : in std_logic_vector(3 downto 0); -- multiplication table of hex number
+
+         --  INTEGER RANGE 0 to ARRAY_SIZE*4*16 - 1 ; -- we store hexadecimal numbers for a table for each index
          output: OUT STD_LOGIC_VECTOR (ELEMENTS_BITS_COUNT DOWNTO 0) -- extra bit for sign. Currently 9 + sign
    );
 END single_clock_rom;
@@ -69,25 +71,26 @@ ARCHITECTURE rtl OF single_clock_rom IS
 
 BEGIN
    PROCESS (clock)
-     variable tableOfTablesIdx       : unsigned (4 downto 0) := (others => '0');
-     variable tableIdx               : unsigned (3 downto 0) := (others => '0');
-     alias    secondOrFourthCuadrant : std_logic is std_logic_vector(tableOfTablesIdx)(5); -- on HIGH the index should be inverted
-     alias    thirdOrFourthCuadrant  : std_logic is std_logic_vector(tableOfTablesIdx)(6); -- on HIGH the output should be negative
+     variable tableOfTablesIdx        : unsigned (4 downto 0) := (others => '0');
+     --variable tableIdx                : unsigned (3 downto 0) := (others => '0');
+     alias    secondOrFourthCuadrant  : std_logic is read_angle_idx(5); -- on HIGH the index should be inverted
+     alias    thirdOrFourthCuadrant   : std_logic is read_angle_idx(6); -- on HIGH the output should be negative
+     alias    firstQuadrantTableIndex : std_logic_vector (4 downto 0) is read_angle_idx (4 downto 0);
 
    BEGIN
       IF (clock'event AND clock = '1') THEN
          case secondOrFourthCuadrant is
            when '1' => 
-             tableOfTablesIdx := 31 - (unsigned(std_logic_vector(read_address) and 31) / 16);
+             tableOfTablesIdx := 31 - unsigned(firstQuadrantTableIndex) / 16;
            when '0' =>
-             tableOfTablesIdx := (read_address and 31) / 16;
+             tableOfTablesIdx := unsigned(firstQuadrantTableIndex) / 16;
          end case;
-         tableIdx := (read_address and 31) mod 16;
+         --tableIdx := unsigned(read_angle_idx) mod 16;
          case thirdOrFourthCuadrant is
             when '1' =>
-               output <= rom(tableOfTablesIdx)(tableIdx);
+               output <= std_logic_vector(to_signed(to_integer(signed(rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx))))) * (-1), ELEMENTS_BITS_COUNT+1)) ;
             when '0' =>
-               output <= "0" & rom(tableOfTablesIdx)(tableIdx);
+               output <= "0" & rom(to_integer(unsigned(tableOfTablesIdx)))(to_integer(unsigned(nibble_product_idx)));
          end case;
       END IF;
    END PROCESS;
