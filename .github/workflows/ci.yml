@@ -70,6 +70,24 @@ jobs:
         ghdl -r serial2parallel_tb --assert-level=error --vcd=serial2parallel_tb.vcd
         python3 /tools/vcd2png.py serial2parallel_tb.vcd
         mv gtkwave_serial2parallel_tb.png /generated_images/
+
+    - name: test_simulator_writer
+      run: |
+        cd simulator_writer/test
+        ghdl -a --std=08 ../tl_simulator_writer.vhd
+        ghdl -a --std=08 tb_simulator_writer.vhd
+        ghdl -e --std=08 tb_simulator_writer
+        ghdl -r tb_simulator_writer --assert-level=error --vcd=tb_simulator_writer.vcd
+        python3 /tools/vcd2png.py tb_simulator_writer.vcd
+        mv gtkwave_tb_simulator_writer.png /generated_images/
+        #cd ..
+        #ghdl -a --std=08 ROM_LUT.vhd
+        #yosys -m ghdl -p 'ghdl --std=08 single_clock_rom; prep -top single_clock_rom; write_json -compat-int svg.json'
+        #netlistsvg svg.json -o /generated_images/single_clock_rom_diagram.svg
+        #ghdl -a --std=08 ROM_LUT.vhd
+        #ghdl -a --std=08 tl_rom_lut.vhd
+        #yosys -m ghdl -p 'ghdl --std=08 tl_rom_lut; prep -top tl_rom_lut; write_json -compat-int tl_rom_lut_svg.json'
+        #netlistsvg tl_rom_lut_svg.json -o /generated_images/tl_rom_lut_diagram.svg
         
     - name: test_ROM
       run: |
