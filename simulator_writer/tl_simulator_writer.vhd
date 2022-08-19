@@ -14,6 +14,8 @@ architecture logic of tl_simulator_writer is
   type tChar is array (0 to 4) of std_logic_vector (4 downto 0);
   signal sCurrentChar  : tChar := (others => (others => '0'));
   signal sCurrentBlank : boolean := false;
+--  signal sCurrentBlanks : array (0 to 4) of boolean := (others => false);
+ --outLines(4) <= inClock when sOutRow(0) = '1' and not sCurrentBlank else '0';
 
 begin
   clockProcess : process (inClock)
@@ -27,9 +29,9 @@ begin
   begin
      if rising_edge(inClock) then
         done <= false;
-        if vCounterForClocksForColumn = cClocksForColumn-1 then
+        if vCounterForClocksForColumn = cClocksForColumn-1 or sCurrentBlank then
            vCounterForClocksForColumn := 0;
-           if vCharHorIndex = cCharHorLength-1 then
+           if vCharHorIndex = cCharHorLength-1 or sCurrentBlank then
               vCharHorIndex := 0;
               if vCurrentCharIdx = myString'length then
                  vCurrentCharIdx := 1;
@@ -95,7 +97,11 @@ begin
 
         for i in 0 to 4 loop
 --           sOutRow(i) <= sCurrentChar(i)(vCharHorIndex);
-           sOutRow(i) <= sCurrentChar(i)(cCharHorLength-1 - vCharHorIndex);
+           if sCurrentBlank then
+             sOutRow(i) <= '0';
+           else
+              sOutRow(i) <= sCurrentChar(i)(cCharHorLength-1 - vCharHorIndex);
+           end if;
 --            case sCurrentChar(i)(vCharHorIndex) is
 --               when '1'    => sOutRow(i) <= inClock;
 --               when others => sOutRow(i) <= '0';
@@ -106,11 +112,11 @@ begin
 
 -- otherProcess : process ( sCurrentChar) 
 
- outLines(4) <= inClock when sOutRow(0) = '1' and not sCurrentBlank else '0';
- outLines(3) <= inClock when sOutRow(1) = '1' and not sCurrentBlank else '0';
- outLines(2) <= inClock when sOutRow(2) = '1' and not sCurrentBlank else '0';
- outLines(1) <= inClock when sOutRow(3) = '1' and not sCurrentBlank else '0';
- outLines(0) <= inClock when sOutRow(4) = '1' and not sCurrentBlank else '0';
+ outLines(4) <= inClock when sOutRow(0) = '1' else '0';
+ outLines(3) <= inClock when sOutRow(1) = '1' else '0';
+ outLines(2) <= inClock when sOutRow(2) = '1' else '0';
+ outLines(1) <= inClock when sOutRow(3) = '1' else '0';
+ outLines(0) <= inClock when sOutRow(4) = '1' else '0';
 --outLines <= sOutRow;
 
 
