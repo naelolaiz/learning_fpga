@@ -60,3 +60,8 @@ Project containing tests for learning FPGA/VHDL.
         - (+IFFT, +DSP algorithms) create an FX/DSP module
           - (+bluetooth/BLE driver) extend module with wireless audio
 - Learn Verilog (TODO)
+
+## more links
+ - https://projectf.io/tutorials/
+   - https://projectf.io/recommended-fpga-sites/
+   - https://projectf.io/howto/
