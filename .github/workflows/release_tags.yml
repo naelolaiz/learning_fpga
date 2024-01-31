@@ -1,0 +1,182 @@
+# This is a basic workflow to help you get started with Actions
+
+name: release_tags
+
+on:
+  push:
+    tags:
+      - '*'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+jobs:
+  ubuntu:
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [ '', mcode, llvm, gcc ]
+        version: [ 20.04, latest ]
+        #version: [ 18.04, 20.04, latest ] # TODO: put 18.04 back commenting screenshots generation on it
+    runs-on: ubuntu-${{ matrix.version }}
+    name: '🐧 Ubuntu ${{ matrix.version }} · ${{ matrix.backend }}'
+
+    container:
+      image: ghcr.io/naelolaiz/hdltools:release
+      credentials:
+         username: ${{ github.actor }}
+         password: ${{ secrets.github_token }}
+      volumes:
+        - src:/src
+        - generated_images:/generated_images
+        - generated_signals:/generated_signals
+        - generated_netlists:/generated_netlists
+
+    steps:
+    #- name: create output dir for images
+    #  run: mkdir generated_images
+      
+    - name: '🧰 Checkout'
+      uses: actions/checkout@v2
+
+    - name: test_blink_led
+      run: |
+        ghdl --version
+        cd blink_led/test
+        ghdl -a ../blink_led.vhd
+        ghdl -a tb_blink_led.vhd
+        ghdl -e tb_blink_led
+        ghdl -r tb_blink_led --assert-level=error --vcd=tb_blink_led.vcd
+        python3 /tools/vcd2png.py tb_blink_led.vcd
+        mv gtkwave_tb_blink_led.png /generated_images/
+
+        cd ..
+        ghdl -a --std=08 blink_led.vhd
+        yosys -m ghdl -p 'ghdl --std=08 blink_led; prep -top blink_led; write_json -compat-int svg.json'
+        netlistsvg svg.json -o /generated_images/blink_led_diagram.svg
+
+    - name: test_serial2parallel
+      run: |
+        echo "GHDL_PREFIX: ghdl_PREFIX"
+        echo "GHDL: ghdl"
+        echo "GHDL_LIBS: ghdl_LIBS"
+        ghdl --version
+        cd general_components/
+        ghdl -a Serial2Parallel.vhd
+        ghdl -a Serial2Parallel_tb.vhd
+        ghdl -e serial2parallel_tb
+        ghdl -r serial2parallel_tb --assert-level=error --vcd=serial2parallel_tb.vcd
+        python3 /tools/vcd2png.py serial2parallel_tb.vcd
+        mv gtkwave_serial2parallel_tb.png /generated_images/
+
+    - name: test_simulator_writer
+      run: |
+        cd simulator_writer/test
+        ghdl -a --std=08 ../tl_simulator_writer.vhd
+        ghdl -a --std=08 tb_simulator_writer.vhd
+        ghdl -e --std=08 tb_simulator_writer
+        ghdl -r tb_simulator_writer --assert-level=error --vcd=tb_simulator_writer.vcd
+        python3 /tools/vcd2png.py tb_simulator_writer.vcd
+        mv gtkwave_tb_simulator_writer.png /generated_images/
+        #cd ..
+        #ghdl -a --std=08 ROM_LUT.vhd
+        #yosys -m ghdl -p 'ghdl --std=08 single_clock_rom; prep -top single_clock_rom; write_json -compat-int svg.json'
+        #netlistsvg svg.json -o /generated_images/single_clock_rom_diagram.svg
+        #ghdl -a --std=08 ROM_LUT.vhd
+        #ghdl -a --std=08 tl_rom_lut.vhd
+        #yosys -m ghdl -p 'ghdl --std=08 tl_rom_lut; prep -top tl_rom_lut; write_json -compat-int tl_rom_lut_svg.json'
+        #netlistsvg tl_rom_lut_svg.json -o /generated_images/tl_rom_lut_diagram.svg
+        
+#    - name: test_ROM
+#      run: |
+#        cd rom_lut/test
+#        ghdl -a --std=08 ../ROM_LUT.vhd
+#        ghdl -a --std=08 ../tl_rom_lut.vhd
+#        ghdl -a --std=08 tb_rom_lut.vhd
+#        ghdl -e --std=08 tb_rom_lut
+#        cp ../MY_ROM.hex .
+#        ghdl -r tb_rom_lut --assert-level=error --vcd=tb_rom_lut.vcd
+#        python3 /tools/vcd2png.py tb_rom_lut.vcd
+#        mv gtkwave_tb_rom_lut.png /generated_images/
+#        cd ..
+#        ghdl -a --std=08 ROM_LUT.vhd
+#        yosys -m ghdl -p 'ghdl --std=08 single_clock_rom; prep -top single_clock_rom; write_json -compat-int svg.json'
+#        netlistsvg svg.json -o /generated_images/single_clock_rom_diagram.svg
+#        ghdl -a --std=08 ROM_LUT.vhd
+#        ghdl -a --std=08 tl_rom_lut.vhd
+#        yosys -m ghdl -p 'ghdl --std=08 tl_rom_lut; prep -top tl_rom_lut; write_json -compat-int tl_rom_lut_svg.json'
+#        netlistsvg tl_rom_lut_svg.json -o /generated_images/tl_rom_lut_diagram.svg
+        
+    - name: test_7segments_counter
+      run: |
+        echo "GHDL_PREFIX: ghdl_PREFIX"
+        echo "GHDL: ghdl"
+        echo "GHDL_LIBS: ghdl_LIBS"
+        ghdl --version
+        cd 7segments/counter/test
+        ghdl -a ../test.vhd
+        ghdl -a tb_test.vhd
+        ghdl -e tb_test
+        ghdl -r tb_test --assert-level=error --vcd=7segments_counter_tb.vcd
+        python3 /tools/vcd2png.py 7segments_counter_tb.vcd
+        mv gtkwave_7segments_counter_tb.png /generated_images/
+        cd ..
+        ghdl -a --std=08 test.vhd # TODO: rename it!
+        yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
+        netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
+        #/tools/vhd2svg.sh $(pwd)/test.vhd /generated_images/7_segments_counter_toplevel_diagram.svg
+    - name: test_7segments_counter
+      run: |
+        echo "GHDL_PREFIX: ghdl_PREFIX"
+        echo "GHDL: ghdl"
+        echo "GHDL_LIBS: ghdl_LIBS"
+        ghdl --version
+        cd unnamed_fpga_game/test
+        ghdl -a ../definitions.vhd
+        ghdl -a ../trigonometric.vhd
+        ghdl -a ../sprite.vhd
+        ghdl -a tb_trigonometric.vhd
+        ghdl -e tb_trigonometric
+        ghdl -r tb_trigonometric --assert-level=error --vcd=tb_trigonometric.vcd
+        python3 /tools/vcd2png.py tb_trigonometric.vcd
+        mv gtkwave_tb_trigonometric.png /generated_images/
+        #cd ..
+        #ghdl -a --std=08 test.vhd # TODO: rename it!
+        #yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
+        #netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
+    - name: find and publish all .vcd files
+      run: |
+        find . -name "*.vcd" -size -80M -exec cp {} /generated_signals/ \;
+        find . -name "*.svg.json" -exec cp {} /generated_netlists/ \;
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: screenshots  ${{ matrix.version }}·${{ matrix.backend }}
+        path: |
+          /generated_images
+          /generated_signals
+          /generated_netlists
+
+    - name: Archive Artifacts
+      run: |
+        zip -r screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip /generated_images /generated_signals /generated_netlists
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip
+        asset_name: screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip
+        asset_content_type: application/zip
