@@ -158,6 +158,7 @@ jobs:
 
     - name: Archive Artifacts
       run: |
+        apt-get install -y zip
         zip -r screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip /generated_images /generated_signals /generated_netlists
 
     - name: Create Release
