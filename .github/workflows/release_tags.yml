@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         backend: [ '', mcode, llvm, gcc ]
-        version: [ 20.04, latest ]
+        version: [ 22.04, latest ]
         #version: [ 18.04, 20.04, latest ] # TODO: put 18.04 back commenting screenshots generation on it
     runs-on: ubuntu-${{ matrix.version }}
     name: '🐧 Ubuntu ${{ matrix.version }} · ${{ matrix.backend }}'
@@ -36,7 +36,7 @@ jobs:
     #  run: mkdir generated_images
       
     - name: '🧰 Checkout'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: test_blink_led
       run: |
@@ -148,7 +148,7 @@ jobs:
         find . -name "*.vcd" -size -80M -exec cp {} /generated_signals/ \;
         find . -name "*.svg.json" -exec cp {} /generated_netlists/ \;
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: screenshots  ${{ matrix.version }}·${{ matrix.backend }}
         path: |
@@ -161,23 +161,11 @@ jobs:
         apt-get install -y zip
         zip -r screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip /generated_images /generated_signals /generated_netlists
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release and Upload Asset
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        name: Release ${{ github.ref }}
         draft: false
         prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip
-        asset_name: screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip
-        asset_content_type: application/zip
+        files: screenshots-${{ matrix.version }}-${{ matrix.backend }}.zip

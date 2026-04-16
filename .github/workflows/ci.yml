@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         backend: [ '', mcode, llvm, gcc ]
-        version: [ 20.04, latest ]
+        version: [ 22.04, latest ]
         #version: [ 18.04, 20.04, latest ] # TODO: put 18.04 back commenting screenshots generation on it
     runs-on: ubuntu-${{ matrix.version }}
     name: '🐧 Ubuntu ${{ matrix.version }} · ${{ matrix.backend }}'
@@ -39,7 +39,7 @@ jobs:
     #  run: mkdir generated_images
       
     - name: '🧰 Checkout'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: test_blink_led
       run: |
@@ -151,7 +151,7 @@ jobs:
         find . -name "*.vcd" -size -80M -exec cp {} /generated_signals/ \;
         find . -name "*.svg.json" -exec cp {} /generated_netlists/ \;
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: screenshots  ${{ matrix.version }}·${{ matrix.backend }}
         path: |
