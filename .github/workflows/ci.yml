@@ -1,160 +1,140 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
+    branches: [main]
   workflow_dispatch:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
 jobs:
-  ubuntu:
+  # ------------------------------------------------------------------
+  # discover - list every project Makefile so the build job fans out
+  # over it via matrix. Adding a project never means editing this file.
+  # ------------------------------------------------------------------
+  discover:
+    name: Discover projects
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.enumerate.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: enumerate
+        name: Enumerate projects
+        run: |
+          set -euo pipefail
+          # A "project" is any directory that holds a Makefile which
+          # includes mk/common.mk.
+          projects=$(grep -rl --include=Makefile 'mk/common\.mk' . \
+                     | grep -v '^\./Makefile$' \
+                     | xargs -n1 dirname \
+                     | sed 's|^\./||' \
+                     | sort -u \
+                     | jq -R . | jq -sc .)
+          echo "projects=${projects}" >> "$GITHUB_OUTPUT"
+          echo "Discovered: ${projects}"
+
+  # ------------------------------------------------------------------
+  # build - per-project simulate + diagram + screenshot. Runs inside
+  # the hdltools container so the toolchain is pinned by image tag.
+  # ------------------------------------------------------------------
+  build:
+    name: Build ${{ matrix.project }}
+    needs: discover
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        backend: [ '', mcode, llvm, gcc ]
-        version: [ 22.04, latest ]
-        #version: [ 18.04, 20.04, latest ] # TODO: put 18.04 back commenting screenshots generation on it
-    runs-on: ubuntu-${{ matrix.version }}
-    name: '🐧 Ubuntu ${{ matrix.version }} · ${{ matrix.backend }}'
-
+        project: ${{ fromJson(needs.discover.outputs.projects) }}
     container:
       image: ghcr.io/naelolaiz/hdltools:release
       credentials:
-         username: ${{ github.actor }}
-         password: ${{ secrets.github_token }}
-      volumes:
-        - src:/src
-        - generated_images:/generated_images
-        - generated_signals:/generated_signals
-        - generated_netlists:/generated_netlists
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-    #- name: create output dir for images
-    #  run: mkdir generated_images
-      
-    - name: '🧰 Checkout'
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: test_blink_led
-      run: |
-        ghdl --version
-        cd blink_led/test
-        ghdl -a ../blink_led.vhd
-        ghdl -a tb_blink_led.vhd
-        ghdl -e tb_blink_led
-        ghdl -r tb_blink_led --assert-level=error --vcd=tb_blink_led.vcd
-        python3 /tools/vcd2png.py tb_blink_led.vcd
-        mv gtkwave_tb_blink_led.png /generated_images/
+      # The container already ships ghdl, yosys, ghdl-yosys-plugin,
+      # netlistsvg, gtkwave and xvfb. We only need to install the
+      # Python deps required by scripts/vcd2png.py.
+      #
+      # Note: the hdltools image's default shell is POSIX sh (dash),
+      # not bash, so this block must avoid bash-only constructs like
+      # `set -o pipefail`. `sh -e` (the GitHub Actions default for
+      # containers) already gives us exit-on-error.
+      - name: Install Python deps
+        run: pip install --quiet --no-cache-dir -r scripts/requirements.txt
 
-        cd ..
-        ghdl -a --std=08 blink_led.vhd
-        yosys -m ghdl -p 'ghdl --std=08 blink_led; prep -top blink_led; write_json -compat-int svg.json'
-        netlistsvg svg.json -o /generated_images/blink_led_diagram.svg
+      - name: Tool versions
+        run: |
+          echo "::group::tool versions"
+          ghdl --version | head -n1
+          yosys -V 2>&1 | head -n1 || true
+          netlistsvg --help 2>&1 | head -n1 || true
+          gtkwave --version 2>&1 | head -n1 || true
+          python3 --version
+          echo "::endgroup::"
 
-    - name: test_serial2parallel
-      run: |
-        echo "GHDL_PREFIX: ghdl_PREFIX"
-        echo "GHDL: ghdl"
-        echo "GHDL_LIBS: ghdl_LIBS"
-        ghdl --version
-        cd general_components/
-        ghdl -a Serial2Parallel.vhd
-        ghdl -a Serial2Parallel_tb.vhd
-        ghdl -e serial2parallel_tb
-        ghdl -r serial2parallel_tb --assert-level=error --vcd=serial2parallel_tb.vcd
-        python3 /tools/vcd2png.py serial2parallel_tb.vcd
-        mv gtkwave_serial2parallel_tb.png /generated_images/
+      - name: Simulate
+        working-directory: ${{ matrix.project }}
+        run: make simulate
 
-    - name: test_simulator_writer
-      run: |
-        cd simulator_writer/test
-        ghdl -a --std=08 ../tl_simulator_writer.vhd
-        ghdl -a --std=08 tb_simulator_writer.vhd
-        ghdl -e --std=08 tb_simulator_writer
-        ghdl -r tb_simulator_writer --assert-level=error --vcd=tb_simulator_writer.vcd
-        python3 /tools/vcd2png.py tb_simulator_writer.vcd
-        mv gtkwave_tb_simulator_writer.png /generated_images/
-        #cd ..
-        #ghdl -a --std=08 ROM_LUT.vhd
-        #yosys -m ghdl -p 'ghdl --std=08 single_clock_rom; prep -top single_clock_rom; write_json -compat-int svg.json'
-        #netlistsvg svg.json -o /generated_images/single_clock_rom_diagram.svg
-        #ghdl -a --std=08 ROM_LUT.vhd
-        #ghdl -a --std=08 tl_rom_lut.vhd
-        #yosys -m ghdl -p 'ghdl --std=08 tl_rom_lut; prep -top tl_rom_lut; write_json -compat-int tl_rom_lut_svg.json'
-        #netlistsvg tl_rom_lut_svg.json -o /generated_images/tl_rom_lut_diagram.svg
-        
-#    - name: test_ROM
-#      run: |
-#        cd rom_lut/test
-#        ghdl -a --std=08 ../ROM_LUT.vhd
-#        ghdl -a --std=08 ../tl_rom_lut.vhd
-#        ghdl -a --std=08 tb_rom_lut.vhd
-#        ghdl -e --std=08 tb_rom_lut
-#        cp ../MY_ROM.hex .
-#        ghdl -r tb_rom_lut --assert-level=error --vcd=tb_rom_lut.vcd
-#        python3 /tools/vcd2png.py tb_rom_lut.vcd
-#        mv gtkwave_tb_rom_lut.png /generated_images/
-#        cd ..
-#        ghdl -a --std=08 ROM_LUT.vhd
-#        yosys -m ghdl -p 'ghdl --std=08 single_clock_rom; prep -top single_clock_rom; write_json -compat-int svg.json'
-#        netlistsvg svg.json -o /generated_images/single_clock_rom_diagram.svg
-#        ghdl -a --std=08 ROM_LUT.vhd
-#        ghdl -a --std=08 tl_rom_lut.vhd
-#        yosys -m ghdl -p 'ghdl --std=08 tl_rom_lut; prep -top tl_rom_lut; write_json -compat-int tl_rom_lut_svg.json'
-#        netlistsvg tl_rom_lut_svg.json -o /generated_images/tl_rom_lut_diagram.svg
-        
-    - name: test_7segments_counter
-      run: |
-        echo "GHDL_PREFIX: ghdl_PREFIX"
-        echo "GHDL: ghdl"
-        echo "GHDL_LIBS: ghdl_LIBS"
-        ghdl --version
-        cd 7segments/counter/test
-        ghdl -a ../test.vhd
-        ghdl -a tb_test.vhd
-        ghdl -e tb_test
-        ghdl -r tb_test --assert-level=error --vcd=7segments_counter_tb.vcd
-        python3 /tools/vcd2png.py 7segments_counter_tb.vcd
-        mv gtkwave_7segments_counter_tb.png /generated_images/
-        cd ..
-        ghdl -a --std=08 test.vhd # TODO: rename it!
-        yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
-        netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
-        #/tools/vhd2svg.sh $(pwd)/test.vhd /generated_images/7_segments_counter_toplevel_diagram.svg
-    - name: test_7segments_counter
-      run: |
-        echo "GHDL_PREFIX: ghdl_PREFIX"
-        echo "GHDL: ghdl"
-        echo "GHDL_LIBS: ghdl_LIBS"
-        ghdl --version
-        cd unnamed_fpga_game/test
-        ghdl -a ../definitions.vhd
-        ghdl -a ../trigonometric.vhd
-        ghdl -a ../sprite.vhd
-        ghdl -a tb_trigonometric.vhd
-        ghdl -e tb_trigonometric
-        ghdl -r tb_trigonometric --assert-level=error --vcd=tb_trigonometric.vcd
-        python3 /tools/vcd2png.py tb_trigonometric.vcd
-        mv gtkwave_tb_trigonometric.png /generated_images/
-        #cd ..
-        #ghdl -a --std=08 test.vhd # TODO: rename it!
-        #yosys -m ghdl -p 'ghdl --std=08 test; prep -top test; write_json -compat-int svg.json'
-        #netlistsvg svg.json -o /generated_images/7_segments_counter_toplevel_diagram.svg
-    - name: find and publish all .vcd files
-      run: |
-        find . -name "*.vcd" -size -80M -exec cp {} /generated_signals/ \;
-        find . -name "*.svg.json" -exec cp {} /generated_netlists/ \;
+      - name: Generate netlist diagram
+        working-directory: ${{ matrix.project }}
+        run: make diagram
 
-    - uses: actions/upload-artifact@v4
-      with:
-        name: screenshots  ${{ matrix.version }}·${{ matrix.backend }}
-        path: |
-          /generated_images
-          /generated_signals
-          /generated_netlists
+      # GTKWave needs an X server; xvfb-run wraps the make target.
+      # PyVirtualDisplay in vcd2png.py also spawns its own Xvfb, but
+      # wrapping here gives us a DISPLAY inside the container up front
+      # in case anything else ever wants it.
+      - name: Render waveform screenshot
+        working-directory: ${{ matrix.project }}
+        run: xvfb-run --auto-servernum make screenshot
+
+      # Normalise the artifact slash in the artifact name (GitHub
+      # artifacts reject '/'); 7segments/counter -> 7segments-counter.
+      - name: Normalise artifact name
+        id: artifact
+        run: |
+          echo "name=$(echo '${{ matrix.project }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact.outputs.name }}-artifacts
+          path: |
+            ${{ matrix.project }}/build/*.vcd
+            ${{ matrix.project }}/build/*.svg
+            ${{ matrix.project }}/build/*.json
+            ${{ matrix.project }}/build/*.png
+          if-no-files-found: error
+          retention-days: 30
+
+  # ------------------------------------------------------------------
+  # status - one job downstream checks can depend on.
+  # ------------------------------------------------------------------
+  status:
+    name: CI status
+    if: always()
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any required job failed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "build failed"
+            exit 1
+          fi
+          echo "CI ok"

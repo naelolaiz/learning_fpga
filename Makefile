@@ -1,14 +1,48 @@
-PROJECT_NAME := unnamed_fpga_game
+# ---------------------------------------------------------------------------
+# Top-level Makefile.
+#
+# Auto-discovers every subdirectory (at any depth) that contains a
+# Makefile including mk/common.mk, and forwards the standard targets to
+# each of them. Running `make` at the repo root therefore exercises every
+# project the same way CI does.
+#
+# A project is anywhere `make -C <dir>` would work. To register a new one,
+# drop a Makefile that `include`s ../(../..)?/mk/common.mk — that's it.
+# ---------------------------------------------------------------------------
 
-# The current testbench exercises the trigonometric module. `definitions`
-# and `sprite` are pulled in because they are dependencies of the full
-# design, even when the TB itself only instantiates `trigonometric`.
-TOP     := sprite
-TB_TOP  := tb_trigonometric
+# Find every Makefile under the tree that uses our shared rules. Marker:
+# a literal `mk/common.mk` include. grep -l prints filenames only.
+PROJECT_MAKEFILES := $(shell grep -rl --include=Makefile 'mk/common\.mk' . 2>/dev/null | \
+                            grep -v '^\./Makefile$$' | sort)
+PROJECTS := $(patsubst %/Makefile,%,$(PROJECT_MAKEFILES))
 
-SRC_FILES := definitions.vhd trigonometric.vhd sprite.vhd
-TB_FILES  := test/tb_trigonometric.vhd
+# Targets we forward to each project. Keep in sync with mk/common.mk.
+FORWARDED_TARGETS := all analyze elaborate simulate diagram screenshot clean
 
-VHDL_STANDARD := 08
+.PHONY: help list $(FORWARDED_TARGETS)
 
-include ../mk/common.mk
+help:
+	@echo "learning_fpga - top-level orchestration"
+	@echo ""
+	@echo "Discovered projects:"
+	@for p in $(PROJECTS); do echo "  - $$p"; done
+	@echo ""
+	@echo "Targets (run against every project):"
+	@echo "  all         simulate + diagram + screenshot"
+	@echo "  analyze     ghdl -a"
+	@echo "  elaborate   ghdl -e"
+	@echo "  simulate    ghdl -r (emits a VCD)"
+	@echo "  diagram     yosys + netlistsvg (emits an SVG)"
+	@echo "  screenshot  GTKWave headless (emits a PNG)"
+	@echo "  clean       remove every build/ directory"
+	@echo ""
+	@echo "Targeting a single project: make -C <project-dir> [target]"
+
+list:
+	@for p in $(PROJECTS); do echo $$p; done
+
+$(FORWARDED_TARGETS):
+	@set -e; for dir in $(PROJECTS); do \
+	    echo "==> $$dir: make $@"; \
+	    $(MAKE) -C $$dir $@; \
+	done
