@@ -1,0 +1,55 @@
+# --- Build outputs ---------------------------------------------------------
+build/
+work/
+work-obj*.cf
+*.cf
+*.o
+*.vcd
+*.ghw
+*.fst
+
+# Binaries GHDL may drop next to sources if someone forgets --workdir.
+**/tb_*
+!**/tb_*.vhd
+!**/tb_*.py
+**/*_tb
+!**/*_tb.vhd
+!**/*_tb.py
+
+# The curated screenshots in doc/ and per-project doc/ folders stay
+# versioned (they're referenced from the README). Only ignore the
+# auto-generated artifacts inside build/.
+# (already covered by `build/` above)
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Quartus intermediates (keep sources, ignore generated) ---------------
+db/
+incremental_db/
+output_files/
+simulation/
+*.qws
+*.rpt
+*.summary
+*.smsg
+*.pin
+*.jdi
+*.sof
+*.pof
+
+# --- Editors / OS ----------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
