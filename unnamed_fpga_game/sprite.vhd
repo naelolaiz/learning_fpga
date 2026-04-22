@@ -9,6 +9,7 @@ use work.trigonometric.all;
 entity sprite is
    generic (SCREEN_SIZE    : Size2D := (800,600);
             SPRITE_WIDTH   : integer := 7;
+            SPRITE_HEIGHT  : integer := 7;
             SCALE          : integer := 3;
             SPRITE_CONTENT : std_logic_vector(48 downto 0) := "1001001"
                                                             & "0101010"
@@ -21,6 +22,9 @@ entity sprite is
             INITIAL_ROTATION_SPEED           : RotationSpeed := ( 1, 0);
             INITIAL_POSITION         : Pos2D   := (0, 0);
             INITIAL_SPEED            : Speed2D := (0, 0, 0)
+            constant SPRITE_SIZE : Size2D := (SPRITE_WIDTH, SPRITE_HEIGHT);
+
+            -- constant SPRITE_SIZE : Size2D := (SPRITE_WIDTH, SPRITE_CONTENT'length / SPRITE_WIDTH);
             );
    port( inClock : in  std_logic;
          inEnabled : in boolean;
