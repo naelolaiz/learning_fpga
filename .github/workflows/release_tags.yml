@@ -63,10 +63,10 @@ jobs:
         cd general_components/
         ghdl -a Serial2Parallel.vhd
         ghdl -a Serial2Parallel_tb.vhd
-        ghdl -e serial2parallel_tb
-        ghdl -r serial2parallel_tb --assert-level=error --vcd=serial2parallel_tb.vcd
-        python3 /tools/vcd2png.py serial2parallel_tb.vcd
-        mv gtkwave_serial2parallel_tb.png /generated_images/
+        ghdl -e Serial2Parallel_tb
+        ghdl -r Serial2Parallel_tb --assert-level=error --vcd=Serial2Parallel_tb.vcd
+        python3 /tools/vcd2png.py Serial2Parallel_tb.vcd
+        mv gtkwave_Serial2Parallel_tb.png /generated_images/
 
     - name: test_simulator_writer
       run: |
