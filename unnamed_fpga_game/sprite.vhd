@@ -82,7 +82,7 @@ outShouldDraw <= sShouldDraw;
    end process;
 
    moveSprite : process (inClock, sShouldDraw, inColision)
-      variable counterForSpritePositionUpdate : integer range 0 to INITIAL_SPEED.update_period := 0;
+      variable counterForSpritePositionUpdate : integer := 0;
       variable nextPositionToTest : Pos2D := (0,0);
       variable collisionDetected : boolean := false;
    begin
@@ -124,13 +124,15 @@ outShouldDraw <= sShouldDraw;
   RefreshsSpriteContent : process (inClock)
     variable oneDimensionalPointer: integer := 0;
   begin
+    if rising_edge(inClock) then -- Added synchronous check
     -- TODO : assert proper height and width
-    for i in SPRITE_SIZE.height-1 downto 0 loop
-       oneDimensionalPointer := i*SPRITE_WIDTH;
-       for o in SPRITE_SIZE.width-1 downto 0 loop
-          sSpriteContent(i)(o) <= SPRITE_CONTENT(oneDimensionalPointer+o);
+       for i in SPRITE_SIZE.height-1 downto 0 loop
+          oneDimensionalPointer := i*SPRITE_WIDTH;
+          for o in SPRITE_SIZE.width-1 downto 0 loop
+             sSpriteContent(i)(o) <= SPRITE_CONTENT(oneDimensionalPointer+o);
+          end loop;
        end loop;
-    end loop;
+    end if;                                      
   end process;
 
   ProcessPosition : process(inClock,
