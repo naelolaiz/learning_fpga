@@ -10,13 +10,13 @@ entity sprite is
    generic (SCREEN_SIZE    : Size2D := (800,600);
             SPRITE_WIDTH   : integer := 7;
             SCALE          : integer := 3;
-            SPRITE_CONTENT : std_logic_vector := "1001001"
-                                               & "0101010"
-                                               & "0011100"
-                                               & "1111111"
-                                               & "0011100"
-                                               & "0101010"
-                                               & "1001001";
+            SPRITE_CONTENT : std_logic_vector(48 downto 0) := "1001001"
+                                                            & "0101010"
+                                                            & "0011100"
+                                                            & "1111111"
+                                                            & "0011100"
+                                                            & "0101010"
+                                                            & "1001001";
             INITIAL_ROTATION         : integer := 0; -- 0 to 31
             INITIAL_ROTATION_SPEED           : RotationSpeed := ( 1, 0);
             INITIAL_POSITION         : Pos2D   := (0, 0);
