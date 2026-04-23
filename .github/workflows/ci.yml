@@ -110,6 +110,12 @@ jobs:
         run: |
           echo "name=$(echo '${{ matrix.project }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
 
+      # Some projects opt out of `make diagram` (SKIP_DIAGRAM) when TOP
+      # isn't synthesisable by the yosys+ghdl-plugin combo. Their
+      # *.json/*.svg globs then match nothing, so we use `warn` instead
+      # of `error`; the simulate/diagram/screenshot steps above would
+      # have already failed the job if an artifact was missing for a
+      # non-opted-out reason.
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -119,7 +125,7 @@ jobs:
             ${{ matrix.project }}/build/*.svg
             ${{ matrix.project }}/build/*.json
             ${{ matrix.project }}/build/*.png
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
 
   # ------------------------------------------------------------------
