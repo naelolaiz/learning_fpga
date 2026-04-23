@@ -17,6 +17,9 @@
 #   ASSERT_LEVEL   GHDL --assert-level. Default: error.
 #   SIM_TIME       GHDL --stop-time. Default: empty (runs until testbench returns).
 #   EXTRA_GHDL     Extra flags passed to every ghdl invocation.
+#   SKIP_DIAGRAM   If non-empty, `make diagram` is a no-op. Use when TOP is a
+#                  package or otherwise can't be synthesised by yosys+ghdl.
+#   SKIP_SCREENSHOT If non-empty, `make screenshot` is a no-op.
 #
 # Artifact locations (all under build/ for trivial `make clean`):
 #
@@ -40,6 +43,8 @@ SYNTH_STD     ?= $(VHDL_STANDARD)
 ASSERT_LEVEL  ?= error
 SIM_TIME      ?=
 EXTRA_GHDL    ?=
+SKIP_DIAGRAM  ?=
+SKIP_SCREENSHOT ?=
 
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
@@ -93,6 +98,11 @@ analyze: | $(WORK_DIR)
 	$(GHDL) -a $(GHDL_SIM_FLAGS) $(SRC_FILES) $(TB_FILES)
 
 # ---- Elaborate -------------------------------------------------------------
+# GHDL drops the linked testbench binary (and, with llvm/gcc backends, a
+# stray `e~<tb>.o` alongside) into the project root. We don't try to
+# redirect it with `-o`: that breaks `ghdl -r`, which hunts for the
+# binary under its default lowercased name. The `clean` rule sweeps
+# those droppings, and .gitignore keeps them out of the tree.
 elaborate: analyze
 	$(GHDL) -e $(GHDL_SIM_FLAGS) $(TB_TOP)
 
@@ -105,16 +115,25 @@ $(VCD_FILE): elaborate | $(BUILD_DIR)
 # ---- Waveform screenshot ---------------------------------------------------
 # Drives a headless GTKWave via the Python helper. The helper is part of
 # this repo so no container assumption is baked in.
+ifneq ($(strip $(SKIP_SCREENSHOT)),)
+screenshot:
+	@echo "[$(PROJECT_NAME)] screenshot: skipped (SKIP_SCREENSHOT set)"
+else
 screenshot: $(WAVEFORM_PNG)
 
 $(WAVEFORM_PNG): $(VCD_FILE)
 	$(PYTHON) $(VCD2PNG) --input $< --output $@
+endif
 
 # ---- Netlist diagram -------------------------------------------------------
 # yosys+ghdl-yosys-plugin synthesises TOP into a generic netlist; netlistsvg
 # renders it. Synthesis has its own std flag because a few of the projects
 # rely on VHDL-93 for sim but synthesise cleanly only under 2008 (or vice
 # versa); SYNTH_STD lets each project say what it needs.
+ifneq ($(strip $(SKIP_DIAGRAM)),)
+diagram:
+	@echo "[$(PROJECT_NAME)] diagram: skipped (SKIP_DIAGRAM set)"
+else
 diagram: $(DIAGRAM_SVG)
 
 $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
@@ -125,8 +144,23 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
+endif
 
 # ---- Housekeeping ----------------------------------------------------------
+# GHDL's llvm/gcc backends leave droppings next to the sources: work-obj*.cf
+# (library index), e~<tb>.o (elab object) and the linked <tb> binary
+# itself. `--workdir` doesn't reroute the binary, only the intermediates.
+# We use `-f` guards around the named files so the rule is safe even
+# when $(TOP)/$(TB_TOP) collide with directory names (e.g. `test/`).
 clean:
 	@rm -rf $(BUILD_DIR)
-	@rm -f *.cf *.o $(TB_TOP) $(TOP) work-obj*.cf
+	@find . -maxdepth 1 -type f \( \
+	    -name '*.cf' -o \
+	    -name '*.o'  -o \
+	    -name 'e~*'  -o \
+	    -name 'work-obj*.cf' \
+	  \) -delete
+	@find . -maxdepth 1 -type f \( \
+	    -iname '$(TB_TOP)' -o \
+	    -iname '$(TOP)' \
+	  \) -delete 2>/dev/null || true

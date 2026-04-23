@@ -1,5 +1,9 @@
 # learning_fpga
-Project containing tests for learning FPGA/VHDL. 
+
+[![CI](https://github.com/naelolaiz/learning_fpga/actions/workflows/ci.yml/badge.svg)](https://github.com/naelolaiz/learning_fpga/actions/workflows/ci.yml)
+
+Project containing tests for learning FPGA/VHDL.
+
 ## Hardware
 ![used board](doc/board.jpg?raw=true)
  * FPGA chip: EP4CE6E22C8N. ([datasheet in mouser](https://www.mouser.es/datasheet/2/612/cyiv-51001-1299459.pdf))
@@ -41,14 +45,13 @@ Project containing tests for learning FPGA/VHDL.
         - cleanup
         - simplify code to remove redundant timers
  - [x] create a CI github action to compile a vhdl file with ghdl : https://github.com/naelolaiz/learning_fpga/blob/main/.github/workflows/ci.yml
-   - TODO: make other vhdl files compatible. At least " Clock" (they don't currently compile because of missing configurations and probably different standards used?)
- - [x] create a CI github infrastructure allowing:
-   - [x] automatically run a simulation, and generate a .png file with the simulation signals view in gtkwave
-   - [x] automatically create .svg diagram files for the selected .vhd files
-   - all done in https://github.com/naelolaiz/hdltools and https://github.com/naelolaiz/fpga_tutorial. 
-     - [x] TODO: merge here! DONE!
-     - TODO: clean up
-   
+   - TODO: make other vhdl files compatible (at least the Clock — today it doesn't compile because of missing configurations and probably a different VHDL standard).
+ - [x] create a CI github infrastructure that
+   - [x] runs every project's simulation and renders a GTKWave PNG of the waveform
+   - [x] renders netlist SVG diagrams for each top-level entity via yosys + ghdl-yosys-plugin + netlistsvg
+   - [x] auto-discovers new projects, no workflow edit needed (see [CONTRIBUTING.md](CONTRIBUTING.md))
+   - machinery merged in from https://github.com/naelolaiz/hdltools and https://github.com/naelolaiz/fpga_tutorial
+
   - TODO:
     - create a simple game with the buttons and the 7 segments display (snake / space invaders)
       - learn how to generate random numbers with the FPGA
@@ -60,6 +63,60 @@ Project containing tests for learning FPGA/VHDL.
         - (+IFFT, +DSP algorithms) create an FX/DSP module
           - (+bluetooth/BLE driver) extend module with wireless audio
 - Learn Verilog (TODO)
+
+## Build & CI
+
+Every VHDL project in this repo is built by the same small Makefile
+machinery. One `mk/common.mk` holds every rule (analyze / elaborate /
+simulate / diagram / screenshot / clean); each project's Makefile just
+declares *what the project is* (`TOP`, `TB_TOP`, `SRC_FILES`, `TB_FILES`).
+CI auto-discovers projects — adding a new one is two files and zero
+workflow changes. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Running locally
+
+```bash
+# Everything, same commands as CI
+make                            # all projects, all targets
+make -C blink_led simulate      # one project, one stage
+make list                       # what's discovered
+make clean                      # nuke every build/
+```
+
+Or through the same container CI uses (includes GHDL, yosys+ghdl-plugin,
+netlistsvg, GTKWave, Xvfb):
+
+```bash
+docker run --rm -it -v "$PWD":/work -w /work \
+    ghcr.io/naelolaiz/hdltools:release \
+    make
+```
+
+Podman works the same way — swap `docker` for `podman`.
+
+### What CI produces, per project
+
+| Artifact                  | Tool chain                                    |
+| ------------------------- | --------------------------------------------- |
+| `build/<tb>.vcd`          | GHDL simulate                                 |
+| `build/<top>.svg`         | yosys + ghdl-yosys-plugin → netlistsvg        |
+| `build/<tb>.png`          | GHDL → VCD → headless GTKWave (Xvfb)          |
+
+Each matrix job uploads them as `<project>-artifacts`.
+
+### Currently built in CI
+
+- `blink_led`
+- `general_components` (Serial2Parallel)
+- `simulator_writer`
+- `7segments/counter`
+- `unnamed_fpga_game` (trigonometric testbench; `SKIP_DIAGRAM` set — see
+  project Makefile for the reason)
+
+Projects pending adoption (they have VHDL sources but no CI hookup yet —
+dropping a `Makefile` in each is all it takes): `7segments/text`,
+`7segments/clock`, `7segments/random_generator`, `i2s_test_1`, `rom_lut`,
+`uda1380`, `vga`.
 
 ## more links
  - https://projectf.io/tutorials/
