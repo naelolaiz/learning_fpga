@@ -8,13 +8,18 @@ work-obj*.cf
 *.ghw
 *.fst
 
-# Binaries GHDL may drop next to sources if someone forgets --workdir.
+# Binaries GHDL drops next to sources when invoked with llvm/gcc backends.
+# ghdl -e produces <tb_top> (binary) and e~<tb_top>.o alongside sources;
+# --workdir only reroutes the intermediate .o files, not the linked
+# binary itself.
 **/tb_*
 !**/tb_*.vhd
 !**/tb_*.py
 **/*_tb
 !**/*_tb.vhd
 !**/*_tb.py
+**/e~*.o
+**/e~*
 
 # The curated screenshots in doc/ and per-project doc/ folders stay
 # versioned (they're referenced from the README). Only ignore the
