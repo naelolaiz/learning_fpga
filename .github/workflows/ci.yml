@@ -128,19 +128,220 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      # Write the per-project step summary using raw.githubusercontent.com
+      # URLs pointing at the `ci-gallery` branch. The `gallery` job (below)
+      # commits the generated .svg/.png files to that branch at the URL
+      # paths referenced here; by the time anyone views the run summary
+      # page, those URLs resolve and GitHub renders the images inline.
+      #
+      # Data URIs were tried first and silently stripped by GitHub's
+      # markdown sanitizer, so we rely on real URLs instead.
+      - name: Build summary
+        if: always()
+        working-directory: ${{ matrix.project }}
+        run: |
+          summary="$GITHUB_STEP_SUMMARY"
+          base="https://raw.githubusercontent.com/${{ github.repository }}/ci-gallery/run-${{ github.run_id }}/${{ steps.artifact.outputs.name }}"
+          echo "## ${{ matrix.project }}" >> "$summary"
+          echo "" >> "$summary"
+          echo "### Netlist diagram" >> "$summary"
+          if ls build/*.svg >/dev/null 2>&1; then
+            for f in build/*.svg; do
+              name=$(basename "$f")
+              echo "" >> "$summary"
+              echo "**${name}**" >> "$summary"
+              echo "" >> "$summary"
+              echo "![${name}](${base}/${name})" >> "$summary"
+            done
+          else
+            echo "" >> "$summary"
+            echo "_No netlist diagram produced (SKIP_DIAGRAM or synth failure)._" >> "$summary"
+          fi
+          echo "" >> "$summary"
+          echo "### Waveform" >> "$summary"
+          if ls build/*.png >/dev/null 2>&1; then
+            for f in build/*.png; do
+              name=$(basename "$f")
+              echo "" >> "$summary"
+              echo "**${name}**" >> "$summary"
+              echo "" >> "$summary"
+              echo "![${name}](${base}/${name})" >> "$summary"
+            done
+          else
+            echo "" >> "$summary"
+            echo "_No waveform screenshot produced._" >> "$summary"
+          fi
+
+  # ------------------------------------------------------------------
+  # gallery - collects every build's .svg / .png into the `ci-gallery`
+  # orphan branch so the step-summary URLs above (and any PR comment)
+  # resolve to real, inline-renderable raw.githubusercontent.com links.
+  # ------------------------------------------------------------------
+  gallery:
+    name: Publish gallery
+    needs: [build]
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Stage gallery content
+        id: stage
+        run: |
+          set -euo pipefail
+          stage=/tmp/stage
+          mkdir -p "$stage/run-${GITHUB_RUN_ID}"
+          found=0
+          for art in artifacts/*-artifacts; do
+            [ -d "$art" ] || continue
+            proj=$(basename "$art" | sed 's/-artifacts$//')
+            dest="$stage/run-${GITHUB_RUN_ID}/$proj"
+            mkdir -p "$dest"
+            # Copy only the visual outputs; skip the huge VCDs.
+            copied=0
+            for f in "$art"/*.svg "$art"/*.png; do
+              [ -f "$f" ] || continue
+              cp "$f" "$dest/"
+              copied=$((copied+1))
+            done
+            if [ "$copied" -eq 0 ]; then
+              rmdir "$dest"
+            else
+              found=$((found+copied))
+            fi
+          done
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+          echo "stage=$stage" >> "$GITHUB_OUTPUT"
+          ls -R "$stage"
+
+      - name: Commit to ci-gallery branch
+        if: steps.stage.outputs.found != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          repo_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          work=/tmp/gallery
+          if git ls-remote --exit-code "$repo_url" refs/heads/ci-gallery >/dev/null 2>&1; then
+            git clone --branch ci-gallery --depth 1 "$repo_url" "$work"
+          else
+            mkdir -p "$work"
+            cd "$work"
+            git init -q -b ci-gallery
+            git remote add origin "$repo_url"
+            printf '# CI gallery\n\nAuto-generated per-run artifacts from the CI workflow.\n' > README.md
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                add README.md
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                commit -q -m 'init ci-gallery'
+            cd -
+          fi
+
+          cp -r "${{ steps.stage.outputs.stage }}/run-${GITHUB_RUN_ID}" "$work/"
+
+          # On main pushes, refresh the `latest/` pointer so the README
+          # can link to always-current diagrams.
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            rm -rf "$work/latest"
+            cp -r "$work/run-${GITHUB_RUN_ID}" "$work/latest"
+          fi
+
+          cd "$work"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -q -m "gallery: run ${GITHUB_RUN_ID}"
+            git push origin ci-gallery
+          fi
+
+      - name: Build PR comment body
+        if: github.event_name == 'pull_request' && steps.stage.outputs.found != '0'
+        id: comment_body
+        run: |
+          set -euo pipefail
+          out=/tmp/pr_comment.md
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/ci-gallery/run-${GITHUB_RUN_ID}"
+          {
+            echo "<!-- ci-gallery-comment -->"
+            echo "### CI gallery — run ${GITHUB_RUN_ID}"
+            echo ""
+            for d in "${{ steps.stage.outputs.stage }}/run-${GITHUB_RUN_ID}"/*/; do
+              [ -d "$d" ] || continue
+              proj=$(basename "$d")
+              echo "#### \`${proj}\`"
+              echo ""
+              for f in "$d"/*.svg; do
+                [ -f "$f" ] || continue
+                name=$(basename "$f")
+                echo "**${name}**"
+                echo ""
+                echo "![${name}](${base}/${proj}/${name})"
+                echo ""
+              done
+              for f in "$d"/*.png; do
+                [ -f "$f" ] || continue
+                name=$(basename "$f")
+                echo "**${name}**"
+                echo ""
+                echo "![${name}](${base}/${proj}/${name})"
+                echo ""
+              done
+            done
+          } > "$out"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Upsert PR comment
+        if: github.event_name == 'pull_request' && steps.stage.outputs.found != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('${{ steps.comment_body.outputs.path }}', 'utf8');
+            const marker = '<!-- ci-gallery-comment -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+            }
+
   # ------------------------------------------------------------------
   # status - one job downstream checks can depend on.
   # ------------------------------------------------------------------
   status:
     name: CI status
     if: always()
-    needs: [build]
+    needs: [build, gallery]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if any required job failed
         run: |
           if [ "${{ needs.build.result }}" != "success" ]; then
             echo "build failed"
+            exit 1
+          fi
+          if [ "${{ needs.gallery.result }}" != "success" ]; then
+            echo "gallery failed"
             exit 1
           fi
           echo "CI ok"
