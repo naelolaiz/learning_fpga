@@ -128,38 +128,48 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      # Embed each generated .svg and .png into the job's step summary
-      # as a base64 data URI so the build page renders them inline.
-      # GitHub caps $GITHUB_STEP_SUMMARY at 1 MiB per step; diagrams and
-      # waveform screenshots for these projects stay well under that.
-      # `if: always()` keeps the summary visible even if a later step
-      # failed, so partial output is still surfaced.
-      - name: Build summary
+      # Embed each generated .svg and .png into the job summary as a
+      # base64 data URI so the build job page renders them inline.
+      # Split into separate steps per file type, and avoid raw HTML
+      # (no <details>) — both the workflow-run summary view and the
+      # individual job page render these, but the job page's renderer
+      # is stricter and can fail silently on mixed HTML/markdown with
+      # very long single-line image URIs.
+
+      - name: Summary header
+        if: always()
+        run: |
+          echo "## ${{ matrix.project }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Summary - netlist diagram
         if: always()
         working-directory: ${{ matrix.project }}
         run: |
           summary="$GITHUB_STEP_SUMMARY"
-          echo "## ${{ matrix.project }}" >> "$summary"
+          echo "" >> "$summary"
+          echo "### Netlist diagram" >> "$summary"
           if ls build/*.svg >/dev/null 2>&1; then
-            echo "" >> "$summary"
-            echo "### Netlist diagram" >> "$summary"
             for f in build/*.svg; do
               name=$(basename "$f")
               b64=$(base64 "$f" | tr -d '\n')
               echo "" >> "$summary"
-              echo "<details><summary>${name}</summary>" >> "$summary"
+              echo "**${name}**" >> "$summary"
               echo "" >> "$summary"
               echo "![${name}](data:image/svg+xml;base64,${b64})" >> "$summary"
-              echo "" >> "$summary"
-              echo "</details>" >> "$summary"
             done
           else
             echo "" >> "$summary"
             echo "_No netlist diagram produced (SKIP_DIAGRAM or synth failure)._" >> "$summary"
           fi
+
+      - name: Summary - waveform screenshot
+        if: always()
+        working-directory: ${{ matrix.project }}
+        run: |
+          summary="$GITHUB_STEP_SUMMARY"
+          echo "" >> "$summary"
+          echo "### Waveform" >> "$summary"
           if ls build/*.png >/dev/null 2>&1; then
-            echo "" >> "$summary"
-            echo "### Waveform" >> "$summary"
             for f in build/*.png; do
               name=$(basename "$f")
               b64=$(base64 "$f" | tr -d '\n')
