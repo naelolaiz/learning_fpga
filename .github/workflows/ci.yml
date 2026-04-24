@@ -281,21 +281,29 @@ jobs:
             git push origin ci-gallery
           fi
 
-      - name: Build PR comment body
-        if: github.event_name == 'pull_request' && steps.stage.outputs.found != '0'
-        id: comment_body
+      # The consolidated gallery body is useful in two places:
+      #   1. The Actions run-summary page (so visitors don't have to click
+      #      into every per-project job to see its outputs).
+      #   2. The PR comment (on pull_request events).
+      # Build it once, reuse the file in both downstream steps.
+      - name: Build consolidated gallery body
+        if: steps.stage.outputs.found != '0'
+        id: gallery_body
         run: |
           set -euo pipefail
-          out=/tmp/pr_comment.md
+          out=/tmp/gallery_body.md
           base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/ci-gallery/run-${GITHUB_RUN_ID}"
           {
             echo "<!-- ci-gallery-comment -->"
-            echo "### CI gallery — run ${GITHUB_RUN_ID}"
+            echo "### CI gallery — run \`${GITHUB_RUN_ID}\`"
+            echo ""
+            echo "Netlist diagrams and simulation waveforms for every project in this run."
             echo ""
             for d in "${{ steps.stage.outputs.stage }}/run-${GITHUB_RUN_ID}"/*/; do
               [ -d "$d" ] || continue
               proj=$(basename "$d")
-              echo "#### \`${proj}\`"
+              echo "<details open>"
+              echo "<summary><code>${proj}</code></summary>"
               echo ""
               for f in "$d"/*.svg; do
                 [ -f "$f" ] || continue
@@ -313,9 +321,15 @@ jobs:
                 echo "![${name}](${base}/${proj}/${name})"
                 echo ""
               done
+              echo "</details>"
+              echo ""
             done
           } > "$out"
           echo "path=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Write gallery to run summary
+        if: steps.stage.outputs.found != '0'
+        run: cat "${{ steps.gallery_body.outputs.path }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upsert PR comment
         if: github.event_name == 'pull_request' && steps.stage.outputs.found != '0'
@@ -323,7 +337,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const body = fs.readFileSync('${{ steps.comment_body.outputs.path }}', 'utf8');
+            const body = fs.readFileSync('${{ steps.gallery_body.outputs.path }}', 'utf8');
             const marker = '<!-- ci-gallery-comment -->';
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
