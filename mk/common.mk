@@ -70,6 +70,18 @@ SIM_TIME      ?=
 EXTRA_GHDL    ?=
 SKIP_DIAGRAM  ?=
 SKIP_SCREENSHOT ?=
+# Per-TB opt-in to FST dump format (GHDL --fst) instead of VCD.
+# FST is ~10-100x smaller; use for long-window testbenches where the
+# VCD would be many hundreds of MB. Note: GTKWave on some builds
+# won't render an FST-sourced PNG reliably — in practice this flag
+# is most useful when paired with NO_PNG_TBS (see below).
+FST_TBS       ?=
+# Per-TB opt-out of the `screenshot` step. Use when a testbench's
+# contribution is its assertions, not its waveform — e.g. a
+# long-window TB whose waveform would be sub-pixel-per-clock-edge
+# anyway. The TB still simulates and its assertions still guard CI,
+# it just doesn't produce a PNG.
+NO_PNG_TBS    ?=
 
 V_SRC_FILES   ?=
 V_TB_FILES    ?=
@@ -79,20 +91,28 @@ V_DEFINES     ?=
 V_INCDIRS     ?=
 SKIP_V_DIAGRAM ?=
 SKIP_V_SCREENSHOT ?=
+V_NO_PNG_TBS  ?=
 
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
 WORK_DIR      := $(BUILD_DIR)/work
+# Waveform path for a given testbench. Defaults to VCD; switches to FST
+# when the TB is listed in FST_TBS (VHDL) or V_FST_TBS (Verilog).
+# Used via $(call tb_wave,tb_name) / $(call v_tb_wave,tb_name).
+tb_wave   = $(BUILD_DIR)/$(1)$(if $(filter $(1),$(FST_TBS)),.fst,.vcd)
+v_tb_wave = $(BUILD_DIR)/$(1)_v$(if $(filter $(1),$(V_FST_TBS)),.fst,.vcd)
+
 # Per-TB artifact lists. The netlist is still singular (it's the design
 # top-level, not a testbench), but simulation/screenshot fan out over
-# $(TB_TOPS) / $(V_TB_TOPS).
-VCD_FILES     := $(foreach tb,$(TB_TOPS),$(BUILD_DIR)/$(tb).vcd)
-WAVEFORM_PNGS := $(foreach tb,$(TB_TOPS),$(BUILD_DIR)/$(tb).png)
+# $(TB_TOPS) / $(V_TB_TOPS). TBs in NO_PNG_TBS contribute to simulate
+# (their assertions run) but are excluded from the screenshot output.
+VCD_FILES     := $(foreach tb,$(TB_TOPS),$(call tb_wave,$(tb)))
+WAVEFORM_PNGS := $(foreach tb,$(filter-out $(NO_PNG_TBS),$(TB_TOPS)),$(BUILD_DIR)/$(tb).png)
 NETLIST_JSON  := $(BUILD_DIR)/$(TOP).json
 DIAGRAM_SVG   := $(BUILD_DIR)/$(TOP).svg
 
-V_VCD_FILES     := $(foreach tb,$(V_TB_TOPS),$(BUILD_DIR)/$(tb)_v.vcd)
-V_WAVEFORM_PNGS := $(foreach tb,$(V_TB_TOPS),$(BUILD_DIR)/$(tb)_v.png)
+V_VCD_FILES     := $(foreach tb,$(V_TB_TOPS),$(call v_tb_wave,$(tb)))
+V_WAVEFORM_PNGS := $(foreach tb,$(filter-out $(V_NO_PNG_TBS),$(V_TB_TOPS)),$(BUILD_DIR)/$(tb)_v.png)
 V_NETLIST_JSON  := $(BUILD_DIR)/$(V_TOP)_v.json
 V_DIAGRAM_SVG   := $(BUILD_DIR)/$(V_TOP)_v.svg
 
@@ -179,23 +199,33 @@ $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_ELAB_RULE,$(tb))))
 elaborate: $(foreach tb,$(TB_TOPS),elaborate-$(tb))
 
 # ---- Simulate (VHDL) -------------------------------------------------------
-# One VCD per TB. Each simulate depends on its own elaboration.
+# One waveform file per TB. Dumps VCD by default, FST when the TB is
+# listed in FST_TBS (GHDL handles both via --vcd= / --fst=).
 define GHDL_SIM_RULE
-$$(BUILD_DIR)/$(1).vcd: elaborate-$(1) | $$(BUILD_DIR)
-	$$(GHDL) -r $$(GHDL_SIM_FLAGS) $(1) --assert-level=$$(ASSERT_LEVEL) --vcd=$$@ $$(SIM_STOPTIME)
+$$(call tb_wave,$(1)): elaborate-$(1) | $$(BUILD_DIR)
+	$$(GHDL) -r $$(GHDL_SIM_FLAGS) $(1) --assert-level=$$(ASSERT_LEVEL) \
+	    $$(if $$(filter $(1),$$(FST_TBS)),--fst=$$@,--vcd=$$@) $$(SIM_STOPTIME)
 endef
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_SIM_RULE,$(tb))))
 
 simulate: $(VCD_FILES)
 
 # ---- Waveform screenshot (VHDL) -------------------------------------------
+# GTKWave (driven by scripts/vcd2png.py) reads both VCD and FST, so the
+# PNG rule just points at whichever format the simulate step produced.
 ifneq ($(strip $(SKIP_SCREENSHOT)),)
 screenshot:
 	@echo "[$(PROJECT_NAME)] screenshot: skipped (SKIP_SCREENSHOT set)"
 else
+# Optional per-TB zoom override: a project Makefile may set
+#   ZOOM_RANGE_<tb_name> := FROM TO
+# (integers in the dump's native time units) to force an explicit
+# zoom when the default "Zoom Full" is unreliable — e.g. for an FST
+# dump that GTKWave reads as 0..3 fs.
 define GHDL_PNG_RULE
-$$(BUILD_DIR)/$(1).png: $$(BUILD_DIR)/$(1).vcd
-	$$(PYTHON) $$(VCD2PNG) --input $$< --output $$@
+$$(BUILD_DIR)/$(1).png: $$(call tb_wave,$(1))
+	$$(PYTHON) $$(VCD2PNG) --input $$< --output $$@ \
+	    $$(if $$(ZOOM_RANGE_$(1)),--zoom-range $$(ZOOM_RANGE_$(1)))
 endef
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_PNG_RULE,$(tb))))
 
@@ -227,7 +257,9 @@ ifneq ($(strip $(V_SRC_FILES)),)
 # ---- Simulate (Verilog) ---------------------------------------------------
 # One VVP binary, one VCD per testbench. The iverilog invocation per TB
 # supplies its own -DVCD_OUT so each `$dumpfile(`VCD_OUT)` lands in its
-# own build/<tb>_v.vcd file.
+# own build/<tb>_v.vcd file. For TBs listed in V_FST_TBS, the VCD is
+# then post-converted to FST via `vcd2fst` (the iverilog $dumpfile API
+# doesn't natively emit FST, so we pipe through the standalone tool).
 define IVERILOG_RULE
 $$(BUILD_DIR)/$(1)_v.vvp: $$(V_SRC_FILES) $$(V_TB_FILES) | $$(BUILD_DIR)
 	$$(IVERILOG) -g2012 \
@@ -247,6 +279,13 @@ $$(BUILD_DIR)/$(1)_v.vcd: $$(BUILD_DIR)/$(1)_v.vvp
 	    echo "       (testbench should call \$$$$dumpfile(\`VCD_OUT))" >&2; \
 	    exit 1; \
 	fi
+
+# Optional FST post-conversion. Only emitted when $(1) is in V_FST_TBS;
+# otherwise this rule simply doesn't exist for this TB.
+ifneq (,$(filter $(1),$(V_FST_TBS)))
+$$(BUILD_DIR)/$(1)_v.fst: $$(BUILD_DIR)/$(1)_v.vcd
+	vcd2fst $$< $$@
+endif
 endef
 $(foreach tb,$(V_TB_TOPS),$(eval $(call IVERILOG_RULE,$(tb))))
 
@@ -257,9 +296,11 @@ ifneq ($(strip $(SKIP_V_SCREENSHOT)),)
 screenshot_v:
 	@echo "[$(PROJECT_NAME)] screenshot_v: skipped (SKIP_V_SCREENSHOT set)"
 else
+# Optional per-TB zoom override, Verilog side: V_ZOOM_RANGE_<tb>.
 define VERILOG_PNG_RULE
-$$(BUILD_DIR)/$(1)_v.png: $$(BUILD_DIR)/$(1)_v.vcd
-	$$(PYTHON) $$(VCD2PNG) --input $$< --output $$@
+$$(BUILD_DIR)/$(1)_v.png: $$(call v_tb_wave,$(1))
+	$$(PYTHON) $$(VCD2PNG) --input $$< --output $$@ \
+	    $$(if $$(V_ZOOM_RANGE_$(1)),--zoom-range $$(V_ZOOM_RANGE_$(1)))
 endef
 $(foreach tb,$(V_TB_TOPS),$(eval $(call VERILOG_PNG_RULE,$(tb))))
 

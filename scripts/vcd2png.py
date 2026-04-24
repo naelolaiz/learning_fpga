@@ -26,29 +26,41 @@ from pyvirtualdisplay.smartdisplay import DisplayTimeoutError, SmartDisplay
 
 # ---- Constants -----------------------------------------------------------
 
-#: Tcl the script injects into GTKWave: add every signal it can find and
-#: zoom out to the full simulation window. Raw-string so the backslash
-#: inside Tcl's `split` survives untouched.
-_GTKWAVE_TCL = r"""
+#: Tcl injected into GTKWave. Adds every signal found in the dump,
+#: then applies a zoom policy (see `--zoom` / `--zoom-range` on the
+#: CLI). The `{zoom}` placeholder is substituted before the Tcl is
+#: written to disk; all other braces are Tcl and must be doubled for
+#: `str.format`. Raw-string so the backslash inside Tcl's `split`
+#: survives untouched.
+_GTKWAVE_TCL_TEMPLATE = r"""
 set all_signals [list]
 set nfacs [ gtkwave::getNumFacs ]
-for {set i 0} {$i < $nfacs} {incr i} {
+for {{set i 0}} {{$i < $nfacs}} {{incr i}} {{
     set facname [ gtkwave::getFacName $i ]
-    set fields  [split $facname "\\"]
-    set sig1    [ lindex $fields 0 ]
-    set sig2    [ lindex $fields 1 ]
-    if {[llength $fields] == 2} {
-        set sig "$sig2"
-    } else {
-        set sig "$sig1"
-    }
-    lappend all_signals "$sig"
-}
+    lappend all_signals $facname
+}}
 gtkwave::addSignalsFromList $all_signals
-set min_time [ gtkwave::getMinTime ]
-set max_time [ gtkwave::getMaxTime ]
-gtkwave::setZoomRangeTimes $min_time $max_time
+{zoom}
 """
+
+# Per-`--zoom` mode Tcl fragments.
+#
+# `full` — GTKWave's "Zoom Full" menu action, equivalent to pressing
+# the zoom-fit button. Reliable for VCD dumps; works for most FST
+# dumps too but see the note on `range:` below.
+#
+# `off` — leave whatever zoom GTKWave defaults to (useful for
+# screenshots where the caller wants the default view).
+#
+# `range:FROM,TO` — call `setZoomRangeTimes` with explicit integer
+# times in the dump's native time units (fs for GHDL, ps for
+# iverilog, usually). Use this when `full` produces a degenerate
+# zoom, e.g. on some GTKWave builds reading an FST file where
+# `getMaxTime` returns a stale value and Zoom_Full lands on 0..3 fs.
+_ZOOM_FRAGMENTS = {
+    "full": "gtkwave::/Time/Zoom/Zoom_Full",
+    "off": "# zoom disabled by --zoom off",
+}
 
 #: GTKWave runtime config: hide the SST pane, skip the splash, disable
 #: the vertical grid — makes the resulting PNG cleaner to paste into docs.
@@ -81,6 +93,10 @@ class ScreenshotConfig:
     timeout_seconds: int = 12
     settle_seconds: int = 0
     background: str = "white"
+    # Zoom policy: "full" runs Zoom_Full; "off" leaves GTKWave's
+    # default view; a 2-tuple (from, to) calls setZoomRangeTimes with
+    # those integer time values (in the dump's native time units).
+    zoom: "str | Tuple[int, int]" = "full"
 
 
 # ---- Image helpers -------------------------------------------------------
@@ -123,11 +139,25 @@ def _looks_rendered(image: Image.Image) -> bool:
 # ---- GTKWave driver ------------------------------------------------------
 
 
-def _write_gtkwave_control_files(work_dir: Path) -> Tuple[Path, Path]:
+def _resolve_zoom_tcl(zoom: "str | Tuple[int, int]") -> str:
+    """Return the Tcl fragment implementing the requested zoom policy."""
+    if isinstance(zoom, tuple):
+        lo, hi = zoom
+        return f"gtkwave::setZoomRangeTimes {int(lo)} {int(hi)}"
+    try:
+        return _ZOOM_FRAGMENTS[zoom]
+    except KeyError as exc:
+        raise ValueError(
+            f"unknown zoom mode {zoom!r}; expected 'full', 'off', or a (from, to) tuple"
+        ) from exc
+
+
+def _write_gtkwave_control_files(work_dir: Path, cfg: ScreenshotConfig) -> Tuple[Path, Path]:
     """Drop the Tcl + rc files GTKWave needs into a work dir."""
     tcl_path = work_dir / "gtkwave.tcl"
     rc_path = work_dir / "gtkwave.rc"
-    tcl_path.write_text(_GTKWAVE_TCL)
+    tcl = _GTKWAVE_TCL_TEMPLATE.format(zoom=_resolve_zoom_tcl(cfg.zoom))
+    tcl_path.write_text(tcl)
     rc_path.write_text(_GTKWAVE_RC)
     return tcl_path, rc_path
 
@@ -184,7 +214,7 @@ def render(cfg: ScreenshotConfig) -> None:
         raise FileNotFoundError(f"VCD not found: {cfg.input_vcd}")
 
     with tempfile.TemporaryDirectory(prefix="gtkwave_") as tmp:
-        tcl_path, rc_path = _write_gtkwave_control_files(Path(tmp))
+        tcl_path, rc_path = _write_gtkwave_control_files(Path(tmp), cfg)
         _capture_screenshot(cfg, tcl_path, rc_path)
 
 
@@ -230,6 +260,24 @@ def _parse_args(argv: Optional[list[str]] = None) -> ScreenshotConfig:
         help="Virtual display background colour (default: white).",
     )
     parser.add_argument(
+        "--zoom", choices=("full", "off"), default="full",
+        help=(
+            "Zoom policy after adding signals. 'full' (default) clicks "
+            "GTKWave's Zoom Full; 'off' leaves the default view. "
+            "Superseded by --zoom-range if both are given."
+        ),
+    )
+    parser.add_argument(
+        "--zoom-range", type=int, nargs=2, metavar=("FROM", "TO"), default=None,
+        help=(
+            "Explicit zoom range in the dump's native time units "
+            "(fs for GHDL, ps for iverilog). Calls "
+            "gtkwave::setZoomRangeTimes directly; use this when --zoom "
+            "full produces a degenerate view, e.g. some GTKWave builds "
+            "reading FST where getMaxTime returns a stale value."
+        ),
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true",
         help="Enable debug logging.",
     )
@@ -260,6 +308,15 @@ def _parse_args(argv: Optional[list[str]] = None) -> ScreenshotConfig:
             f"--screen-size must be WIDTHxHEIGHT, got {args.screen_size!r}"
         )
 
+    zoom: "str | Tuple[int, int]"
+    if args.zoom_range is not None:
+        lo, hi = args.zoom_range
+        if hi <= lo:
+            parser.error("--zoom-range TO must be greater than FROM")
+        zoom = (lo, hi)
+    else:
+        zoom = args.zoom
+
     return ScreenshotConfig(
         input_vcd=input_vcd,
         output_png=output_png,
@@ -267,6 +324,7 @@ def _parse_args(argv: Optional[list[str]] = None) -> ScreenshotConfig:
         timeout_seconds=args.timeout,
         settle_seconds=args.settle,
         background=args.background,
+        zoom=zoom,
     )
 
 
