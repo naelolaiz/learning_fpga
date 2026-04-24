@@ -294,6 +294,21 @@ Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it
 - New dual-language examples: `pwm_led`, `uart_tx`, `shift_register`,
   `fifo_sync`.
 
+### Test coverage — done ✅
+
+- Per-project multi-testbench support in `mk/common.mk` (`TB_TOPS` /
+  `V_TB_TOPS` lists): each testbench produces its own waveform in CI
+  so projects can ship focused unit tests alongside integration ones.
+- Assertion-driven testbenches instead of stimulus-only: every VHDL
+  and Verilog TB exercises algebraic or cause-effect properties that
+  fail the build on regression, not just waveform eyeballing.
+- New testbenches: `vga_sprites/tb_multiply_by_sin_lut` (LUT unit
+  tests), `vga_sprites/tb_sprite_gravity` (gravity cause-effect),
+  `fifo_sync/tb_fifo_sync_overlapping` (simultaneous read+write
+  invariants). Rewrote `7segments/counter/tb_test` from 0 assertions
+  to three invariants (mux one-hot, valid 7-seg encodings, full
+  digit rotation).
+
 ### In progress 🛠️
 
 - **`7segments/clock`** — application-level example composed from smaller
