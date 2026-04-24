@@ -96,13 +96,14 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: make diagram
 
-      # GTKWave needs an X server; xvfb-run wraps the make target.
-      # PyVirtualDisplay in vcd2png.py also spawns its own Xvfb, but
-      # wrapping here gives us a DISPLAY inside the container up front
-      # in case anything else ever wants it.
+      # GTKWave needs an X server but vcd2png.py spawns its own Xvfb
+      # via pyvirtualdisplay, so we don't wrap with xvfb-run here.
+      # The earlier double-Xvfb (outer xvfb-run + inner pyvirtualdisplay)
+      # masked a frame-capture race that produced empty PNGs in CI
+      # even though the same command rendered correctly locally.
       - name: Render waveform screenshot
         working-directory: ${{ matrix.project }}
-        run: xvfb-run --auto-servernum make screenshot
+        run: make screenshot
 
       # Optional Verilog flow. mk/common.mk turns these into no-ops for
       # projects that don't define V_SRC_FILES, so it is safe to run
@@ -117,7 +118,7 @@ jobs:
 
       - name: Render waveform screenshot (Verilog)
         working-directory: ${{ matrix.project }}
-        run: xvfb-run --auto-servernum make screenshot_v
+        run: make screenshot_v
 
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.

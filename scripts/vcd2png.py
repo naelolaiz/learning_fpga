@@ -125,15 +125,55 @@ def _compute_content_bbox(image: Image.Image) -> Optional[Tuple[int, int, int, i
     )
 
 
+#: Minimum number of green signal-trace pixels that must appear in
+#: the waveform pane before we consider the frame ready. GTKWave
+#: draws signal traces in bright green on a black pane; the startup
+#: frame (no signals added yet, no zoom applied) has ONLY the blue
+#: time-axis gridlines in that region, so a green-specific filter
+#: cleanly separates rendered from not-rendered. Threshold chosen
+#: well above normal UI chrome noise but well below what a typical
+#: short-sim trace produces.
+_MIN_WAVEFORM_GREEN_PX = 500
+
+
 def _looks_rendered(image: Image.Image) -> bool:
-    """True once the captured frame contains enough waveform to be useful."""
-    bbox = _compute_content_bbox(image)
-    if bbox is None:
-        return False
-    _, top, _, bottom = bbox
-    rendered = (bottom - top) > _MIN_WAVEFORM_HEIGHT_PX
-    logger.debug("bbox=%s rendered=%s", bbox, rendered)
-    return rendered
+    """True once the frame contains actual signal traces (not just gridlines).
+
+    The previous check (bbox height > 30 px, or "any saturated colour")
+    passed on the empty startup frame because GTKWave draws blue
+    vertical gridlines in the time-axis band even before any signals
+    are loaded. The result was a race: if `addSignalsFromList` or
+    `Zoom_Full` hadn't taken effect yet when `waitgrab` returned, we
+    captured the pre-render state. Locally GTKWave usually beat the
+    grab; in CI it lost often enough to ship empty PNGs with a
+    0..3 fs time axis.
+
+    The green-specific filter below excludes both the blue gridlines
+    and the grey UI chrome. It returns True only when enough bright
+    green (signal-trace) pixels have appeared in the right ~65% of
+    the frame.
+    """
+    if image.mode != "RGB":
+        rgb = image.convert("RGB")
+    else:
+        rgb = image
+    w, h = rgb.size
+    # Waveform pane sits right of the middle; skip a small top strip
+    # (time axis) and bottom strip (filter bar).
+    pane = rgb.crop((int(w * 0.35), int(h * 0.03), w, int(h * 0.95)))
+    green = 0
+    for r, g, b in pane.getdata():
+        # Signal traces are bright green: g dominates r and b by a
+        # wide margin. This excludes blue gridlines (b dominates),
+        # white text (all channels high), grey dividers (r~g~b),
+        # and black background (all channels low).
+        if g > 120 and g > r + 40 and g > b + 40:
+            green += 1
+            if green >= _MIN_WAVEFORM_GREEN_PX:
+                logger.debug("rendered=True (green_px>=%d)", _MIN_WAVEFORM_GREEN_PX)
+                return True
+    logger.debug("rendered=False (green_px=%d)", green)
+    return False
 
 
 # ---- GTKWave driver ------------------------------------------------------
@@ -199,9 +239,13 @@ def _capture_screenshot(cfg: ScreenshotConfig, tcl_path: Path, rc_path: Path) ->
             "the VCD may be empty or the signals list mismatched."
         )
 
-    # Widen to the left edge so signal names are always visible.
-    _, top, right, bottom = bbox
-    trimmed = frame.crop((0, top, right, bottom))
+    # Crop top/bottom to the content, but keep the full frame width so
+    # every PNG this tool produces ends up at the same width — makes
+    # paired VHDL/Verilog waveforms line up visually in the README
+    # gallery instead of rendering at slightly different per-project
+    # widths depending on how far right GTKWave's content extended.
+    _, top, _, bottom = bbox
+    trimmed = frame.crop((0, top, frame.width, bottom))
 
     cfg.output_png.parent.mkdir(parents=True, exist_ok=True)
     trimmed.save(cfg.output_png)
