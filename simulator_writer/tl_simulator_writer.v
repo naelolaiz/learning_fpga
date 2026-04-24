@@ -19,18 +19,18 @@ module tl_simulator_writer #(
     output reg        done
 );
 
-    localparam integer CHAR_HOR_LENGTH       = 5;
-    localparam integer CLOCKS_FOR_COLUMN     = 5;
-    localparam integer COLUMN_SEP_BETW_CHARS = 1;
+    localparam integer cCharHorLength               = 5;
+    localparam integer cClocksForColumn             = 5;
+    localparam integer cColumnSeparatorBetweenChars = 1;
 
     reg [4:0]  sCurrentChar [0:4];
     reg [4:0]  sOutRow;
     reg        sCurrentBlank;
 
-    integer vCurrentCharIdx        = 1;
-    integer vCountForSeparator     = 0;
-    integer vCounterForClocksColumn = 0;
-    integer vCharHorIndex           = 0;
+    integer vCurrentCharIdx                 = 1;
+    integer vCountForSeparatorBetweenChars  = 0;
+    integer vCounterForClocksForColumn      = 0;
+    integer vCharHorIndex                   = 0;
 
     integer i;
 
@@ -44,28 +44,28 @@ module tl_simulator_writer #(
     always @(posedge inClock) begin
         done <= 1'b0;
 
-        if (vCounterForClocksColumn == CLOCKS_FOR_COLUMN - 1 || sCurrentBlank) begin
-            vCounterForClocksColumn <= 0;
-            if (vCharHorIndex == CHAR_HOR_LENGTH - 1 || sCurrentBlank) begin
+        if (vCounterForClocksForColumn == cClocksForColumn - 1 || sCurrentBlank) begin
+            vCounterForClocksForColumn <= 0;
+            if (vCharHorIndex == cCharHorLength - 1 || sCurrentBlank) begin
                 vCharHorIndex <= 0;
                 if (vCurrentCharIdx == STRING_LENGTH) begin
                     vCurrentCharIdx <= 1;
                     done            <= 1'b1;
                 end else begin
-                    if (vCountForSeparator == COLUMN_SEP_BETW_CHARS) begin
-                        vCountForSeparator <= 0;
+                    if (vCountForSeparatorBetweenChars == cColumnSeparatorBetweenChars) begin
+                        vCountForSeparatorBetweenChars <= 0;
                         vCurrentCharIdx    <= vCurrentCharIdx + 1;
                         sCurrentBlank      <= 1'b0;
                     end else begin
                         sCurrentBlank      <= 1'b1;
-                        vCountForSeparator <= vCountForSeparator + 1;
+                        vCountForSeparatorBetweenChars <= vCountForSeparatorBetweenChars + 1;
                     end
                 end
             end else begin
                 vCharHorIndex <= vCharHorIndex + 1;
             end
         end else begin
-            vCounterForClocksColumn <= vCounterForClocksColumn + 1;
+            vCounterForClocksForColumn <= vCounterForClocksForColumn + 1;
         end
 
         // Character bitmap selection — same patterns as the VHDL.
@@ -132,7 +132,7 @@ module tl_simulator_writer #(
             if (sCurrentBlank)
                 sOutRow[i] <= 1'b0;
             else
-                sOutRow[i] <= sCurrentChar[i][CHAR_HOR_LENGTH - 1 - vCharHorIndex];
+                sOutRow[i] <= sCurrentChar[i][cCharHorLength - 1 - vCharHorIndex];
         end
     end
 
