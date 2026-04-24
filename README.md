@@ -10,9 +10,10 @@ LED to richer designs (PWM, UART, FIFO, shift registers, 7-segment mux,
 mini-game, VGA & I²S sketches).
 
 Every project simulates, renders its **netlist diagram** (`*.svg`), and
-captures a **waveform screenshot** (`*.png`) automatically in CI. The
-examples below embed the **latest diagrams and waveforms** rendered from
-`main` — they update whenever the source changes.
+captures a **waveform screenshot** (`*.png`) of a testbench simulation
+automatically in CI. The examples below embed the **latest diagrams
+and waveforms** rendered from `main` — they update whenever the 
+source changes.
 
 - 📚 **What it is** — a tutorial you can read front-to-back, or dip into
   one example at a time.
