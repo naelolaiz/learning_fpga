@@ -98,7 +98,10 @@ outShouldDraw <= sShouldDraw;
       variable nextPositionToTest : Pos2D := (0,0);
       variable collisionDetected : boolean := false;
       variable counterForVelocityUpdateByGravity : integer range 0 to GRAVITY.update_period := 0;
-      variable currentSpeed : Speed2D := sCurrentSpeed;
+      -- No default initializer here: yosys's synthesis elaboration
+      -- rejects a variable default that reads a signal. The value is
+      -- assigned unconditionally at the top of the process body below.
+      variable currentSpeed : Speed2D;
    begin
       if rising_edge(inClock) then
          currentSpeed := sCurrentSpeed;

@@ -9,7 +9,7 @@ use work.definitions.all;
 -- to confirm that enabling gravity compiles and simulates without error,
 -- and to produce a waveform showing the velocity integration + bounce.
 --
--- NOTE: unnamed_fpga_game's Makefile currently runs tb_trigonometric as
+-- NOTE: vga_sprites's Makefile currently runs tb_trigonometric as
 -- TB_TOP (single-testbench flow in mk/common.mk). This file is listed in
 -- TB_FILES so it is analysed on every build as a compile-time check of
 -- the gravity path; it is not simulated until mk/common.mk learns about

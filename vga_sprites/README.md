@@ -1,5 +1,6 @@
-# unnamed_fpga_game
-game using vga
+# vga_sprites
+VGA sprite demo: multiple sprites driven by a trigonometric sin/cos LUT
+for rotation, with optional gravity physics.
 
 ## WIP
 Two sprites are currently consuming all multipliers, as seen in the quartus summary:

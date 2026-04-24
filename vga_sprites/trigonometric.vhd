@@ -62,7 +62,13 @@ package body trigonometric is
                                is
         constant sinIsNegative        : boolean := index(4) = '1';
         constant inputValueIsNegative : boolean := inputValue(7) = '1';
-        constant absInputValue : std_logic_vector(7 downto 0) := std_logic_vector(to_unsigned(abs(to_integer(signed(inputValue))), 8));
+        -- |inputValue| as unsigned 8-bit, without calling abs(): if the
+        -- sign bit is 0 the input is already non-negative; otherwise
+        -- two's-complement-negate via bitwise NOT + 1. Written this way
+        -- because yosys+ghdl-yosys-plugin does not handle the
+        -- abs(to_integer(signed(...))) → to_unsigned(...) chain, which
+        -- is why SKIP_DIAGRAM used to be set on this project.
+        variable absInputValue : std_logic_vector(7 downto 0);
 
         alias mostSignificativeNibble is absInputValue (7 downto 4);
         alias lessSignificativeNibble is absInputValue (3 downto 0);
@@ -70,6 +76,12 @@ package body trigonometric is
         variable op   : std_logic_vector (7 downto 0)  := (others => '0');
         variable sum  : std_logic_vector (11 downto 0) := (others => '0');
      begin
+        if inputValueIsNegative then
+           absInputValue := std_logic_vector(unsigned(not inputValue) + 1);
+        else
+           absInputValue := inputValue;
+        end if;
+
         sum := (others => '0');
         op := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN (to_integer(unsigned(indexForTable))) (to_integer(unsigned(lessSignificativeNibble)));
         sum (11 downto 4) := MULTIPLICATION_TABLES_FOR_POSITIVE_SIN (to_integer(unsigned(indexForTable))) (to_integer(unsigned(mostSignificativeNibble)));
