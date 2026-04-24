@@ -8,8 +8,7 @@ use ieee.numeric_std.ALL;
 -- display, cycling through them via `cableSelect` (active-low,
 -- one-hot-inverted) every ~2 ms. `sevenSegments` carries the seven
 -- cathode lines (also active-low) encoding the digit currently
--- selected. Every ~62.5 ms the internal counter increments, so over
--- the 150 ms simulation window digit 0 must tick at least twice.
+-- selected.
 --
 -- Three things are asserted:
 --
@@ -29,7 +28,12 @@ entity tb_test is
 end tb_test;
 
 architecture testbench of tb_test is
-   constant TEST_DURATION : time := 150 ms;
+   -- 10 ms covers a full mux rotation (2 ms per digit -> 8 ms for
+   -- 0->1->2->3) and a bit more, which is all the assertions need.
+   -- Keep this short: GHDL dumps at 1 fs timescale by default, so
+   -- long runs produce multi-hundred-MB VCDs that the gallery's
+   -- GTKWave screenshot pipeline can't render in time.
+   constant TEST_DURATION : time := 10 ms;
    signal sClock50MHz       : std_logic := '0';
    -- Initialise to a valid encoding so the continuous invariants
    -- below hold at t=0, before the DUT has driven the first output.
@@ -126,8 +130,9 @@ begin
       wait for TEST_DURATION;
 
       -- (C) Mux must have rotated through all four digits. At ~2 ms
-      -- per digit the round-trip is ~8 ms; in 150 ms that happens
-      -- ~18 times, so a stuck mux is unmissable.
+      -- per digit the round-trip is ~8 ms, which fits inside the
+      -- 10 ms TEST_DURATION with a margin, so a stuck mux is
+      -- unmissable.
       assert sSeenDigit0 and sSeenDigit1 and sSeenDigit2 and sSeenDigit3
          report "mux stuck: saw digit0=" & boolean'image(sSeenDigit0)
               & " digit1=" & boolean'image(sSeenDigit1)
