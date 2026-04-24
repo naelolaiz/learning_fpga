@@ -77,94 +77,99 @@ and Verilog on the right so you can compare the two directly.
 <details open>
 <summary><b><code>blink_led</code></b> — the "hello world": toggle an LED at 1 Hz</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![blink_led netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/blink_led.svg) | ![blink_led netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/blink_led_v.svg) |
-| ![blink_led waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/tb_blink_led.png) | ![blink_led waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/tb_blink_led_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `blink_led` (netlist) | ![blink_led netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/blink_led.svg) | ![blink_led netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/blink_led_v.svg) |
+| `tb_blink_led` | ![blink_led waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/tb_blink_led.png) | ![blink_led waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/blink_led/tb_blink_led_v.png) |
 
 </details>
 
 <details>
 <summary><b><code>pwm_led</code></b> — duty-cycle modulation driving an LED</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![pwm_led netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/pwm_led.svg) | ![pwm_led netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/pwm_led_v.svg) |
-| ![pwm_led waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/tb_pwm_led.png) | ![pwm_led waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/tb_pwm_led_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `pwm_led` (netlist) | ![pwm_led netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/pwm_led.svg) | ![pwm_led netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/pwm_led_v.svg) |
+| `tb_pwm_led` | ![pwm_led waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/tb_pwm_led.png) | ![pwm_led waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/pwm_led/tb_pwm_led_v.png) |
 
 </details>
 
 <details>
 <summary><b><code>uart_tx</code></b> — a minimal 8N1 UART transmitter</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![uart_tx netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/uart_tx.svg) | ![uart_tx netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/uart_tx_v.svg) |
-| ![uart_tx waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/tb_uart_tx.png) | ![uart_tx waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/tb_uart_tx_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `uart_tx` (netlist) | ![uart_tx netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/uart_tx.svg) | ![uart_tx netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/uart_tx_v.svg) |
+| `tb_uart_tx` | ![uart_tx waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/tb_uart_tx.png) | ![uart_tx waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/uart_tx/tb_uart_tx_v.png) |
 
 </details>
 
 <details>
 <summary><b><code>shift_register</code></b> — parameterisable shift register</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![shift_register netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/shift_register.svg) | ![shift_register netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/shift_register_v.svg) |
-| ![shift_register waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/tb_shift_register.png) | ![shift_register waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/tb_shift_register_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `shift_register` (netlist) | ![shift_register netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/shift_register.svg) | ![shift_register netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/shift_register_v.svg) |
+| `tb_shift_register` | ![shift_register waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/tb_shift_register.png) | ![shift_register waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/shift_register/tb_shift_register_v.png) |
 
 </details>
 
 <details>
 <summary><b><code>fifo_sync</code></b> — synchronous FIFO with full / empty flags</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![fifo_sync netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync.svg) | ![fifo_sync netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync_v.svg) |
-| ![fifo_sync tb_fifo_sync (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync.png) | ![fifo_sync tb_fifo_sync (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_v.png) |
-| ![fifo_sync tb_fifo_sync_overlapping (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping.png) | ![fifo_sync tb_fifo_sync_overlapping (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `fifo_sync` (netlist) | ![fifo_sync netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync.svg) | ![fifo_sync netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync_v.svg) |
+| `tb_fifo_sync` | ![fifo_sync tb_fifo_sync (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync.png) | ![fifo_sync tb_fifo_sync (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_v.png) |
+| `tb_fifo_sync_overlapping` | ![fifo_sync tb_fifo_sync_overlapping (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping.png) | ![fifo_sync tb_fifo_sync_overlapping (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping_v.png) |
 
-Two VHDL testbenches: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_fifo_sync_overlapping` covers the simultaneous read+write case (occupancy invariance + ordering under overlap).
+Two testbenches each side: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_fifo_sync_overlapping` covers the simultaneous read+write case (occupancy invariance + ordering under overlap).
 
 </details>
 
 <details>
 <summary><b><code>7segments/counter</code></b> — multiplexed 4-digit counter</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![7seg counter netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/test.svg) | ![7seg counter netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/test_v.svg) |
-| ![7seg counter waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/tb_test.png) | ![7seg counter waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/tb_test_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `test` (netlist) | ![7seg counter netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/test.svg) | ![7seg counter netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/test_v.svg) |
+| `tb_test` (10 ms) | ![7seg counter waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/tb_test.png) | ![7seg counter waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/tb_test_v.png) |
+
+A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal counter ticks, but dumps FST without a waveform screenshot (at that zoom level the 20 ns clock period is sub-pixel anyway).
 
 </details>
 
 <details>
 <summary><b><code>general_components</code></b> — reusable Serial2Parallel block</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![Serial2Parallel netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel.svg) | ![Serial2Parallel netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel_v.svg) |
-| ![Serial2Parallel waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel_tb.png) | ![Serial2Parallel waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel_tb_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `Serial2Parallel` (netlist) | ![Serial2Parallel netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel.svg) | ![Serial2Parallel netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel_v.svg) |
+| `Serial2Parallel_tb` | ![Serial2Parallel waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel_tb.png) | ![Serial2Parallel waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/general_components/Serial2Parallel_tb_v.png) |
 
 </details>
 
 <details>
 <summary><b><code>simulator_writer</code></b> — produces a VCD trace for the simulator flow</summary>
 
-| VHDL | Verilog |
-| :--: | :-----: |
-| ![simulator_writer netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tl_simulator_writer.svg) | ![simulator_writer netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tl_simulator_writer_v.svg) |
-| ![simulator_writer waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tb_simulator_writer.png) | ![simulator_writer waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tb_simulator_writer_v.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `tl_simulator_writer` (netlist) | ![simulator_writer netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tl_simulator_writer.svg) | ![simulator_writer netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tl_simulator_writer_v.svg) |
+| `tb_simulator_writer` | ![simulator_writer waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tb_simulator_writer.png) | ![simulator_writer waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/simulator_writer/tb_simulator_writer_v.png) |
 
 </details>
 
 <details>
 <summary><b><code>vga_sprites</code></b> — VGA sprite demo with trigonometric rotation + optional gravity</summary>
 
-| netlist | tb_trigonometric | tb_multiply_by_sin_lut | tb_sprite_gravity |
-| :-----: | :--------------: | :--------------------: | :---------------: |
-| ![vga_sprites netlist](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite.svg) | ![vga_sprites tb_trigonometric](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric.png) | ![vga_sprites tb_multiply_by_sin_lut](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_multiply_by_sin_lut.png) | ![vga_sprites tb_sprite_gravity](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_sprite_gravity.png) |
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `sprite` (netlist) | ![vga_sprites netlist](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite.svg) | — |
+| `tb_trigonometric` | ![vga_sprites tb_trigonometric](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric.png) | — |
+| `tb_multiply_by_sin_lut` | ![vga_sprites tb_multiply_by_sin_lut](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_multiply_by_sin_lut.png) | — |
+| `tb_sprite_gravity` | ![vga_sprites tb_sprite_gravity](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_sprite_gravity.png) | — |
 
-Three focused testbenches: `tb_trigonometric` (integration sweep + rotate properties), `tb_multiply_by_sin_lut` (LUT unit tests — odd symmetry, anti-symmetry across π, mirror across π/2, magnitude bound), `tb_sprite_gravity` (sprite entity with gravity on — fall/bounce cause-effect check).
+Three focused testbenches: `tb_trigonometric` (integration sweep + rotate properties), `tb_multiply_by_sin_lut` (LUT unit tests — odd symmetry, anti-symmetry across π, mirror across π/2, magnitude bound), `tb_sprite_gravity` (sprite entity with gravity on — fall/bounce cause-effect check). No Verilog mirror yet.
 
 </details>
 

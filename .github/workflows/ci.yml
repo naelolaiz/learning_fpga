@@ -159,33 +159,44 @@ jobs:
           summary="$GITHUB_STEP_SUMMARY"
           base="https://raw.githubusercontent.com/${{ github.repository }}/ci-gallery/run-${{ github.run_id }}/${{ steps.artifact.outputs.name }}"
           echo "## ${{ matrix.project }}" >> "$summary"
-          echo "" >> "$summary"
-          echo "### Netlist diagram" >> "$summary"
-          if ls build/*.svg >/dev/null 2>&1; then
-            for f in build/*.svg; do
-              name=$(basename "$f")
-              echo "" >> "$summary"
-              echo "**${name}**" >> "$summary"
-              echo "" >> "$summary"
-              echo "![${name}](${base}/${name})" >> "$summary"
+          echo ""                         >> "$summary"
+
+          # Emit one 3-column table (stem | VHDL | Verilog) covering
+          # every artifact this project produced. The two loops (SVGs
+          # first for netlists, PNGs after for waveforms) preserve a
+          # natural reading order; `seen` de-duplicates so a stem
+          # with both VHDL and Verilog files emits one row, matching
+          # the aggregate gallery layout exactly. See the "Build
+          # consolidated gallery body" step below for the same
+          # shape applied across all projects.
+          if ls build/*.svg >/dev/null 2>&1 || ls build/*.png >/dev/null 2>&1; then
+            echo "|  | VHDL | Verilog |" >> "$summary"
+            echo "| --- | :---: | :---: |" >> "$summary"
+            seen=""
+            for pass_ext in svg png; do
+              for f in build/*."$pass_ext"; do
+                [ -f "$f" ] || continue
+                stem=$(basename "$f" ".$pass_ext")
+                stem=${stem%_v}
+                case " $seen " in
+                  *" $stem "*) continue ;;
+                esac
+                seen="$seen $stem"
+                vhdl=""
+                verilog=""
+                for ext in svg png; do
+                  [ -z "$vhdl"    ] && [ -f "build/${stem}.${ext}"   ] && vhdl="${stem}.${ext}"
+                  [ -z "$verilog" ] && [ -f "build/${stem}_v.${ext}" ] && verilog="${stem}_v.${ext}"
+                done
+                vcell=""
+                verilog_cell=""
+                [ -n "$vhdl" ]    && vcell="![${vhdl}](${base}/${vhdl})"
+                [ -n "$verilog" ] && verilog_cell="![${verilog}](${base}/${verilog})"
+                echo "| \`${stem}\` | ${vcell} | ${verilog_cell} |" >> "$summary"
+              done
             done
           else
-            echo "" >> "$summary"
-            echo "_No netlist diagram produced (SKIP_DIAGRAM or synth failure)._" >> "$summary"
-          fi
-          echo "" >> "$summary"
-          echo "### Waveform" >> "$summary"
-          if ls build/*.png >/dev/null 2>&1; then
-            for f in build/*.png; do
-              name=$(basename "$f")
-              echo "" >> "$summary"
-              echo "**${name}**" >> "$summary"
-              echo "" >> "$summary"
-              echo "![${name}](${base}/${name})" >> "$summary"
-            done
-          else
-            echo "" >> "$summary"
-            echo "_No waveform screenshot produced._" >> "$summary"
+            echo "_No artifacts produced for this project._" >> "$summary"
           fi
 
   # ------------------------------------------------------------------
@@ -299,28 +310,55 @@ jobs:
             echo ""
             echo "Netlist diagrams and simulation waveforms for every project in this run."
             echo ""
+            # Emit a table per project, grouped by artifact stem so
+            # VHDL and Verilog twins sit in adjacent columns of the
+            # same row. A stem is the filename with a trailing `_v`
+            # and the extension stripped; `_v` marks a Verilog twin.
+            # Keeps paired waveforms visually next to each other
+            # instead of alpha-sorted into VHDL1, VHDL2, Verilog2,
+            # Verilog1.
             for d in "${{ steps.stage.outputs.stage }}/run-${GITHUB_RUN_ID}"/*/; do
               [ -d "$d" ] || continue
               proj=$(basename "$d")
+
               echo "<details open>"
               echo "<summary><code>${proj}</code></summary>"
               echo ""
-              for f in "$d"/*.svg; do
-                [ -f "$f" ] || continue
-                name=$(basename "$f")
-                echo "**${name}**"
-                echo ""
-                echo "![${name}](${base}/${proj}/${name})"
-                echo ""
+              # Always use the 3-column VHDL | Verilog layout, even
+              # for VHDL-only projects. Keeping the shape consistent
+              # makes it easy to compare across projects; the empty
+              # Verilog cells are an honest signal that the project
+              # hasn't grown a Verilog mirror yet.
+              echo "|  | VHDL | Verilog |"
+              echo "| --- | :---: | :---: |"
+
+              # Two passes emit rows in a natural reading order:
+              # netlists (SVGs) first, then waveforms (PNGs).
+              # `seen` de-duplicates so a stem with both VHDL and
+              # Verilog files emits one row, not two.
+              seen=""
+              for pass_ext in svg png; do
+                for f in "$d"/*."$pass_ext"; do
+                  [ -f "$f" ] || continue
+                  stem=$(basename "$f" ".$pass_ext")
+                  stem=${stem%_v}
+                  case " $seen " in
+                    *" $stem "*) continue ;;
+                  esac
+                  seen="$seen $stem"
+                  vhdl=""; verilog=""
+                  for ext in svg png; do
+                    [ -z "$vhdl"    ] && [ -f "$d/${stem}.${ext}"   ] && vhdl="${stem}.${ext}"
+                    [ -z "$verilog" ] && [ -f "$d/${stem}_v.${ext}" ] && verilog="${stem}_v.${ext}"
+                  done
+                  vcell=""; verilog_cell=""
+                  [ -n "$vhdl" ]    && vcell="![${vhdl}](${base}/${proj}/${vhdl})"
+                  [ -n "$verilog" ] && verilog_cell="![${verilog}](${base}/${proj}/${verilog})"
+                  echo "| \`${stem}\` | ${vcell} | ${verilog_cell} |"
+                done
               done
-              for f in "$d"/*.png; do
-                [ -f "$f" ] || continue
-                name=$(basename "$f")
-                echo "**${name}**"
-                echo ""
-                echo "![${name}](${base}/${proj}/${name})"
-                echo ""
-              done
+
+              echo ""
               echo "</details>"
               echo ""
             done
