@@ -1,4 +1,8 @@
 // tb_fifo_sync.v - Verilog mirror of tb_fifo_sync.vhd.
+//
+// Pushes DEPTH words in, asserts full, drains them, asserts the
+// ordering and empty. Concurrent read/write behaviour is covered by
+// the sibling tb_fifo_sync_overlapping.v.
 
 `timescale 1ns/1ps
 

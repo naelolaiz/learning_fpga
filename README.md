@@ -121,7 +121,7 @@ and Verilog on the right so you can compare the two directly.
 | :--: | :-----: |
 | ![fifo_sync netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync.svg) | ![fifo_sync netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync_v.svg) |
 | ![fifo_sync tb_fifo_sync (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync.png) | ![fifo_sync tb_fifo_sync (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_v.png) |
-| ![fifo_sync tb_fifo_sync_overlapping (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping.png) | — |
+| ![fifo_sync tb_fifo_sync_overlapping (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping.png) | ![fifo_sync tb_fifo_sync_overlapping (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping_v.png) |
 
 Two VHDL testbenches: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_fifo_sync_overlapping` covers the simultaneous read+write case (occupancy invariance + ordering under overlap).
 
