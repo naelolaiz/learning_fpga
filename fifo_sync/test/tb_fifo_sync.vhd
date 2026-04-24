@@ -1,7 +1,10 @@
 -- tb_fifo_sync.vhd
 --
 -- Pushes DEPTH words in, asserts `full`, drains them, asserts the
--- ordering and `empty`, and checks one round of overlapping read/write.
+-- ordering and `empty`. Concurrent read/write behaviour (the tricky
+-- case where both enables are high on the same cycle and occupancy
+-- must stay constant) is covered by the sibling
+-- `tb_fifo_sync_overlapping.vhd`.
 
 library ieee;
 use ieee.std_logic_1164.all;

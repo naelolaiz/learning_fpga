@@ -5,25 +5,40 @@ use ieee.numeric_std.all;
 library work;
 use work.definitions.all;
 
--- Exercises the sprite entity with GRAVITY_ENABLED => true. The intent is
--- to confirm that enabling gravity compiles and simulates without error,
--- and to produce a waveform showing the velocity integration + bounce.
+-- Exercises the sprite entity with GRAVITY_ENABLED => true.
 --
--- NOTE: vga_sprites's Makefile currently runs tb_trigonometric as
--- TB_TOP (single-testbench flow in mk/common.mk). This file is listed in
--- TB_FILES so it is analysed on every build as a compile-time check of
--- the gravity path; it is not simulated until mk/common.mk learns about
--- multiple testbenches (tracked as a follow-up).
+-- Rather than probe the sprite's internal position/velocity (which
+-- would require VHDL-2008 external names or exposing private state),
+-- the TB asserts the gravity effect through the sprite's public
+-- `outShouldDraw` port using a cause-effect pattern:
+--
+--   1. Place the cursor on the sprite's initial center. `outShouldDraw`
+--      should go high (pixel inside sprite).
+--   2. Wait long enough for gravity to accumulate enough downward
+--      velocity that the sprite moves strictly below the original
+--      center. `outShouldDraw` at the original center should now be
+--      low — the sprite has fallen out of that pixel.
+--
+-- This is deliberately coarse (one before/after check instead of a
+-- continuous trajectory), but any regression in the gravity path —
+-- the record being ignored, the velocity accumulator not
+-- incrementing, the position update not firing — fails step 2.
 entity tb_sprite_gravity is
 end tb_sprite_gravity;
 
 architecture testbench of tb_sprite_gravity is
    constant CLK_PERIOD : time := 20 ns; -- 50 MHz, matches the board's vga_clk
 
+   -- Small screen + minimal sprite so the TB runs fast and a few
+   -- gravity ticks move the sprite visibly.
+   constant SCREEN      : Size2D := (60, 40);
+   constant INIT_CENTER : Pos2D  := (30, 8);
+
    signal tbClock       : std_logic := '0';
    signal tbCursorPos   : Pos2D     := (0, 0);
    signal tbShouldDraw  : boolean;
    signal tbRunning     : boolean := true;
+   signal tbStage       : integer := 0;
 
 begin
 
@@ -32,21 +47,21 @@ begin
 
    dut : entity work.sprite
       generic map (
-         SCREEN_SIZE            => (60, 40),   -- small screen = fast bounces
+         SCREEN_SIZE            => SCREEN,
          SPRITE_WIDTH           => 3,
          SCALE                  => 1,
          SPRITE_CONTENT         => "010"
                                  & "111"
                                  & "010",
          INITIAL_ROTATION       => 0,
-         INITIAL_ROTATION_SPEED => (0, 0),     -- rotation off in this TB
-         INITIAL_POSITION       => (30, 5),    -- near top of the screen
-         -- update_period=20: position step every 20 clocks, small enough
-         -- for the TB to observe several updates in a short simulated span.
-         INITIAL_SPEED          => (0, 1, 20),
+         INITIAL_ROTATION_SPEED => (0, 0),     -- rotation off for this TB
+         INITIAL_POSITION       => INIT_CENTER,
+         -- update_period=20: position step every 20 clocks. Short so
+         -- the TB observes several updates in < 1 ms of sim time.
+         INITIAL_SPEED          => (0, 0, 20),
          GRAVITY_ENABLED        => true,
-         -- y_increments=1 every 10 clock cycles: two gravity ticks per
-         -- position update so the integration is visibly non-trivial.
+         -- y_increments=1 every 10 clock cycles -> two gravity ticks
+         -- per position update, so velocity accumulates visibly fast.
          GRAVITY                => (1, 10)
       )
       port map (
@@ -57,11 +72,38 @@ begin
          outShouldDraw => tbShouldDraw
       );
 
-   -- Run a fixed simulated window long enough for the sprite to fall,
-   -- hit the bottom edge, and bounce at least once.
    stim : process
    begin
-      wait for 200 us;
+      -- Stage 1: cursor on the sprite's initial center.
+      -- outShouldDraw should be high (center pixel of the sprite
+      -- pattern is '1'). Allow a few clocks for the registered
+      -- `ProcessPosition` to settle.
+      tbStage     <= 1;
+      tbCursorPos <= INIT_CENTER;
+      wait for 10 * CLK_PERIOD;
+      assert tbShouldDraw = true
+         report "gravity TB stage 1: cursor at sprite center should draw,"
+              & " but outShouldDraw is false (sprite missing at t=0?)"
+         severity failure;
+
+      -- Stage 2: wait for gravity to pull the sprite clear of the
+      -- original pixel. With GRAVITY = (1, 10) on a 50 MHz clock and
+      -- INITIAL_SPEED.update_period = 20, velocity reaches +2 after
+      -- ~40 position updates (~800 clocks), then one more update
+      -- shifts y past the half-height of the 3x3 sprite. 300 us of
+      -- sim time is plenty.
+      tbStage <= 2;
+      wait for 300 us;
+
+      tbCursorPos <= INIT_CENTER;   -- re-sample the original center
+      wait for 4 * CLK_PERIOD;      -- registered input + one position step
+      assert tbShouldDraw = false
+         report "gravity TB stage 2: sprite has not moved off the original"
+              & " center after 300 us -- gravity path regressed?"
+         severity failure;
+
+      tbStage <= 99;
+      wait for 2 * CLK_PERIOD;
       tbRunning <= false;
       wait;
    end process;
