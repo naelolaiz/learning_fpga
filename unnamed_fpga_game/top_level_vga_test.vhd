@@ -74,7 +74,12 @@ constant SCREEN_MARGINS : Pos2D  := (155,30);
             INITIAL_ROTATION         : integer;
             INITIAL_ROTATION_SPEED           : RotationSpeed;
             INITIAL_POSITION         : Pos2D;
-            INITIAL_SPEED            : Speed2D
+            INITIAL_SPEED            : Speed2D;
+            -- Default: gravity disabled. Override at instantiation
+            -- (GRAVITY_ENABLED => true, GRAVITY => (y_inc, period)) to
+            -- enable the bouncing-ball physics path in sprite.vhd.
+            GRAVITY_ENABLED          : boolean := false;
+            GRAVITY                  : GravityAcceleration := (1, 3000000)
             );
    port( inClock : in  std_logic;
          inEnabled : in boolean;
