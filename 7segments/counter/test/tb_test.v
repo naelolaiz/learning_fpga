@@ -26,15 +26,15 @@ module tb_test;
     wire [3:0] sCableSelect;
 
     // Seen-flags fed by track_digits_seen; checked at end of sim.
-    reg seenDigit0 = 1'b0;
-    reg seenDigit1 = 1'b0;
-    reg seenDigit2 = 1'b0;
-    reg seenDigit3 = 1'b0;
+    reg sSeenDigit0 = 1'b0;
+    reg sSeenDigit1 = 1'b0;
+    reg sSeenDigit2 = 1'b0;
+    reg sSeenDigit3 = 1'b0;
 
     // Gate the continuous invariants for a short settle window so
     // the DUT has driven its outputs out of their undefined reset
     // values before the checks begin.
-    reg checksEnabled = 1'b0;
+    reg sChecksEnabled = 1'b0;
 
     test dut (
         .clock         (sClock50MHz),
@@ -67,13 +67,13 @@ module tb_test;
 
     // (A) continuous check.
     always @(sCableSelect) begin
-        if (checksEnabled && !is_one_hot_inverted(sCableSelect))
+        if (sChecksEnabled && !is_one_hot_inverted(sCableSelect))
             $fatal(1, "cableSelect violated one-hot-inverted invariant: %b", sCableSelect);
     end
 
     // (B) continuous check.
     always @(sSevenSegments) begin
-        if (checksEnabled && !is_valid_7seg(sSevenSegments))
+        if (sChecksEnabled && !is_valid_7seg(sSevenSegments))
             $fatal(1, "sevenSegments is not a valid BCD encoding: %b", sSevenSegments);
     end
 
@@ -82,12 +82,12 @@ module tb_test;
     // guarantees we catch the initial value even if the simulator
     // doesn't emit a change event for the undefined->valid drive at t=0.
     always @(posedge sClock50MHz) begin
-        if (checksEnabled) begin
+        if (sChecksEnabled) begin
             case (sCableSelect)
-                4'b1110: seenDigit0 <= 1'b1;
-                4'b1101: seenDigit1 <= 1'b1;
-                4'b1011: seenDigit2 <= 1'b1;
-                4'b0111: seenDigit3 <= 1'b1;
+                4'b1110: sSeenDigit0 <= 1'b1;
+                4'b1101: sSeenDigit1 <= 1'b1;
+                4'b1011: sSeenDigit2 <= 1'b1;
+                4'b0111: sSeenDigit3 <= 1'b1;
                 default: ;
             endcase
         end
@@ -101,14 +101,14 @@ module tb_test;
         // cableSelect / sevenSegments out of their reset values
         // before the continuous assertions start firing.
         #200;
-        checksEnabled = 1'b1;
+        sChecksEnabled = 1'b1;
 
         #(TEST_DURATION);
 
         // (C) Mux must have rotated through all four digits.
-        if (!(seenDigit0 && seenDigit1 && seenDigit2 && seenDigit3))
+        if (!(sSeenDigit0 && sSeenDigit1 && sSeenDigit2 && sSeenDigit3))
             $fatal(1, "mux stuck: seen digits = %b%b%b%b",
-                   seenDigit0, seenDigit1, seenDigit2, seenDigit3);
+                   sSeenDigit0, sSeenDigit1, sSeenDigit2, sSeenDigit3);
 
         $display("tb_test simulation done!");
         $finish;

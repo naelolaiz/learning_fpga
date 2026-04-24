@@ -137,7 +137,11 @@ module tl_simulator_writer #(
     end
 
     // Combinational gating: each output is the clock when its row is on.
-    always @(*) begin
+    // `always_comb` (vs `always @(*)`) is required to execute at t=0
+    // per IEEE 1800-2012, matching VHDL's combinational-process
+    // semantics — the testbench then sees sensible values at sim start
+    // instead of x until the first change of an input.
+    always_comb begin
         outLines[4] = sOutRow[0] ? inClock : 1'b0;
         outLines[3] = sOutRow[1] ? inClock : 1'b0;
         outLines[2] = sOutRow[2] ? inClock : 1'b0;

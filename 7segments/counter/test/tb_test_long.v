@@ -26,7 +26,7 @@ module tb_test_long;
     wire [6:0] sSevenSegments;
     wire [3:0] sCableSelect;
 
-    reg counterTicked = 1'b0;
+    reg sCounterTicked = 1'b0;
 
     // Encoding for digit "0" on the DUT's 7seg bus. Anything else
     // while digit 0 is selected means the counter has advanced.
@@ -42,7 +42,7 @@ module tb_test_long;
 
     always @(posedge sClock50MHz) begin
         if (sCableSelect == 4'b1110 && sSevenSegments !== ENCODING_ZERO) begin
-            counterTicked <= 1'b1;
+            sCounterTicked <= 1'b1;
         end
     end
 
@@ -52,7 +52,7 @@ module tb_test_long;
 
         #(TEST_DURATION);
 
-        if (!counterTicked)
+        if (!sCounterTicked)
             $fatal(1, "counter stuck: numberToDisplay never incremented in 150 ms");
 
         $display("tb_test_long simulation done!");

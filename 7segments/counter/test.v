@@ -50,7 +50,7 @@ module test (
     end
 
     // Anode mux + nibble select.
-    always @(*) begin
+    always_comb begin
         // Active-low one-hot for the four digits.
         case (enabledDigit)
             2'd0: cableSelect = 4'b1110;
@@ -64,7 +64,7 @@ module test (
     end
 
     // 7-segment decode (active-low segments, common-anode).
-    always @(*) begin
+    always_comb begin
         case (currentDigitValue)
             4'h0: sevenSegments = 7'b1000000;
             4'h1: sevenSegments = 7'b1111001;
