@@ -1,0 +1,22 @@
+# Dependabot configuration for automated dependency updates.
+#
+# Purpose: keep pinned GitHub Action versions in
+# .github/workflows/*.yml current so Node runtime deprecation warnings
+# don't silently accumulate. Before this file existed, the workflow
+# pins drifted several majors behind upstream, and Node 20 deprecation
+# notices started appearing in every CI run.
+#
+# docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci"

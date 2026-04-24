@@ -27,7 +27,7 @@ jobs:
     outputs:
       projects: ${{ steps.enumerate.outputs.projects }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - id: enumerate
         name: Enumerate projects
@@ -64,7 +64,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # The container already ships ghdl, yosys, ghdl-yosys-plugin,
       # iverilog, netlistsvg, gtkwave and xvfb. We only need to install
@@ -133,7 +133,7 @@ jobs:
       # have already failed the job if an artifact was missing for a
       # non-opted-out reason.
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.artifact.outputs.name }}-artifacts
           path: |
@@ -203,7 +203,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -333,7 +333,7 @@ jobs:
 
       - name: Upsert PR comment
         if: github.event_name == 'pull_request' && steps.stage.outputs.found != '0'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');

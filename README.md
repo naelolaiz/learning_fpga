@@ -56,9 +56,9 @@ A few demos running on the board itself:
 | :-------------------------------: | :--------------------------------: |
 | ![VGA demo](doc/vga_testing_2.gif) | ![Scrolling text on 7-segment display](7segments/text/doc/scrolling_long_text.gif) |
 
-### [Rotating sprite with a trigonometric LUT](unnamed_fpga_game)
+### [Rotating sprite with a trigonometric LUT](vga_sprites)
 
-![Rotating sprite driven by a precomputed sin/cos LUT](unnamed_fpga_game/doc/rotating_with_lut_trigonometric.gif)
+![Rotating sprite driven by a precomputed sin/cos LUT](vga_sprites/doc/rotating_with_lut_trigonometric.gif)
 
 ---
 
@@ -155,13 +155,11 @@ and Verilog on the right so you can compare the two directly.
 </details>
 
 <details>
-<summary><b><code>unnamed_fpga_game</code></b> — mini game kernel (trigonometric testbench)</summary>
+<summary><b><code>vga_sprites</code></b> — VGA sprite demo with trigonometric rotation + optional gravity</summary>
 
-Netlist synthesis is intentionally skipped (`SKIP_DIAGRAM=1`) — the
-`abs()` call in `trigonometric.vhd` trips `yosys + ghdl-yosys-plugin`.
-Only the simulation waveform is produced:
-
-![unnamed_fpga_game trig waveform](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/unnamed_fpga_game/tb_trigonometric.png)
+| netlist | waveform |
+| :-----: | :------: |
+| ![vga_sprites netlist](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite.svg) | ![vga_sprites trig waveform](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric.png) |
 
 </details>
 
@@ -256,7 +254,7 @@ declares `TOP / TB_TOP / SRC_FILES / TB_FILES` (and optionally the
 | [7segments/counter](7segments/counter/)                     | ✅ | VHDL + Verilog | Multiplexed 4-digit counter.                                   |
 | [general_components](general_components/)                   | ✅ | VHDL + Verilog | Serial2Parallel (both languages) + Debounce (VHDL only).       |
 | [simulator_writer](simulator_writer/)                       | ✅ | VHDL + Verilog | VCD writer used to sanity-check the sim flow.                  |
-| [unnamed_fpga_game](unnamed_fpga_game/)                     | ✅ | VHDL           | Trigonometric testbench; `SKIP_DIAGRAM` set (see Makefile).    |
+| [vga_sprites](vga_sprites/)                                 | ✅ | VHDL           | Rotating VGA sprites (trig LUT) + optional gravity.            |
 | [7segments/text](7segments/text/)                           | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
 | [7segments/clock](7segments/clock/)                         | ⏳ | VHDL           | Fails to compile under current toolchain (see Roadmap).        |
 | [7segments/random_generator](7segments/random_generator/)   | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
@@ -315,7 +313,7 @@ Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it
 ### Next up 🎯
 
 - Verilog mirrors for the bigger SoC-style projects: `vga`,
-  `i2s_test_1`, `uda1380`, `7segments/clock`, `unnamed_fpga_game` —
+  `i2s_test_1`, `uda1380`, `7segments/clock`, `vga_sprites` —
   leaf modules first, top-levels after.
 - Wire the "pending adoption" projects above into CI once their
   sources build cleanly (the old `rom_lut` was intentionally disabled
