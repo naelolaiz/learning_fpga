@@ -20,7 +20,11 @@
    PROJECT_NAME := my_new_project
 
    TOP     := my_top
-   TB_TOP  := tb_my_top
+   # TB_TOPS is a space-separated list. Projects with a single
+   # testbench write a one-entry list; projects that have multiple
+   # focused testbenches (e.g. unit vs. integration) list them all and
+   # each one renders its own VCD + PNG in `build/`.
+   TB_TOPS := tb_my_top
 
    SRC_FILES := my_top.vhd
    TB_FILES  := test/tb_my_top.vhd
@@ -31,7 +35,7 @@
    # iverilog/yosys flow (`simulate_v`, `diagram_v`, `screenshot_v`).
    # `make all` runs both flows when both are populated.
    V_TOP       := my_top
-   V_TB_TOP    := tb_my_top
+   V_TB_TOPS   := tb_my_top
    V_SRC_FILES := my_top.v
    V_TB_FILES  := test/tb_my_top.v
 

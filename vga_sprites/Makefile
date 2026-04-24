@@ -1,19 +1,18 @@
 PROJECT_NAME := vga_sprites
 
-# The testbench exercises trigonometric helpers through `tb_trigonometric`.
-# `definitions` and `sprite` are analysed alongside so any break in the
-# rest of the design shows up at CI time, even though the TB itself
-# doesn't instantiate `sprite`.
+# Three focused testbenches, each renders its own VCD + PNG in CI:
+#   tb_trigonometric      integration sweep + algebraic property checks
+#                         on the rotate() function and LUT.
+#   tb_multiply_by_sin_lut unit tests for the multiplyBySinLUT primitive.
+#   tb_sprite_gravity     sprite entity with gravity on, checks the
+#                         fall/bounce path end-to-end.
 TOP     := sprite
-TB_TOP  := tb_trigonometric
+TB_TOPS := tb_trigonometric tb_multiply_by_sin_lut tb_sprite_gravity
 
 SRC_FILES := definitions.vhd trigonometric.vhd sprite.vhd
-# tb_sprite_gravity is analysed here as a compile-time check of the
-# sprite's gravity path. It is not simulated because mk/common.mk is
-# single-TB today (only $(TB_TOP) is elaborated + run); a follow-up to
-# extend the flow to multiple testbenches would make this TB actually
-# render a waveform PNG in CI.
-TB_FILES  := test/tb_trigonometric.vhd test/tb_sprite_gravity.vhd
+TB_FILES  := test/tb_trigonometric.vhd \
+             test/tb_multiply_by_sin_lut.vhd \
+             test/tb_sprite_gravity.vhd
 
 VHDL_STANDARD := 08
 

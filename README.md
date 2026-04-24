@@ -120,7 +120,10 @@ and Verilog on the right so you can compare the two directly.
 | VHDL | Verilog |
 | :--: | :-----: |
 | ![fifo_sync netlist (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync.svg) | ![fifo_sync netlist (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/fifo_sync_v.svg) |
-| ![fifo_sync waveform (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync.png) | ![fifo_sync waveform (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_v.png) |
+| ![fifo_sync tb_fifo_sync (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync.png) | ![fifo_sync tb_fifo_sync (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_v.png) |
+| ![fifo_sync tb_fifo_sync_overlapping (VHDL)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/fifo_sync/tb_fifo_sync_overlapping.png) | — |
+
+Two VHDL testbenches: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_fifo_sync_overlapping` covers the simultaneous read+write case (occupancy invariance + ordering under overlap).
 
 </details>
 
@@ -157,9 +160,11 @@ and Verilog on the right so you can compare the two directly.
 <details>
 <summary><b><code>vga_sprites</code></b> — VGA sprite demo with trigonometric rotation + optional gravity</summary>
 
-| netlist | waveform |
-| :-----: | :------: |
-| ![vga_sprites netlist](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite.svg) | ![vga_sprites trig waveform](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric.png) |
+| netlist | tb_trigonometric | tb_multiply_by_sin_lut | tb_sprite_gravity |
+| :-----: | :--------------: | :--------------------: | :---------------: |
+| ![vga_sprites netlist](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite.svg) | ![vga_sprites tb_trigonometric](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric.png) | ![vga_sprites tb_multiply_by_sin_lut](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_multiply_by_sin_lut.png) | ![vga_sprites tb_sprite_gravity](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_sprite_gravity.png) |
+
+Three focused testbenches: `tb_trigonometric` (integration sweep + rotate properties), `tb_multiply_by_sin_lut` (LUT unit tests — odd symmetry, anti-symmetry across π, mirror across π/2, magnitude bound), `tb_sprite_gravity` (sprite entity with gravity on — fall/bounce cause-effect check).
 
 </details>
 
@@ -217,7 +222,7 @@ Swap `podman` for `docker` if that is your local runtime.
 ### Verilog support
 
 The build machinery is **bilingual**. A project that defines `V_TOP` /
-`V_TB_TOP` / `V_SRC_FILES` / `V_TB_FILES` in its `Makefile` also gets a
+`V_TB_TOPS` / `V_SRC_FILES` / `V_TB_FILES` in its `Makefile` also gets a
 parallel iverilog / yosys flow whose artifacts share `build/` with the
 VHDL ones via a `_v` suffix (`build/<top>_v.svg`, `build/<tb>_v.vcd`,
 `build/<tb>_v.png`) — both languages coexist without colliding.
@@ -237,7 +242,7 @@ canonical pattern.
 ### Adding a new example
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). tl;dr: drop a `Makefile` that
-declares `TOP / TB_TOP / SRC_FILES / TB_FILES` (and optionally the
+declares `TOP / TB_TOPS / SRC_FILES / TB_FILES` (and optionally the
 `V_*` equivalents), `include ../mk/common.mk`, done.
 
 ---
