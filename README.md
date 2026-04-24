@@ -62,7 +62,16 @@ Project containing tests for learning FPGA/VHDL.
         - create a spectral analyzer (i2s, fft, vga)
         - (+IFFT, +DSP algorithms) create an FX/DSP module
           - (+bluetooth/BLE driver) extend module with wireless audio
-- Learn Verilog (TODO)
+- Learn Verilog (in progress)
+  - [x] every existing tutorial project ships a Verilog mirror alongside
+    the VHDL: identical functionality, same testbench expectations, so
+    you can read the two side-by-side. See [Verilog support](#verilog-support).
+  - [x] new dual-language examples: `pwm_led`, `uart_tx`, `shift_register`,
+    `fifo_sync` — all small, all read as standalone tutorials in either
+    language.
+  - TODO: mirror the bigger SoC-style projects (`vga`, `i2s_test_1`,
+    `uda1380`, `7segments/clock`, `unnamed_fpga_game` — leaf modules
+    first, top levels after).
 
 ## Build & CI
 
@@ -107,16 +116,49 @@ Each matrix job uploads them as `<project>-artifacts`.
 ### Currently built in CI
 
 - `blink_led`
-- `general_components` (Serial2Parallel)
+- `general_components` (Serial2Parallel + Debounce)
 - `simulator_writer`
 - `7segments/counter`
 - `unnamed_fpga_game` (trigonometric testbench; `SKIP_DIAGRAM` set — see
   project Makefile for the reason)
+- `pwm_led`
+- `uart_tx`
+- `shift_register`
+- `fifo_sync`
 
 Projects pending adoption (they have VHDL sources but no CI hookup yet —
 dropping a `Makefile` in each is all it takes): `7segments/text`,
 `7segments/clock`, `7segments/random_generator`, `i2s_test_1`, `rom_lut`,
 `uda1380`, `vga`.
+
+### Verilog support
+
+The build machinery is **bilingual**: any project that defines
+`V_SRC_FILES` / `V_TB_FILES` / `V_TOP` / `V_TB_TOP` in its `Makefile`
+also gets a parallel iverilog/yosys flow. The Verilog artifacts share
+`build/` with the VHDL ones using a `_v` suffix (`build/<top>_v.svg`,
+`build/<tb>_v.vcd`, `build/<tb>_v.png`) so both languages co-exist
+without colliding.
+
+Per-language targets:
+
+| target          | tooling                              |
+| --------------- | ------------------------------------ |
+| `simulate_v`    | `iverilog -g2012` → `vvp`            |
+| `diagram_v`     | `yosys read_verilog` → `netlistsvg`  |
+| `screenshot_v`  | `vvp` VCD → headless GTKWave         |
+
+`make all` runs both flows when both language sets are populated.
+
+Verilog testbenches must call `$dumpfile(\`VCD_OUT)`; the Makefile
+supplies that define so the dump file lands in `build/` regardless of
+where the testbench is invoked from. See `blink_led/test/tb_blink_led.v`
+for the canonical pattern.
+
+`iverilog` lives in the `hdltools` container image (added via
+[hdltools#3](https://github.com/naelolaiz/hdltools/pull/3)). Until the
+new `:release` tag is republished, CI installs it via apt as a one-line
+bridge — see `.github/workflows/ci.yml`.
 
 ## more links
  - https://projectf.io/tutorials/

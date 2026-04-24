@@ -14,9 +14,11 @@ work-obj*.cf
 # binary itself.
 **/tb_*
 !**/tb_*.vhd
+!**/tb_*.v
 !**/tb_*.py
 **/*_tb
 !**/*_tb.vhd
+!**/*_tb.v
 !**/*_tb.py
 **/e~*.o
 **/e~*

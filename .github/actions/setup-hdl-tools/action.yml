@@ -1,8 +1,9 @@
 name: Set up HDL toolchain (apt fallback)
 description: >-
-  Installs GHDL, yosys (+ ghdl-yosys-plugin), netlistsvg, GTKWave, Xvfb
-  and the Python deps via apt/npm/pip. Only used when the hdltools
-  container is unavailable; the primary CI path uses the pre-built image.
+  Installs GHDL, yosys (+ ghdl-yosys-plugin), iverilog, netlistsvg,
+  GTKWave, Xvfb and the Python deps via apt/npm/pip. Only used when the
+  hdltools container is unavailable; the primary CI path uses the
+  pre-built image.
 
 inputs:
   python-version:
@@ -29,6 +30,7 @@ runs:
           ghdl \
           yosys \
           yosys-plugin-ghdl \
+          iverilog \
           gtkwave \
           xvfb \
           xauth \
@@ -51,5 +53,6 @@ runs:
         yosys -V
         netlistsvg --help 2>&1 | head -n1 || true
         gtkwave --version 2>&1 | head -n1 || true
+        iverilog -V 2>&1 | head -n1 || true
         python --version
         echo "::endgroup::"

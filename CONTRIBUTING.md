@@ -27,7 +27,26 @@
 
    VHDL_STANDARD := 08   # optional; default is 08
 
+   # Optional Verilog mirror — define these to enable the parallel
+   # iverilog/yosys flow (`simulate_v`, `diagram_v`, `screenshot_v`).
+   # `make all` runs both flows when both are populated.
+   V_TOP       := my_top
+   V_TB_TOP    := tb_my_top
+   V_SRC_FILES := my_top.v
+   V_TB_FILES  := test/tb_my_top.v
+
    include ../mk/common.mk    # adjust ../ depth if your project is deeper
+   ```
+
+   For Verilog testbenches, dump waveforms via the supplied `VCD_OUT`
+   define so the file lands in `build/`:
+
+   ```verilog
+   initial begin
+       $dumpfile(`VCD_OUT);
+       $dumpvars(0, tb_my_top);
+       // ...
+   end
    ```
 
 3. Build locally:
@@ -73,7 +92,8 @@ docker run --rm -it -v "$PWD":/work -w /work \
 On Ubuntu 22.04+:
 
 ```bash
-sudo apt-get install ghdl yosys yosys-plugin-ghdl gtkwave xvfb nodejs npm
+sudo apt-get install ghdl yosys yosys-plugin-ghdl iverilog \
+                     gtkwave xvfb nodejs npm
 sudo npm install -g netlistsvg
 pip install -r scripts/requirements.txt
 ```

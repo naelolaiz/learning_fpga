@@ -77,6 +77,16 @@ jobs:
       - name: Install Python deps
         run: pip install --quiet --no-cache-dir -r scripts/requirements.txt
 
+      # iverilog is needed for the optional Verilog flow in mk/common.mk
+      # (the projects that ship a `.v` mirror alongside the `.vhd`). It is
+      # not yet baked into the hdltools image — once
+      # https://github.com/naelolaiz/hdltools/pull/3 lands and the
+      # `:release` tag rolls forward, drop this step.
+      - name: Install iverilog (bridge until hdltools#3 ships)
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends iverilog
+
       - name: Tool versions
         run: |
           echo "::group::tool versions"
@@ -84,6 +94,7 @@ jobs:
           yosys -V 2>&1 | head -n1 || true
           netlistsvg --help 2>&1 | head -n1 || true
           gtkwave --version 2>&1 | head -n1 || true
+          iverilog -V 2>&1 | head -n1 || true
           python3 --version
           echo "::endgroup::"
 
@@ -102,6 +113,21 @@ jobs:
       - name: Render waveform screenshot
         working-directory: ${{ matrix.project }}
         run: xvfb-run --auto-servernum make screenshot
+
+      # Optional Verilog flow. mk/common.mk turns these into no-ops for
+      # projects that don't define V_SRC_FILES, so it is safe to run
+      # them unconditionally across the matrix.
+      - name: Simulate (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: make simulate_v
+
+      - name: Generate netlist diagram (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: make diagram_v
+
+      - name: Render waveform screenshot (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: xvfb-run --auto-servernum make screenshot_v
 
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.
