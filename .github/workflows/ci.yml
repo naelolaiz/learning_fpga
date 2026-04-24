@@ -67,8 +67,8 @@ jobs:
         uses: actions/checkout@v4
 
       # The container already ships ghdl, yosys, ghdl-yosys-plugin,
-      # netlistsvg, gtkwave and xvfb. We only need to install the
-      # Python deps required by scripts/vcd2png.py.
+      # iverilog, netlistsvg, gtkwave and xvfb. We only need to install
+      # the Python deps required by scripts/vcd2png.py.
       #
       # Note: the hdltools image's default shell is POSIX sh (dash),
       # not bash, so this block must avoid bash-only constructs like
@@ -84,6 +84,7 @@ jobs:
           yosys -V 2>&1 | head -n1 || true
           netlistsvg --help 2>&1 | head -n1 || true
           gtkwave --version 2>&1 | head -n1 || true
+          iverilog -V 2>&1 | head -n1 || true
           python3 --version
           echo "::endgroup::"
 
@@ -102,6 +103,21 @@ jobs:
       - name: Render waveform screenshot
         working-directory: ${{ matrix.project }}
         run: xvfb-run --auto-servernum make screenshot
+
+      # Optional Verilog flow. mk/common.mk turns these into no-ops for
+      # projects that don't define V_SRC_FILES, so it is safe to run
+      # them unconditionally across the matrix.
+      - name: Simulate (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: make simulate_v
+
+      - name: Generate netlist diagram (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: make diagram_v
+
+      - name: Render waveform screenshot (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: xvfb-run --auto-servernum make screenshot_v
 
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.

@@ -86,7 +86,14 @@ Other code using the same board or covering similar ground:
   - a spectral analyzer (I2S + FFT + VGA);
   - an FX/DSP module (+ IFFT, + DSP algorithms);
   - wireless audio on top (+ BLE/Bluetooth driver).
-- Learn Verilog.
+- Learn Verilog (in progress): every CI-wired tutorial project ships a
+  Verilog mirror alongside the VHDL — identical functionality, matching
+  testbench expectations — so the two read side-by-side. Four new
+  dual-language examples (`pwm_led`, `uart_tx`, `shift_register`,
+  `fifo_sync`) land in both languages. Bigger SoC-style projects
+  (`vga`, `i2s_test_1`, `uda1380`, `7segments/clock`, `unnamed_fpga_game`)
+  still to mirror — leaf modules first, top levels after. See
+  [Verilog support](#verilog-support).
 
 ## Build & CI
 
@@ -147,11 +154,15 @@ Adding a project means dropping a `Makefile` that `include`s `mk/common.mk`;
 
 | Project                     | CI | Notes                                                           |
 | --------------------------- | -- | --------------------------------------------------------------- |
-| `blink_led`                 | ✅ |                                                                 |
-| `general_components`        | ✅ | Serial2Parallel.                                                |
-| `simulator_writer`          | ✅ |                                                                 |
-| `7segments/counter`         | ✅ |                                                                 |
+| `blink_led`                 | ✅ | VHDL + Verilog.                                                 |
+| `general_components`        | ✅ | Serial2Parallel (VHDL + Verilog) + Debounce.                    |
+| `simulator_writer`          | ✅ | VHDL + Verilog.                                                 |
+| `7segments/counter`         | ✅ | VHDL + Verilog.                                                 |
 | `unnamed_fpga_game`         | ✅ | Trigonometric testbench; `SKIP_DIAGRAM` set (see Makefile).     |
+| `pwm_led`                   | ✅ | VHDL + Verilog.                                                 |
+| `uart_tx`                   | ✅ | VHDL + Verilog.                                                 |
+| `shift_register`            | ✅ | VHDL + Verilog.                                                 |
+| `fifo_sync`                 | ✅ | VHDL + Verilog.                                                 |
 | `7segments/text`            | ⏳ | Sources present, no Makefile yet.                               |
 | `7segments/clock`           | ⏳ | Fails to compile under current toolchain (see In progress).     |
 | `7segments/random_generator`| ⏳ | Sources present, no Makefile yet.                               |
@@ -159,6 +170,30 @@ Adding a project means dropping a `Makefile` that `include`s `mk/common.mk`;
 | `rom_lut`                   | ⏳ | Sources present, no Makefile yet.                               |
 | `uda1380`                   | ⏳ | Sources present, no Makefile yet.                               |
 | `vga`                       | ⏳ | Sources present, no Makefile yet.                               |
+
+### Verilog support
+
+The build machinery is **bilingual**: any project that defines
+`V_SRC_FILES` / `V_TB_FILES` / `V_TOP` / `V_TB_TOP` in its `Makefile`
+also gets a parallel iverilog/yosys flow. The Verilog artifacts share
+`build/` with the VHDL ones using a `_v` suffix (`build/<top>_v.svg`,
+`build/<tb>_v.vcd`, `build/<tb>_v.png`) so both languages co-exist
+without colliding.
+
+Per-language targets:
+
+| target          | tooling                              |
+| --------------- | ------------------------------------ |
+| `simulate_v`    | `iverilog -g2012` → `vvp`            |
+| `diagram_v`     | `yosys read_verilog` → `netlistsvg`  |
+| `screenshot_v`  | `vvp` VCD → headless GTKWave         |
+
+`make all` runs both flows when both language sets are populated.
+
+Verilog testbenches must call `$dumpfile(\`VCD_OUT)`; the Makefile
+supplies that define so the dump file lands in `build/` regardless of
+where the testbench is invoked from. See `blink_led/test/tb_blink_led.v`
+for the canonical pattern.
 
 ## More links
 
