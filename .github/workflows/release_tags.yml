@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Python deps
         run: pip install --quiet --no-cache-dir -r scripts/requirements.txt
@@ -67,7 +67,7 @@ jobs:
           ( cd release && zip -r ../release-${{ github.ref_name }}.zip . )
 
       - name: Upload artifact to workflow run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ github.ref_name }}
           path: release-${{ github.ref_name }}.zip
@@ -77,7 +77,7 @@ jobs:
       # Skipped on manual dispatch from a branch — only publishes on tag.
       - name: Create Release and upload asset
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
