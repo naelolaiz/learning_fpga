@@ -14,7 +14,12 @@ TOP     := sprite
 TB_TOP  := tb_trigonometric
 
 SRC_FILES := definitions.vhd trigonometric.vhd sprite.vhd
-TB_FILES  := test/tb_trigonometric.vhd
+# tb_sprite_gravity is analysed here as a compile-time check of the
+# sprite's gravity path. It is not simulated because mk/common.mk is
+# single-TB today (only $(TB_TOP) is elaborated + run); a follow-up to
+# extend the flow to multiple testbenches would make this TB actually
+# render a waveform PNG in CI.
+TB_FILES  := test/tb_trigonometric.vhd test/tb_sprite_gravity.vhd
 
 VHDL_STANDARD := 08
 SKIP_DIAGRAM  := 1

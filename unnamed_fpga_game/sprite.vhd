@@ -20,7 +20,13 @@ entity sprite is
             INITIAL_ROTATION         : integer := 0; -- 0 to 31
             INITIAL_ROTATION_SPEED           : RotationSpeed := ( 1, 0);
             INITIAL_POSITION         : Pos2D   := (0, 0);
-            INITIAL_SPEED            : Speed2D := (0, 0, 0)
+            INITIAL_SPEED            : Speed2D := (0, 0, 0);
+            -- Optional downward physics. When GRAVITY_ENABLED is false the
+            -- GRAVITY record is ignored; when true, GRAVITY.y_increments is
+            -- added to the sprite's y-velocity every GRAVITY.update_period
+            -- clock ticks (see moveSprite below).
+            GRAVITY_ENABLED          : boolean := false;
+            GRAVITY                  : GravityAcceleration := (1, 3000000)
             );
    port( inClock : in  std_logic;
          inEnabled : in boolean;
@@ -81,42 +87,72 @@ outShouldDraw <= sShouldDraw;
        end if;
    end process;
 
-   moveSprite : process (inClock, sShouldDraw, inColision)
+   -- Position + velocity update.
+   --
+   -- Uses a `currentSpeed` variable (not the sCurrentSpeed signal directly)
+   -- so reads within the process see the latest velocity instead of the
+   -- previous delta-cycle value. Gravity depends on that: the updated
+   -- velocity must feed the same cycle's position step and bounce check.
+   moveSprite : process (inClock, sShouldDraw, inColision, sCurrentSpeed)
       variable counterForSpritePositionUpdate : integer range 0 to INITIAL_SPEED.update_period := 0;
       variable nextPositionToTest : Pos2D := (0,0);
       variable collisionDetected : boolean := false;
+      variable counterForVelocityUpdateByGravity : integer range 0 to GRAVITY.update_period := 0;
+      variable currentSpeed : Speed2D := sCurrentSpeed;
    begin
       if rising_edge(inClock) then
+         currentSpeed := sCurrentSpeed;
+
+         -- Gravity: add `y_increments` to downward velocity every
+         -- `update_period` clock cycles. On the board's 50 MHz vga_clk,
+         -- the default period 3_000_000 fires ~17x per second.
+         if GRAVITY_ENABLED then
+            if counterForVelocityUpdateByGravity = GRAVITY.update_period then
+               counterForVelocityUpdateByGravity := 0;
+               currentSpeed.y := currentSpeed.y + GRAVITY.y_increments;
+            else
+               counterForVelocityUpdateByGravity := counterForVelocityUpdateByGravity + 1;
+            end if;
+         end if;
+
          if counterForSpritePositionUpdate = INITIAL_SPEED.update_period then
             counterForSpritePositionUpdate := 0;
             collisionDetected := false;
            -- check for colission with the screen
             -- TODO: implement vectors sum
-            nextPositionToTest := ((sSpritePos.x + sCurrentSpeed.x),
-                                  (sSpritePos.y + sCurrentSpeed.y));
+            nextPositionToTest := ((sSpritePos.x + currentSpeed.x),
+                                  (sSpritePos.y + currentSpeed.y));
             if  nextPositionToTest.x - C_HALF_SCALED_WIDTH <= 0
              or nextPositionToTest.x + C_HALF_SCALED_WIDTH >= SCREEN_SIZE.width then
-               sCurrentSpeed.x <= sCurrentSpeed.x * (-1);
+               currentSpeed.x := currentSpeed.x * (-1);
                collisionDetected := true;
             end if;
             if  nextPositionToTest.y - C_HALF_SCALED_HEIGHT <= 0
              or nextPositionToTest.y + C_HALF_SCALED_HEIGHT >= SCREEN_SIZE.height then
-               sCurrentSpeed.y <= sCurrentSpeed.y * (-1);
+               currentSpeed.y := currentSpeed.y * (-1);
+               -- After a top-edge bounce with gravity enabled, the flipped
+               -- y-velocity points downward; cap its magnitude so an
+               -- accumulated fast fall doesn't launch the sprite at the
+               -- same speed upward on the next bounce cycle.
+               if GRAVITY_ENABLED and currentSpeed.y > 1 then
+                  currentSpeed.y := 1;
+               end if;
                collisionDetected := true;
             end if;
-            sSpritePos <= ((sSpritePos.x + sCurrentSpeed.x),
-                           (sSpritePos.y + sCurrentSpeed.y));
+            sSpritePos <= ((sSpritePos.x + currentSpeed.x),
+                           (sSpritePos.y + currentSpeed.y));
             if collisionDetected or (inColision and sShouldDraw) then
-               sCurrentRotationSpeed.index_inc <= sCurrentRotationSpeed.index_inc * (-1); 
+               sCurrentRotationSpeed.index_inc <= sCurrentRotationSpeed.index_inc * (-1);
             end if;
             if (inColision and sShouldDraw) then
-               sCurrentSpeed.x <= sCurrentSpeed.x * (-1);
-               sCurrentSpeed.y <= sCurrentSpeed.y * (-1);
+               currentSpeed.x := currentSpeed.x * (-1);
+               currentSpeed.y := currentSpeed.y * (-1);
             end if;
-
          else
             counterForSpritePositionUpdate := counterForSpritePositionUpdate + 1;
          end if;
+
+         sCurrentSpeed <= currentSpeed;
       end if;
    end process;
 

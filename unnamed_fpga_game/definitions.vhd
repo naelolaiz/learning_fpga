@@ -29,6 +29,15 @@ package definitions is
       height : integer;
    end record;
 
+   -- Downward acceleration applied to a sprite's y-velocity.
+   -- `y_increments` is added to speed.y every `update_period` clock ticks.
+   -- A sprite with GRAVITY_ENABLED=false ignores this record entirely.
+   type GravityAcceleration is
+   record
+      y_increments  : integer;
+      update_period : integer;
+   end record;
+
 end package;
 
 package body definitions is
