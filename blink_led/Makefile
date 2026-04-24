@@ -11,4 +11,10 @@ TB_FILES  := test/tb_blink_led.vhd
 # VHDL_STANDARD := 93 here.
 VHDL_STANDARD := 08
 
+# Verilog mirror — built side-by-side with the VHDL flow.
+V_TOP       := blink_led
+V_TB_TOP    := tb_blink_led
+V_SRC_FILES := blink_led.v
+V_TB_FILES  := test/tb_blink_led.v
+
 include ../mk/common.mk

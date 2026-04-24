@@ -11,4 +11,10 @@ TB_FILES  := test/tb_test.vhd
 
 VHDL_STANDARD := 08
 
+# Verilog mirror.
+V_TOP       := test
+V_TB_TOP    := tb_test
+V_SRC_FILES := test.v
+V_TB_FILES  := test/tb_test.v
+
 include ../../mk/common.mk
