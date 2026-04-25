@@ -22,7 +22,7 @@ architecture testbench of tb_uart_tx is
   signal sTxData   : std_logic_vector(7 downto 0) := x"A5";
   signal sTx       : std_logic;
   signal sTxBusy   : std_logic;
-  signal sActive   : boolean := true;
+  signal sSimulationActive   : boolean := true;
 
   signal received  : std_logic_vector(7 downto 0);
 begin
@@ -32,7 +32,7 @@ begin
     port map (clk => sClk, tx_start => sTxStart, tx_data => sTxData,
               tx => sTx, tx_busy => sTxBusy);
 
-  sClk <= not sClk after CLK_PERIOD/2 when sActive;
+  sClk <= not sClk after CLK_PERIOD/2 when sSimulationActive;
 
   driver : process
   begin
@@ -61,7 +61,7 @@ begin
       report "Recovered byte mismatch" severity error;
 
     report "uart_tx simulation done!" severity note;
-    sActive <= false;
+    sSimulationActive <= false;
     wait;
   end process;
 

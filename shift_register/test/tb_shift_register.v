@@ -17,6 +17,8 @@ module tb_shift_register;
     wire [WIDTH-1:0] sPOut;
     wire             sSOut;
 
+    reg              sSimulationActive = 1'b1;
+
     shift_register #(.WIDTH(WIDTH)) dut (
         .clk          (sClk),
         .load         (sLoad),
@@ -26,12 +28,15 @@ module tb_shift_register;
         .serial_out   (sSOut)
     );
 
-    always #(CLK_PERIOD/2) sClk = ~sClk;
+    always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_shift_register);
+        $dumpvars(1, tb_shift_register);
+        $dumpvars(1, dut);
+    end
 
+    initial begin : driver
         @(negedge sClk);
         sLoad = 1'b1;
         @(negedge sClk);
@@ -53,6 +58,7 @@ module tb_shift_register;
             $fatal(1, "After three shifts, serial_out=%b", sSOut);
 
         $display("shift_register simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

@@ -44,6 +44,8 @@ architecture testbench of tb_trigonometric is
    signal checkerLUTInput   : std_logic_vector(7 downto 0) := (others => '0');
    signal checkerLUTOutput  : std_logic_vector(7 downto 0) := (others => '0');
 
+   signal sSimulationActive : boolean := true;
+
 begin
 
    ------------------------------------------------------------------
@@ -196,6 +198,7 @@ begin
             end loop;
          end loop;
       end loop;
+      sSimulationActive <= false;
       wait;
    end process;
 

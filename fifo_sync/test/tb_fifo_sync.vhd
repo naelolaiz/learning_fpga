@@ -1,7 +1,10 @@
 -- tb_fifo_sync.vhd
 --
 -- Pushes DEPTH words in, asserts `full`, drains them, asserts the
--- ordering and `empty`, and checks one round of overlapping read/write.
+-- ordering and `empty`. Concurrent read/write behaviour (the tricky
+-- case where both enables are high on the same cycle and occupancy
+-- must stay constant) is covered by the sibling
+-- `tb_fifo_sync_overlapping.vhd`.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -23,7 +26,7 @@ architecture testbench of tb_fifo_sync is
   signal sRdData : std_logic_vector(DATA_WIDTH-1 downto 0);
   signal sEmpty  : std_logic;
   signal sFull   : std_logic;
-  signal sActive : boolean := true;
+  signal sSimulationActive : boolean := true;
 begin
 
   dut : entity work.fifo_sync
@@ -33,7 +36,7 @@ begin
               rd_en => sRdEn, rd_data => sRdData,
               empty => sEmpty, full => sFull);
 
-  sClk <= not sClk after CLK_PERIOD/2 when sActive;
+  sClk <= not sClk after CLK_PERIOD/2 when sSimulationActive;
 
   driver : process
   begin
@@ -66,7 +69,7 @@ begin
     assert sEmpty = '1' report "Should be empty after draining" severity error;
 
     report "fifo_sync simulation done!" severity note;
-    sActive <= false;
+    sSimulationActive <= false;
     wait;
   end process;
 

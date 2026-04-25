@@ -11,19 +11,24 @@ module tb_pwm_led;
     reg  [WIDTH-1:0] sDuty = {WIDTH{1'b0}};
     wire             sPwm;
 
+    reg              sSimulationActive = 1'b1;
+
     pwm_led #(.WIDTH(WIDTH)) dut (
         .clk     (sClk),
         .duty    (sDuty),
         .pwm_out (sPwm)
     );
 
-    always #(CLK_PERIOD/2) sClk = ~sClk;
-
-    integer d, c, observed;
+    always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_pwm_led);
+        $dumpvars(1, tb_pwm_led);
+        $dumpvars(1, dut);
+    end
+
+    initial begin : driver
+        integer d, c, observed;
 
         for (d = 0; d <= 255; d = d + 1) begin
             if ((d % 32) == 0 || d == 255) begin
@@ -40,6 +45,7 @@ module tb_pwm_led;
             end
         end
         $display("pwm_led simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

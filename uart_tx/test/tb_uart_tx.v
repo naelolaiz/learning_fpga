@@ -16,6 +16,8 @@ module tb_uart_tx;
 
     reg  [7:0] received = 8'h00;
 
+    reg        sSimulationActive = 1'b1;
+
     uart_tx #(.CLKS_PER_BIT(CLKS_PER_BIT)) dut (
         .clk      (sClk),
         .tx_start (sTxStart),
@@ -24,13 +26,16 @@ module tb_uart_tx;
         .tx_busy  (sTxBusy)
     );
 
-    always #(CLK_PERIOD/2) sClk = ~sClk;
-
-    integer i;
+    always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_uart_tx);
+        $dumpvars(1, tb_uart_tx);
+        $dumpvars(1, dut);
+    end
+
+    initial begin : driver
+        integer i;
 
         #(4*CLK_PERIOD);
         if (sTx !== 1'b1) $fatal(1, "Idle line should be high");
@@ -57,6 +62,7 @@ module tb_uart_tx;
                    received, sTxData);
 
         $display("uart_tx simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

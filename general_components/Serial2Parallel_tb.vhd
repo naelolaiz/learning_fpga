@@ -12,7 +12,7 @@ architecture tb of Serial2Parallel_tb is
   signal sData : std_logic := '0';
   signal sPrint : std_logic := '0';
   signal sOutData : std_logic_vector (NUMBER_OF_BITS-1 downto 0);
-
+  signal sSimulationActive : boolean := true;
 
 begin
 
@@ -53,6 +53,7 @@ begin
      report "Error" severity error;
   end loop;
   report "Simulation completed!" severity note;
+  sSimulationActive <= false;
   wait; -- finish simulation
 end process;
 

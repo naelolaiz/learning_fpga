@@ -20,7 +20,7 @@ architecture testbench of tb_shift_register is
   signal sIn      : std_logic := '0';
   signal sPOut    : std_logic_vector(WIDTH-1 downto 0);
   signal sSOut    : std_logic;
-  signal sActive  : boolean := true;
+  signal sSimulationActive  : boolean := true;
 begin
 
   dut : entity work.shift_register
@@ -28,7 +28,7 @@ begin
     port map (clk => sClk, load => sLoad, load_data => sLoadD,
               serial_in => sIn, parallel_out => sPOut, serial_out => sSOut);
 
-  sClk <= not sClk after CLK_PERIOD/2 when sActive;
+  sClk <= not sClk after CLK_PERIOD/2 when sSimulationActive;
 
   driver : process
   begin
@@ -64,7 +64,7 @@ begin
       severity error;
 
     report "shift_register simulation done!" severity note;
-    sActive <= false;
+    sSimulationActive <= false;
     wait;
   end process;
 

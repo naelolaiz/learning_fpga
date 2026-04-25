@@ -2,67 +2,77 @@
 //
 // 50 MHz clock (20 ns period), button toggles, with assertions
 // equivalent to the VHDL testbench's report/assert checks.
+//
+// Signal names use the same `s`-prefix convention as the VHDL
+// mirror (sClock50MHz, sButton, sLed1, sLed2) so the two waveforms
+// show identically-named signals side by side in the gallery.
 
 `timescale 1ns/1ps
 
 module tb_blink_led;
 
-    reg  clk    = 1'b0;
-    reg  button = 1'b1;     // active-low: idle = 1
-    wire led1;
-    wire led2;
+    reg  sClock50MHz = 1'b0;
+    reg  sButton     = 1'b1;     // active-low: idle = 1
+    wire sLed1;
+    wire sLed2;
+
+    reg  sSimulationActive = 1'b1;
 
     // Match the VHDL TB: CLOCKS_TO_OVERFLOW=10 → 10*20 ns = 200 ns toggle.
     blink_led #(.CLOCKS_TO_OVERFLOW(10)) dut (
-        .clk     (clk),
-        .button1 (button),
-        .led     (led1),
-        .led2    (led2)
+        .clk     (sClock50MHz),
+        .button1 (sButton),
+        .led     (sLed1),
+        .led2    (sLed2)
     );
 
     // 50 MHz: 10 ns half-period.
-    always #10 clk = ~clk;
+    always #10 if (sSimulationActive) sClock50MHz = ~sClock50MHz;
 
     // Match the VHDL TB's button schedule.
     initial begin
-        button = 1'b1;
-        #50  button = 1'b0;
-        #40  button = 1'b1;
-        #150 button = 1'b0;
-        #50  button = 1'b1;
+        sButton = 1'b1;
+        #50  sButton = 1'b0;
+        #40  sButton = 1'b1;
+        #150 sButton = 1'b0;
+        #50  sButton = 1'b1;
+    end
+
+    initial begin
+        $dumpfile(`VCD_OUT);
+        $dumpvars(1, tb_blink_led);
+        $dumpvars(1, dut);
     end
 
     // Checker process — mirrors tb_blink_led.vhd assertions.
-    initial begin
-        $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_blink_led);
-
-        @(posedge clk);
-        if (!(led1 === 1'b0 && led2 === 1'b0))
+    initial begin : driver
+        @(posedge sClock50MHz);
+        if (!(sLed1 === 1'b0 && sLed2 === 1'b0))
             $fatal(1, "Wrong output signals at start");
 
-        @(negedge button);          // first press
-        @(posedge clk);
-        if (!(led1 === 1'b0 && led2 === 1'b1))
+        @(negedge sButton);          // first press
+        @(posedge sClock50MHz);
+        if (!(sLed1 === 1'b0 && sLed2 === 1'b1))
             $fatal(1, "Wrong output signals after first button press");
 
         // The first press happens around 50 ns; wait into the second
         // pulse half (matches the VHDL TB's "wait for 130 ns" comment).
         #130;
-        if (!(led1 === 1'b1 && led2 === 1'b1))
+        if (!(sLed1 === 1'b1 && sLed2 === 1'b1))
             $fatal(1, "Wrong output signals on second cycle, button not pressed");
 
-        @(negedge button);          // second press
-        @(posedge clk);
-        if (!(led1 === 1'b1 && led2 === 1'b0))
+        @(negedge sButton);          // second press
+        @(posedge sClock50MHz);
+        if (!(sLed1 === 1'b1 && sLed2 === 1'b0))
             $fatal(1, "Wrong output signals on second cycle, button pressed");
 
-        @(posedge button);          // release
-        @(posedge clk);
-        if (!(led1 === 1'b1 && led2 === 1'b1))
+        @(posedge sButton);          // release
+        @(posedge sClock50MHz);
+        if (!(sLed1 === 1'b1 && sLed2 === 1'b1))
             $fatal(1, "Wrong output signals on second cycle, button released");
 
         $display("Simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

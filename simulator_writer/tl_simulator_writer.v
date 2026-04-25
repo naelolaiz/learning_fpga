@@ -15,22 +15,28 @@ module tl_simulator_writer #(
     parameter integer STRING_LENGTH = 12   // matches "Hello world!"
 ) (
     input  wire       inClock,
-    output reg  [4:0] outLines,
+    output wire [4:0] outLines,
     output reg        done
 );
 
-    localparam integer CHAR_HOR_LENGTH       = 5;
-    localparam integer CLOCKS_FOR_COLUMN     = 5;
-    localparam integer COLUMN_SEP_BETW_CHARS = 1;
+    localparam integer cCharHorLength               = 5;
+    localparam integer cClocksForColumn             = 5;
+    localparam integer cColumnSeparatorBetweenChars = 1;
 
     reg [4:0]  sCurrentChar [0:4];
     reg [4:0]  sOutRow;
     reg        sCurrentBlank;
 
-    integer vCurrentCharIdx        = 1;
-    integer vCountForSeparator     = 0;
-    integer vCounterForClocksColumn = 0;
-    integer vCharHorIndex           = 0;
+    // The VHDL twin keeps these as process *variables*; GHDL does not
+    // surface them in the VCD. They live at module scope here for
+    // yosys compatibility (static locals inside a named always block
+    // are not yet accepted by the yosys SV frontend) — the testbench
+    // hides them via an explicit $dumpvars signal list so the two
+    // waveforms still show the same signal set.
+    integer vCurrentCharIdx                 = 1;
+    integer vCountForSeparatorBetweenChars  = 0;
+    integer vCounterForClocksForColumn      = 0;
+    integer vCharHorIndex                   = 0;
 
     integer i;
 
@@ -44,28 +50,28 @@ module tl_simulator_writer #(
     always @(posedge inClock) begin
         done <= 1'b0;
 
-        if (vCounterForClocksColumn == CLOCKS_FOR_COLUMN - 1 || sCurrentBlank) begin
-            vCounterForClocksColumn <= 0;
-            if (vCharHorIndex == CHAR_HOR_LENGTH - 1 || sCurrentBlank) begin
+        if (vCounterForClocksForColumn == cClocksForColumn - 1 || sCurrentBlank) begin
+            vCounterForClocksForColumn <= 0;
+            if (vCharHorIndex == cCharHorLength - 1 || sCurrentBlank) begin
                 vCharHorIndex <= 0;
                 if (vCurrentCharIdx == STRING_LENGTH) begin
                     vCurrentCharIdx <= 1;
                     done            <= 1'b1;
                 end else begin
-                    if (vCountForSeparator == COLUMN_SEP_BETW_CHARS) begin
-                        vCountForSeparator <= 0;
+                    if (vCountForSeparatorBetweenChars == cColumnSeparatorBetweenChars) begin
+                        vCountForSeparatorBetweenChars <= 0;
                         vCurrentCharIdx    <= vCurrentCharIdx + 1;
                         sCurrentBlank      <= 1'b0;
                     end else begin
                         sCurrentBlank      <= 1'b1;
-                        vCountForSeparator <= vCountForSeparator + 1;
+                        vCountForSeparatorBetweenChars <= vCountForSeparatorBetweenChars + 1;
                     end
                 end
             end else begin
                 vCharHorIndex <= vCharHorIndex + 1;
             end
         end else begin
-            vCounterForClocksColumn <= vCounterForClocksColumn + 1;
+            vCounterForClocksForColumn <= vCounterForClocksForColumn + 1;
         end
 
         // Character bitmap selection — same patterns as the VHDL.
@@ -132,17 +138,18 @@ module tl_simulator_writer #(
             if (sCurrentBlank)
                 sOutRow[i] <= 1'b0;
             else
-                sOutRow[i] <= sCurrentChar[i][CHAR_HOR_LENGTH - 1 - vCharHorIndex];
+                sOutRow[i] <= sCurrentChar[i][cCharHorLength - 1 - vCharHorIndex];
         end
     end
 
     // Combinational gating: each output is the clock when its row is on.
-    always @(*) begin
-        outLines[4] = sOutRow[0] ? inClock : 1'b0;
-        outLines[3] = sOutRow[1] ? inClock : 1'b0;
-        outLines[2] = sOutRow[2] ? inClock : 1'b0;
-        outLines[1] = sOutRow[3] ? inClock : 1'b0;
-        outLines[0] = sOutRow[4] ? inClock : 1'b0;
-    end
+    // Per-bit continuous assigns (rather than an always_comb with
+    // constant bit-selects) — iverilog warns about the latter as a
+    // not-yet-supported form.
+    assign outLines[4] = sOutRow[0] ? inClock : 1'b0;
+    assign outLines[3] = sOutRow[1] ? inClock : 1'b0;
+    assign outLines[2] = sOutRow[2] ? inClock : 1'b0;
+    assign outLines[1] = sOutRow[3] ? inClock : 1'b0;
+    assign outLines[0] = sOutRow[4] ? inClock : 1'b0;
 
 endmodule
