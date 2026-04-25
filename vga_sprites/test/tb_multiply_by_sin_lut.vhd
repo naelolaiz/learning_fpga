@@ -37,6 +37,7 @@ architecture testbench of tb_multiply_by_sin_lut is
    signal sInput   : std_logic_vector(7 downto 0) := (others => '0');
    signal sOutput  : integer := 0;
    signal sClock   : std_logic := '0'; -- reference clock for viewing
+   signal sSimulationActive : boolean := true;
 
    -- Helper: call the LUT with (idx, signed integer input) and return
    -- the signed-integer output. Kept small to keep the property
@@ -168,6 +169,7 @@ begin
       end loop;
 
       sStage <= 99; -- done
+      sSimulationActive <= false;
       wait;
    end process;
 

@@ -33,6 +33,8 @@ module tb_fifo_sync_overlapping;
     wire                   sEmpty;
     wire                   sFull;
 
+    reg                    sSimulationActive = 1'b1;
+
     fifo_sync #(.DATA_WIDTH(DATA_WIDTH), .DEPTH(DEPTH)) dut (
         .clk    (sClk),
         .rst    (sRst),
@@ -44,14 +46,17 @@ module tb_fifo_sync_overlapping;
         .full   (sFull)
     );
 
-    always #(CLK_PERIOD/2) sClk = ~sClk;
-
-    integer i;
-    integer expected;
+    always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_fifo_sync_overlapping);
+        $dumpvars(1, tb_fifo_sync_overlapping);
+        $dumpvars(1, dut);
+    end
+
+    initial begin : driver
+        integer i;
+        integer expected;
 
         // Release reset.
         #(2*CLK_PERIOD);
@@ -114,6 +119,7 @@ module tb_fifo_sync_overlapping;
             $fatal(1, "fifo did not drain after overlap phase -- occupancy drift?");
 
         $display("tb_fifo_sync_overlapping simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

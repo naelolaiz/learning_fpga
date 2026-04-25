@@ -28,8 +28,13 @@ entity uart_tx is
 end entity uart_tx;
 
 architecture rtl of uart_tx is
-  type state_t is (S_IDLE, S_START, S_DATA, S_STOP);
-  signal state     : state_t                       := S_IDLE;
+  -- `state` is an encoded vector (not an enum) so GHDL dumps it to the
+  -- VCD and the Verilog + VHDL waveforms carry the same signal set.
+  constant S_IDLE  : std_logic_vector(1 downto 0) := "00";
+  constant S_START : std_logic_vector(1 downto 0) := "01";
+  constant S_DATA  : std_logic_vector(1 downto 0) := "10";
+  constant S_STOP  : std_logic_vector(1 downto 0) := "11";
+  signal state     : std_logic_vector(1 downto 0) := S_IDLE;
   signal tick      : integer range 0 to CLKS_PER_BIT-1 := 0;
   signal bit_idx   : integer range 0 to 7          := 0;
   signal shifter   : std_logic_vector(7 downto 0)  := (others => '0');
@@ -80,6 +85,9 @@ begin
           else
             tick <= tick + 1;
           end if;
+
+        when others =>
+          state <= S_IDLE;
       end case;
     end if;
   end process;

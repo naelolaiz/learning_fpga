@@ -21,6 +21,8 @@ module tb_fifo_sync;
     wire                   sEmpty;
     wire                   sFull;
 
+    reg                    sSimulationActive = 1'b1;
+
     fifo_sync #(.DATA_WIDTH(DATA_WIDTH), .DEPTH(DEPTH)) dut (
         .clk    (sClk),
         .rst    (sRst),
@@ -32,13 +34,21 @@ module tb_fifo_sync;
         .full   (sFull)
     );
 
-    always #(CLK_PERIOD/2) sClk = ~sClk;
+    // Gate the clock on sSimulationActive so the VHDL and Verilog
+    // waveforms carry the same shutdown signal.
+    always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
-    integer i;
-
+    // Level 1 restricts the dump to the TB's own top-level signals and
+    // the DUT's top-level signals — loop counters inside `driver` and
+    // any function-local hierarchy stay hidden, matching GHDL's VCD.
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_fifo_sync);
+        $dumpvars(1, tb_fifo_sync);
+        $dumpvars(1, dut);
+    end
+
+    initial begin : driver
+        integer i;
 
         #(2*CLK_PERIOD);
         sRst = 1'b0;
@@ -66,6 +76,7 @@ module tb_fifo_sync;
         if (sEmpty !== 1'b1) $fatal(1, "Should be empty after drain");
 
         $display("fifo_sync simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

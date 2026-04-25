@@ -31,10 +31,7 @@ module tb_test;
     reg sSeenDigit2 = 1'b0;
     reg sSeenDigit3 = 1'b0;
 
-    // Gate the continuous invariants for a short settle window so
-    // the DUT has driven its outputs out of their undefined reset
-    // values before the checks begin.
-    reg sChecksEnabled = 1'b0;
+    reg sSimulationActive = 1'b1;
 
     test dut (
         .clock         (sClock50MHz),
@@ -42,7 +39,7 @@ module tb_test;
         .cableSelect   (sCableSelect)
     );
 
-    always #10 sClock50MHz = ~sClock50MHz;
+    always #10 if (sSimulationActive) sClock50MHz = ~sClock50MHz;
 
     // (A) cableSelect must have exactly one '0'.
     function automatic is_one_hot_inverted(input [3:0] v);
@@ -65,24 +62,37 @@ module tb_test;
         endcase
     endfunction
 
-    // (A) continuous check.
-    always @(sCableSelect) begin
-        if (sChecksEnabled && !is_one_hot_inverted(sCableSelect))
-            $fatal(1, "cableSelect violated one-hot-inverted invariant: %b", sCableSelect);
+    // (A) and (B): continuous invariants. Each process waits a short
+    // settle window at t=0 so the DUT has driven its outputs out of
+    // their undefined reset values before the checks begin, then
+    // fires on every change of the observed signal — mirrors the VHDL
+    // TB's sequential assertion processes.
+    initial begin : assert_A_one_hot
+        #200;
+        forever begin
+            @(sCableSelect);
+            if (!is_one_hot_inverted(sCableSelect))
+                $fatal(1, "cableSelect violated one-hot-inverted invariant: %b", sCableSelect);
+        end
     end
 
-    // (B) continuous check.
-    always @(sSevenSegments) begin
-        if (sChecksEnabled && !is_valid_7seg(sSevenSegments))
-            $fatal(1, "sevenSegments is not a valid BCD encoding: %b", sSevenSegments);
+    initial begin : assert_B_valid_encoding
+        #200;
+        forever begin
+            @(sSevenSegments);
+            if (!is_valid_7seg(sSevenSegments))
+                $fatal(1, "sevenSegments is not a valid BCD encoding: %b", sSevenSegments);
+        end
     end
 
     // Track which digits have been selected so far. Sampling on the
     // clock edge (rather than an `always @(sCableSelect)` on change)
     // guarantees we catch the initial value even if the simulator
     // doesn't emit a change event for the undefined->valid drive at t=0.
-    always @(posedge sClock50MHz) begin
-        if (sChecksEnabled) begin
+    initial begin : track_digits_seen
+        #200;
+        forever begin
+            @(posedge sClock50MHz);
             case (sCableSelect)
                 4'b1110: sSeenDigit0 <= 1'b1;
                 4'b1101: sSeenDigit1 <= 1'b1;
@@ -95,14 +105,11 @@ module tb_test;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_test);
+        $dumpvars(1, tb_test);
+        $dumpvars(1, dut);
+    end
 
-        // Settle window: let the DUT's first few clock edges drive
-        // cableSelect / sevenSegments out of their reset values
-        // before the continuous assertions start firing.
-        #200;
-        sChecksEnabled = 1'b1;
-
+    initial begin : driver
         #(TEST_DURATION);
 
         // (C) Mux must have rotated through all four digits.
@@ -111,6 +118,7 @@ module tb_test;
                    sSeenDigit0, sSeenDigit1, sSeenDigit2, sSeenDigit3);
 
         $display("tb_test simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

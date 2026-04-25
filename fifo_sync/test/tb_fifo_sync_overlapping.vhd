@@ -43,7 +43,7 @@ architecture testbench of tb_fifo_sync_overlapping is
    signal sRdData : std_logic_vector(DATA_WIDTH-1 downto 0);
    signal sEmpty  : std_logic;
    signal sFull   : std_logic;
-   signal sActive : boolean := true;
+   signal sSimulationActive : boolean := true;
 begin
 
    dut : entity work.fifo_sync
@@ -53,7 +53,7 @@ begin
                 rd_en => sRdEn, rd_data => sRdData,
                 empty => sEmpty, full => sFull);
 
-   sClk <= not sClk after CLK_PERIOD/2 when sActive;
+   sClk <= not sClk after CLK_PERIOD/2 when sSimulationActive;
 
    driver : process
       variable vExpected : integer;
@@ -135,7 +135,7 @@ begin
          severity failure;
 
       report "fifo_sync overlapping simulation done!" severity note;
-      sActive <= false;
+      sSimulationActive <= false;
       wait;
    end process;
 

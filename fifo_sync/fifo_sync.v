@@ -23,20 +23,7 @@ module fifo_sync #(
     output wire                   full
 );
 
-    function integer clog2(input integer n);
-        integer v, r;
-        begin
-            v = n - 1;
-            r = 0;
-            while (v > 0) begin
-                r = r + 1;
-                v = v >> 1;
-            end
-            clog2 = r;
-        end
-    endfunction
-
-    localparam integer ADDR_W = clog2(DEPTH);
+    localparam integer ADDR_W = $clog2(DEPTH);
 
     reg [DATA_WIDTH-1:0] ram [0:DEPTH-1];
     reg [ADDR_W:0]       wr_ptr = {(ADDR_W+1){1'b0}};

@@ -16,6 +16,8 @@ module tb_blink_led;
     wire sLed1;
     wire sLed2;
 
+    reg  sSimulationActive = 1'b1;
+
     // Match the VHDL TB: CLOCKS_TO_OVERFLOW=10 → 10*20 ns = 200 ns toggle.
     blink_led #(.CLOCKS_TO_OVERFLOW(10)) dut (
         .clk     (sClock50MHz),
@@ -25,7 +27,7 @@ module tb_blink_led;
     );
 
     // 50 MHz: 10 ns half-period.
-    always #10 sClock50MHz = ~sClock50MHz;
+    always #10 if (sSimulationActive) sClock50MHz = ~sClock50MHz;
 
     // Match the VHDL TB's button schedule.
     initial begin
@@ -36,11 +38,14 @@ module tb_blink_led;
         #50  sButton = 1'b1;
     end
 
-    // Checker process — mirrors tb_blink_led.vhd assertions.
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_blink_led);
+        $dumpvars(1, tb_blink_led);
+        $dumpvars(1, dut);
+    end
 
+    // Checker process — mirrors tb_blink_led.vhd assertions.
+    initial begin : driver
         @(posedge sClock50MHz);
         if (!(sLed1 === 1'b0 && sLed2 === 1'b0))
             $fatal(1, "Wrong output signals at start");
@@ -67,6 +72,7 @@ module tb_blink_led;
             $fatal(1, "Wrong output signals on second cycle, button released");
 
         $display("Simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

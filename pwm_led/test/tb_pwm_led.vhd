@@ -16,14 +16,14 @@ architecture testbench of tb_pwm_led is
   signal sClk     : std_logic := '0';
   signal sDuty    : std_logic_vector(WIDTH-1 downto 0) := (others => '0');
   signal sPwm     : std_logic;
-  signal sActive  : boolean := true;
+  signal sSimulationActive  : boolean := true;
 begin
 
   dut : entity work.pwm_led
     generic map (WIDTH => WIDTH)
     port map (clk => sClk, duty => sDuty, pwm_out => sPwm);
 
-  sClk <= not sClk after CLK_PERIOD/2 when sActive;
+  sClk <= not sClk after CLK_PERIOD/2 when sSimulationActive;
 
   driver : process
     variable expected : integer;
@@ -50,7 +50,7 @@ begin
       end if;
     end loop;
     report "pwm_led simulation done!" severity note;
-    sActive <= false;
+    sSimulationActive <= false;
     wait;
   end process;
 

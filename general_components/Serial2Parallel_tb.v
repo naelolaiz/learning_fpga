@@ -18,6 +18,8 @@ module Serial2Parallel_tb;
 
     reg  [NUMBER_OF_BITS-1:0] sCounter;
 
+    reg                       sSimulationActive = 1'b1;
+
     Serial2Parallel #(.NUMBER_OF_BITS(NUMBER_OF_BITS)) dut (
         .inClock (sClock),
         .inData  (sData),
@@ -25,11 +27,14 @@ module Serial2Parallel_tb;
         .outData (sOutData)
     );
 
-    integer i, b;
-
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, Serial2Parallel_tb);
+        $dumpvars(1, Serial2Parallel_tb);
+        $dumpvars(1, dut);
+    end
+
+    initial begin : driver
+        integer i, b;
 
         for (i = 0; i < (1 << NUMBER_OF_BITS); i = i + 1) begin
             sClock   = 1'b0;
@@ -59,6 +64,7 @@ module Serial2Parallel_tb;
                 $fatal(1, "Error at i=%0d: expected %h got %h", i, sCounter, sOutData);
         end
         $display("Simulation completed!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

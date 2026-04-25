@@ -26,8 +26,6 @@ module test (
     reg [1:0] enabledDigit = 2'd0;
     reg [BITS_PER_NIBBLE-1:0] currentDigitValue;
 
-    integer i;
-
     always @(posedge clock) begin
         // Multiplex tick.
         if (counterForMux == MUX_MAX - 1) begin

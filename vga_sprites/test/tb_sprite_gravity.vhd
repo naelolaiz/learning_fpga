@@ -37,13 +37,13 @@ architecture testbench of tb_sprite_gravity is
    signal tbClock       : std_logic := '0';
    signal tbCursorPos   : Pos2D     := (0, 0);
    signal tbShouldDraw  : boolean;
-   signal tbRunning     : boolean := true;
+   signal sSimulationActive     : boolean := true;
    signal tbStage       : integer := 0;
 
 begin
 
    -- Free-running clock while the stimulus process is active.
-   tbClock <= not tbClock after CLK_PERIOD / 2 when tbRunning else '0';
+   tbClock <= not tbClock after CLK_PERIOD / 2 when sSimulationActive else '0';
 
    dut : entity work.sprite
       generic map (
@@ -104,7 +104,7 @@ begin
 
       tbStage <= 99;
       wait for 2 * CLK_PERIOD;
-      tbRunning <= false;
+      sSimulationActive <= false;
       wait;
    end process;
 

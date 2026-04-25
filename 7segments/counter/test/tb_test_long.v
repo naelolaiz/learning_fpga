@@ -28,6 +28,8 @@ module tb_test_long;
 
     reg sCounterTicked = 1'b0;
 
+    reg sSimulationActive = 1'b1;
+
     // Encoding for digit "0" on the DUT's 7seg bus. Anything else
     // while digit 0 is selected means the counter has advanced.
     localparam [6:0] ENCODING_ZERO = 7'b1000000;
@@ -38,7 +40,7 @@ module tb_test_long;
         .cableSelect   (sCableSelect)
     );
 
-    always #10 sClock50MHz = ~sClock50MHz;
+    always #10 if (sSimulationActive) sClock50MHz = ~sClock50MHz;
 
     always @(posedge sClock50MHz) begin
         if (sCableSelect == 4'b1110 && sSevenSegments !== ENCODING_ZERO) begin
@@ -48,14 +50,18 @@ module tb_test_long;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(0, tb_test_long);
+        $dumpvars(1, tb_test_long);
+        $dumpvars(1, dut);
+    end
 
+    initial begin : driver
         #(TEST_DURATION);
 
         if (!sCounterTicked)
             $fatal(1, "counter stuck: numberToDisplay never incremented in 150 ms");
 
         $display("tb_test_long simulation done!");
+        sSimulationActive = 1'b0;
         $finish;
     end
 

@@ -15,7 +15,7 @@ module tl_simulator_writer #(
     parameter integer STRING_LENGTH = 12   // matches "Hello world!"
 ) (
     input  wire       inClock,
-    output reg  [4:0] outLines,
+    output wire [4:0] outLines,
     output reg        done
 );
 
@@ -27,6 +27,12 @@ module tl_simulator_writer #(
     reg [4:0]  sOutRow;
     reg        sCurrentBlank;
 
+    // The VHDL twin keeps these as process *variables*; GHDL does not
+    // surface them in the VCD. They live at module scope here for
+    // yosys compatibility (static locals inside a named always block
+    // are not yet accepted by the yosys SV frontend) — the testbench
+    // hides them via an explicit $dumpvars signal list so the two
+    // waveforms still show the same signal set.
     integer vCurrentCharIdx                 = 1;
     integer vCountForSeparatorBetweenChars  = 0;
     integer vCounterForClocksForColumn      = 0;
@@ -137,16 +143,13 @@ module tl_simulator_writer #(
     end
 
     // Combinational gating: each output is the clock when its row is on.
-    // `always_comb` (vs `always @(*)`) is required to execute at t=0
-    // per IEEE 1800-2012, matching VHDL's combinational-process
-    // semantics — the testbench then sees sensible values at sim start
-    // instead of x until the first change of an input.
-    always_comb begin
-        outLines[4] = sOutRow[0] ? inClock : 1'b0;
-        outLines[3] = sOutRow[1] ? inClock : 1'b0;
-        outLines[2] = sOutRow[2] ? inClock : 1'b0;
-        outLines[1] = sOutRow[3] ? inClock : 1'b0;
-        outLines[0] = sOutRow[4] ? inClock : 1'b0;
-    end
+    // Per-bit continuous assigns (rather than an always_comb with
+    // constant bit-selects) — iverilog warns about the latter as a
+    // not-yet-supported form.
+    assign outLines[4] = sOutRow[0] ? inClock : 1'b0;
+    assign outLines[3] = sOutRow[1] ? inClock : 1'b0;
+    assign outLines[2] = sOutRow[2] ? inClock : 1'b0;
+    assign outLines[1] = sOutRow[3] ? inClock : 1'b0;
+    assign outLines[0] = sOutRow[4] ? inClock : 1'b0;
 
 endmodule
