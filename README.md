@@ -37,28 +37,11 @@ branch and embedded in the [Gallery](#gallery) below, refreshed on every
 
 ## Hardware
 
-![Dev board](doc/board.jpg?raw=true)
+<img src="doc/board.jpg?raw=true" alt="RZ EasyFPGA A2.2 dev board" align="right" width="180">
 
-- **FPGA:** Altera/Intel Cyclone IV `EP4CE6E22C8N`
-  ([datasheet](https://www.mouser.es/datasheet/2/612/cyiv-51001-1299459.pdf))
-- **Dev board:** *RZ EasyFPGA A2.2*
-  ([Banggood listing](https://www.banggood.com/es/ALTERA-Cyclone-IV-EP4CE6-FPGA-Development-Board-Kit-Altera-EP4CE-NIOSII-FPGA-Board-and-USB-Downloader-Infrared-Controller-p-1622523.html); product info is in Chinese)
-- **Synthesis / P&R:** Intel Quartus Prime Lite 21.1
-  ([download](https://www.intel.com/content/www/us/en/software-kit/684215/intel-quartus-prime-lite-edition-design-software-version-21-1-for-linux.html))
+The original target was the *RZ EasyFPGA A2.2* ([Banggood listing](https://www.banggood.com/es/ALTERA-Cyclone-IV-EP4CE6-FPGA-Development-Board-Kit-Altera-EP4CE-NIOSII-FPGA-Board-and-USB-Downloader-Infrared-Controller-p-1622523.html)) — an Altera/Intel Cyclone IV `EP4CE6E22C8N` ([datasheet](https://www.mouser.es/datasheet/2/612/cyiv-51001-1299459.pdf)) board, synthesised with Intel Quartus Prime Lite 21.1 ([download](https://www.intel.com/content/www/us/en/software-kit/684215/intel-quartus-prime-lite-edition-design-software-version-21-1-for-linux.html)). The project has since grown more general and is no longer tied to that specific board.
 
----
-
-## On real hardware
-
-A few demos running on the board itself:
-
-| VGA driver (2nd revision)         | Scrolling alphanumeric 7-seg       |
-| :-------------------------------: | :--------------------------------: |
-| ![VGA demo](doc/vga_testing_2.gif) | ![Scrolling text on 7-segment display](7segments/text/doc/scrolling_long_text.gif) |
-
-### [Rotating sprite with a trigonometric LUT](vga_sprites)
-
-![Rotating sprite driven by a precomputed sin/cos LUT](vga_sprites/doc/rotating_with_lut_trigonometric.gif)
+<br clear="right">
 
 ---
 
@@ -187,6 +170,20 @@ Three focused testbenches: `tb_trigonometric` (integration sweep + rotate proper
 </details>
 
 <!-- GALLERY:END -->
+
+---
+
+## On real hardware
+
+A few demos running on the board itself:
+
+| VGA driver (2nd revision)         | Scrolling alphanumeric 7-seg       |
+| :-------------------------------: | :--------------------------------: |
+| ![VGA demo](doc/vga_testing_2.gif) | ![Scrolling text on 7-segment display](7segments/text/doc/scrolling_long_text.gif) |
+
+### [Rotating sprite with a trigonometric LUT](vga_sprites)
+
+![Rotating sprite driven by a precomputed sin/cos LUT](vga_sprites/doc/rotating_with_lut_trigonometric.gif)
 
 ---
 
