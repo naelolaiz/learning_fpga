@@ -99,11 +99,10 @@ V_NO_WAVEFORM_TBS ?=
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
 WORK_DIR      := $(BUILD_DIR)/work
-# Waveform path for a given testbench. Defaults to VCD; switches to FST
-# when the TB is listed in FST_TBS (VHDL) or V_FST_TBS (Verilog).
-# Used via $(call tb_wave,tb_name) / $(call v_tb_wave,tb_name).
+# Waveform path for a given testbench. VHDL TBs in FST_TBS dump FST
+# (GHDL --fst=); everything else is VCD.
 tb_wave   = $(BUILD_DIR)/$(1)$(if $(filter $(1),$(FST_TBS)),.fst,.vcd)
-v_tb_wave = $(BUILD_DIR)/$(1)_v$(if $(filter $(1),$(V_FST_TBS)),.fst,.vcd)
+v_tb_wave = $(BUILD_DIR)/$(1)_v.vcd
 
 # Per-TB artifact lists. The netlist is still singular (it's the design
 # top-level, not a testbench), but simulation/waveform fan out over
@@ -256,9 +255,7 @@ ifneq ($(strip $(V_SRC_FILES)),)
 # ---- Simulate (Verilog) ---------------------------------------------------
 # One VVP binary, one VCD per testbench. The iverilog invocation per TB
 # supplies its own -DVCD_OUT so each `$dumpfile(`VCD_OUT)` lands in its
-# own build/<tb>_v.vcd file. For TBs listed in V_FST_TBS, the VCD is
-# then post-converted to FST via `vcd2fst` (the iverilog $dumpfile API
-# doesn't natively emit FST, so we pipe through the standalone tool).
+# own build/<tb>_v.vcd file.
 define IVERILOG_RULE
 $$(BUILD_DIR)/$(1)_v.vvp: $$(V_SRC_FILES) $$(V_TB_FILES) | $$(BUILD_DIR)
 	$$(IVERILOG) -g2012 \
@@ -278,13 +275,6 @@ $$(BUILD_DIR)/$(1)_v.vcd: $$(BUILD_DIR)/$(1)_v.vvp
 	    echo "       (testbench should call \$$$$dumpfile(\`VCD_OUT))" >&2; \
 	    exit 1; \
 	fi
-
-# Optional FST post-conversion. Only emitted when $(1) is in V_FST_TBS;
-# otherwise this rule simply doesn't exist for this TB.
-ifneq (,$(filter $(1),$(V_FST_TBS)))
-$$(BUILD_DIR)/$(1)_v.fst: $$(BUILD_DIR)/$(1)_v.vcd
-	vcd2fst $$< $$@
-endif
 endef
 $(foreach tb,$(V_TB_TOPS),$(eval $(call IVERILOG_RULE,$(tb))))
 

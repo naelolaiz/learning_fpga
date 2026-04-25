@@ -31,13 +31,10 @@ V_NO_WAVEFORM_TBS := tb_test_long
 
 VHDL_STANDARD := 08
 
-# Verilog mirror. Same two-TB split, same FST opt-in for the long
-# view (post-converted from VCD via vcd2fst since iverilog's
-# $dumpfile doesn't natively emit FST).
+# Verilog mirror. Same two-TB split.
 V_TOP       := test
 V_TB_TOPS   := tb_test tb_test_long
 V_SRC_FILES := test.v
 V_TB_FILES  := test/tb_test.v test/tb_test_long.v
-V_FST_TBS   := tb_test_long
 
 include ../../mk/common.mk
