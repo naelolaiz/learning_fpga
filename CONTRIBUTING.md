@@ -32,7 +32,7 @@
    VHDL_STANDARD := 08   # optional; default is 08
 
    # Optional Verilog mirror — define these to enable the parallel
-   # iverilog/yosys flow (`simulate_v`, `diagram_v`, `screenshot_v`).
+   # iverilog/yosys flow (`simulate_v`, `diagram_v`, `waveform_v`).
    # `make all` runs both flows when both are populated.
    V_TOP       := my_top
    V_TB_TOPS   := tb_my_top
@@ -74,13 +74,13 @@
 ## Running CI locally
 
 The CI workflow runs every project through `make simulate`, `make diagram`
-and `make screenshot`. You can reproduce any of those verbatim on your
+and `make waveform`. You can reproduce any of those verbatim on your
 laptop:
 
 ```bash
 make -C blink_led simulate
 make -C blink_led diagram
-xvfb-run --auto-servernum make -C blink_led screenshot   # screenshot needs an X server
+make -C blink_led waveform
 ```
 
 Or, the same container CI uses:
@@ -96,8 +96,11 @@ docker run --rm -it -v "$PWD":/work -w /work \
 On Ubuntu 22.04+:
 
 ```bash
-sudo apt-get install ghdl yosys yosys-plugin-ghdl iverilog \
-                     gtkwave xvfb nodejs npm
+sudo apt-get install ghdl yosys yosys-plugin-ghdl iverilog nodejs npm
 sudo npm install -g netlistsvg
-pip install -r scripts/requirements.txt
+pip install git+https://github.com/naelolaiz/hdltools.git#subdirectory=waveview
 ```
+
+`waveview` (the waveform renderer used by `make waveform`) lives in the
+[hdltools](https://github.com/naelolaiz/hdltools) repo and is a regular
+pip-installable package.

@@ -45,7 +45,7 @@ jobs:
           echo "Discovered: ${projects}"
 
   # ------------------------------------------------------------------
-  # build - per-project simulate + diagram + screenshot. Runs inside
+  # build - per-project simulate + diagram + waveform. Runs inside
   # the hdltools container so the toolchain is pinned by image tag.
   # ------------------------------------------------------------------
   build:
@@ -67,15 +67,8 @@ jobs:
         uses: actions/checkout@v6
 
       # The container already ships ghdl, yosys, ghdl-yosys-plugin,
-      # iverilog, netlistsvg, gtkwave and xvfb. We only need to install
-      # the Python deps required by scripts/vcd2png.py.
-      #
-      # Note: the hdltools image's default shell is POSIX sh (dash),
-      # not bash, so this block must avoid bash-only constructs like
-      # `set -o pipefail`. `sh -e` (the GitHub Actions default for
-      # containers) already gives us exit-on-error.
-      - name: Install Python deps
-        run: pip install --quiet --no-cache-dir -r scripts/requirements.txt
+      # iverilog, netlistsvg and waveview, so no extra setup is needed
+      # before invoking the per-project Makefiles.
 
       - name: Tool versions
         run: |
@@ -83,7 +76,7 @@ jobs:
           ghdl --version | head -n1
           yosys -V 2>&1 | head -n1 || true
           netlistsvg --help 2>&1 | head -n1 || true
-          gtkwave --version 2>&1 | head -n1 || true
+          waveview --version 2>&1 | head -n1 || true
           iverilog -V 2>&1 | head -n1 || true
           python3 --version
           echo "::endgroup::"
@@ -96,14 +89,9 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: make diagram
 
-      # GTKWave needs an X server but vcd2png.py spawns its own Xvfb
-      # via pyvirtualdisplay, so we don't wrap with xvfb-run here.
-      # The earlier double-Xvfb (outer xvfb-run + inner pyvirtualdisplay)
-      # masked a frame-capture race that produced empty PNGs in CI
-      # even though the same command rendered correctly locally.
-      - name: Render waveform screenshot
+      - name: Render waveform
         working-directory: ${{ matrix.project }}
-        run: make screenshot
+        run: make waveform
 
       # Optional Verilog flow. mk/common.mk turns these into no-ops for
       # projects that don't define V_SRC_FILES, so it is safe to run
@@ -116,9 +104,9 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: make diagram_v
 
-      - name: Render waveform screenshot (Verilog)
+      - name: Render waveform (Verilog)
         working-directory: ${{ matrix.project }}
-        run: make screenshot_v
+        run: make waveform_v
 
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.
@@ -130,7 +118,7 @@ jobs:
       # Some projects opt out of `make diagram` (SKIP_DIAGRAM) when TOP
       # isn't synthesisable by the yosys+ghdl-plugin combo. Their
       # *.json/*.svg globs then match nothing, so we use `warn` instead
-      # of `error`; the simulate/diagram/screenshot steps above would
+      # of `error`; the simulate/diagram/waveform steps above would
       # have already failed the job if an artifact was missing for a
       # non-opted-out reason.
       - name: Upload artifacts
