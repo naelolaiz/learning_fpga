@@ -10,10 +10,10 @@ LED to richer designs (PWM, UART, FIFO, shift registers, 7-segment mux,
 mini-game, VGA & I²S sketches).
 
 Every project simulates, renders its **netlist diagram** (`*.svg`), and
-captures a **waveform screenshot** (`*.png`) of a testbench simulation
-automatically in CI. The examples below embed the **latest diagrams
-and waveforms** rendered from `main` — they update whenever the 
-source changes.
+renders a **waveform diagram** (`*.svg` + `*.png`) of a testbench
+simulation automatically in CI. The examples below embed the
+**latest diagrams and waveforms** rendered from `main` — they update
+whenever the source changes.
 
 - 📚 **What it is** — a tutorial you can read front-to-back, or dip into
   one example at a time.
@@ -24,7 +24,7 @@ source changes.
 - 🤝 **Easy to extend** — drop a `Makefile` in a new directory and CI
   picks it up (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
-Every `main` CI run publishes its netlist SVGs and GTKWave waveform PNGs
+Every `main` CI run publishes its netlist SVGs and waveform SVG/PNGs
 inline in every job summary, on the run-summary page, and on PR comments
 — see the
 [latest successful `main` run](https://github.com/naelolaiz/learning_fpga/actions/workflows/ci.yml?query=branch%3Amain+is%3Asuccess).
@@ -118,7 +118,7 @@ Two testbenches each side: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_f
 | `test` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/test.svg" alt="7seg counter netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/test_v.svg" alt="7seg counter netlist (Verilog)" width="480"> |
 | `tb_test` (10 ms) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/tb_test.png" alt="7seg counter waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-counter/tb_test_v.png" alt="7seg counter waveform (Verilog)" width="480"> |
 
-A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal counter ticks, but dumps FST without a waveform screenshot (at that zoom level the 20 ns clock period is sub-pixel anyway).
+A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal counter ticks, but dumps FST without a rendered waveform (at that zoom level the 20 ns clock period is sub-pixel anyway).
 
 </details>
 
@@ -195,17 +195,17 @@ any `Makefile` that includes `mk/common.mk`.
 
 ### What CI produces, per project
 
-| Stage        | Tool chain                                        | Output             |
-| ------------ | ------------------------------------------------- | ------------------ |
-| simulate     | GHDL (VHDL) / iverilog (Verilog)                  | `build/<tb>.vcd`   |
-| diagram      | yosys + ghdl-yosys-plugin → netlistsvg            | `build/<top>.svg`  |
-| screenshot   | GHDL → VCD → headless GTKWave (Xvfb)              | `build/<tb>.png`   |
+| Stage        | Tool chain                                        | Output                          |
+| ------------ | ------------------------------------------------- | ------------------------------- |
+| simulate     | GHDL (VHDL) / iverilog (Verilog)                  | `build/<tb>.vcd`                |
+| diagram      | yosys + ghdl-yosys-plugin → netlistsvg            | `build/<top>.svg`               |
+| waveform     | VCD/FST → waveview                                | `build/<tb>.svg`, `build/<tb>.png` |
 
 Each matrix job:
 
 1. **Simulates** the VHDL testbench — and the Verilog mirror if present.
 2. **Renders** the netlist diagram (both languages).
-3. **Screenshots** the waveform under a headless Xvfb.
+3. **Renders** the waveform via waveview (SVG + PNG).
 4. **Publishes** the `.svg` / `.png` to the orphan
    [`ci-gallery`](https://github.com/naelolaiz/learning_fpga/tree/ci-gallery)
    branch (one directory per run, `run-<id>/<project>/`, plus a
@@ -224,7 +224,7 @@ make clean                      # nuke every build/
 ```
 
 …or through the same container CI uses (ships GHDL, yosys +
-ghdl-plugin, iverilog, netlistsvg, GTKWave, Xvfb):
+ghdl-plugin, iverilog, netlistsvg, waveview):
 
 ```bash
 podman run --rm -it -v "$PWD":/work -w /work \
@@ -246,7 +246,7 @@ VHDL ones via a `_v` suffix (`build/<top>_v.svg`, `build/<tb>_v.vcd`,
 | -------------- | ------------------------------------ |
 | `simulate_v`   | `iverilog -g2012` → `vvp`            |
 | `diagram_v`    | `yosys read_verilog` → `netlistsvg`  |
-| `screenshot_v` | `vvp` VCD → headless GTKWave         |
+| `waveform_v`   | `vvp` VCD → waveview                 |
 
 `make all` runs both flows when both language sets are populated.
 Verilog testbenches must call `` $dumpfile(`VCD_OUT) `` — the Makefile
@@ -296,7 +296,7 @@ Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it
   - multiplexed 4-digit counter;
   - alphanumeric characters + scrolling strings.
 - Rotating sprite driven by a precomputed sin/cos LUT.
-- CI: per-project simulate + diagram + GTKWave screenshot, with
+- CI: per-project simulate + diagram + waveview waveform, with
   auto-discovery and a pinned hdltools container. Build machinery
   merged in from
   [hdltools](https://github.com/naelolaiz/hdltools) and
@@ -346,7 +346,7 @@ Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it
   - [x] Project is CI-compatible: `Makefile` discovered by the
     top-level orchestrator, ghdl `--std=08` fixes applied
     (`'HIGH` on integers, slicing of type-conversions), both VHDL and
-    Verilog netlists synthesise (no `SKIP_DIAGRAM`), screenshots
+    Verilog netlists synthesise (no `SKIP_DIAGRAM`), waveforms
     rendered for all four testbenches.
   - [x] Full Verilog mirror — every leaf entity (`Timer`,
     `VariableTimer`, `CounterTimer`, `Debounce`, `Digit`,

@@ -16,19 +16,18 @@ TB_TOPS := tb_test tb_test_long
 SRC_FILES := test.vhd
 TB_FILES  := test/tb_test.vhd test/tb_test_long.vhd
 
-# A 150 ms sim at GHDL's 1 fs timescale produces a ~650 MB VCD that
-# overwhelms the gallery's GTKWave screenshot pipeline. Dumping that
-# TB in FST format instead (GTKWave reads FST natively) keeps the
-# file small without coarsening any timestamps we care about.
+# A 150 ms sim at GHDL's 1 fs timescale produces a ~650 MB VCD;
+# dumping in FST format instead keeps the file small without
+# coarsening any timestamps we care about. waveview reads FST
+# natively.
 FST_TBS := tb_test_long
 
 # tb_test_long's value is its counter-tick assertion, not its
 # waveform: at 150 ms the 20 ns clock period is sub-pixel in any
-# PNG, and GTKWave's rendering of the FST under our pipeline is
-# unreliable anyway. Skip the PNG; simulate still runs and the
-# assertion still guards CI.
-NO_PNG_TBS   := tb_test_long
-V_NO_PNG_TBS := tb_test_long
+# raster render. Skip the waveform render; simulate still runs and
+# the assertion still guards CI.
+NO_WAVEFORM_TBS   := tb_test_long
+V_NO_WAVEFORM_TBS := tb_test_long
 
 VHDL_STANDARD := 08
 

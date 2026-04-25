@@ -1,6 +1,6 @@
 name: release_tags
 
-# Builds every project end-to-end (simulate + diagram + screenshot) using
+# Builds every project end-to-end (simulate + diagram + waveform) using
 # the same Makefile targets CI uses, collects the generated VCDs, PNGs,
 # SVGs and JSON netlists into a single zip, and publishes a GitHub
 # Release when a tag is pushed.
@@ -30,24 +30,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Python deps
-        run: pip install --quiet --no-cache-dir -r scripts/requirements.txt
-
       - name: Tool versions
         run: |
           echo "::group::tool versions"
           ghdl --version | head -n1
           yosys -V 2>&1 | head -n1 || true
           netlistsvg --help 2>&1 | head -n1 || true
-          gtkwave --version 2>&1 | head -n1 || true
+          waveview --version 2>&1 | head -n1 || true
           python3 --version
           echo "::endgroup::"
 
-      # `make all` forwards to simulate + diagram + screenshot for every
-      # discovered project (top-level Makefile). Screenshot rendering
-      # needs an X server; xvfb-run wraps the whole invocation.
+      # `make all` forwards to simulate + diagram + waveform for every
+      # discovered project (top-level Makefile).
       - name: Build every project
-        run: xvfb-run --auto-servernum make all
+        run: make all
 
       # The hdltools image doesn't ship `zip` by default.
       - name: Install zip

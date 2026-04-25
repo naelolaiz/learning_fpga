@@ -17,7 +17,7 @@ PROJECT_MAKEFILES := $(shell grep -rl --include=Makefile 'mk/common\.mk' . 2>/de
 PROJECTS := $(patsubst %/Makefile,%,$(PROJECT_MAKEFILES))
 
 # Targets we forward to each project. Keep in sync with mk/common.mk.
-FORWARDED_TARGETS := all analyze elaborate simulate diagram screenshot clean
+FORWARDED_TARGETS := all analyze elaborate simulate diagram waveform clean
 
 .PHONY: help list $(FORWARDED_TARGETS)
 
@@ -28,12 +28,12 @@ help:
 	@for p in $(PROJECTS); do echo "  - $$p"; done
 	@echo ""
 	@echo "Targets (run against every project):"
-	@echo "  all         simulate + diagram + screenshot"
+	@echo "  all         simulate + diagram + waveform"
 	@echo "  analyze     ghdl -a"
 	@echo "  elaborate   ghdl -e"
 	@echo "  simulate    ghdl -r (emits a VCD)"
 	@echo "  diagram     yosys + netlistsvg (emits an SVG)"
-	@echo "  screenshot  GTKWave headless (emits a PNG)"
+	@echo "  waveform    waveview render (emits an SVG + PNG)"
 	@echo "  clean       remove every build/ directory"
 	@echo ""
 	@echo "Targeting a single project: make -C <project-dir> [target]"
