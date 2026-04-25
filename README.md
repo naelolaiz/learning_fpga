@@ -164,12 +164,12 @@ A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal cou
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| `sprite` (netlist) | ![vga_sprites netlist](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite.svg) | — |
-| `tb_trigonometric` | ![vga_sprites tb_trigonometric](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric.png) | — |
-| `tb_multiply_by_sin_lut` | ![vga_sprites tb_multiply_by_sin_lut](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_multiply_by_sin_lut.png) | — |
-| `tb_sprite_gravity` | ![vga_sprites tb_sprite_gravity](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_sprite_gravity.png) | — |
+| `sprite` (netlist) | ![vga_sprites netlist](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite.svg) | ![vga_sprites sprite (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/sprite_v.svg) |
+| `tb_trigonometric` | ![vga_sprites tb_trigonometric](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric.png) | ![vga_sprites tb_trigonometric (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_trigonometric_v.png) |
+| `tb_multiply_by_sin_lut` | ![vga_sprites tb_multiply_by_sin_lut](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_multiply_by_sin_lut.png) | ![vga_sprites tb_multiply_by_sin_lut (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_multiply_by_sin_lut_v.png) |
+| `tb_sprite_gravity` | ![vga_sprites tb_sprite_gravity](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_sprite_gravity.png) | ![vga_sprites tb_sprite_gravity (Verilog)](https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/vga_sprites/tb_sprite_gravity_v.png) |
 
-Three focused testbenches: `tb_trigonometric` (integration sweep + rotate properties), `tb_multiply_by_sin_lut` (LUT unit tests — odd symmetry, anti-symmetry across π, mirror across π/2, magnitude bound), `tb_sprite_gravity` (sprite entity with gravity on — fall/bounce cause-effect check). No Verilog mirror yet.
+Three focused testbenches: `tb_trigonometric` (integration sweep + rotate properties), `tb_multiply_by_sin_lut` (LUT unit tests — odd symmetry, anti-symmetry across π, mirror across π/2, magnitude bound), `tb_sprite_gravity` (sprite entity with gravity on — fall/bounce cause-effect check). VHDL and Verilog twins simulate the same sin/cos LUT and rotate() math; the trig functions live in `trigonometric_functions.vh` and are `\`include`d into each module that needs them.
 
 </details>
 
@@ -264,7 +264,7 @@ declares `TOP / TB_TOPS / SRC_FILES / TB_FILES` (and optionally the
 | [7segments/counter](7segments/counter/)                     | ✅ | VHDL + Verilog | Multiplexed 4-digit counter.                                   |
 | [general_components](general_components/)                   | ✅ | VHDL + Verilog | Serial2Parallel (both languages) + Debounce (VHDL only).       |
 | [simulator_writer](simulator_writer/)                       | ✅ | VHDL + Verilog | VCD writer used to sanity-check the sim flow.                  |
-| [vga_sprites](vga_sprites/)                                 | ✅ | VHDL           | Rotating VGA sprites (trig LUT) + optional gravity.            |
+| [vga_sprites](vga_sprites/)                                 | ✅ | VHDL + Verilog | Rotating VGA sprites (trig LUT) + optional gravity.            |
 | [7segments/text](7segments/text/)                           | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
 | [7segments/clock](7segments/clock/)                         | ⏳ | VHDL           | Fails to compile under current toolchain (see Roadmap).        |
 | [7segments/random_generator](7segments/random_generator/)   | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
