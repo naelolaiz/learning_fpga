@@ -16,4 +16,16 @@ TB_FILES  := test/tb_trigonometric.vhd \
 
 VHDL_STANDARD := 08
 
+# Verilog mirror. sprite.v + its three TBs pair 1:1 with the VHDL
+# above; trigonometric_functions.vh is ``include``d inside each module
+# that needs it, so V_INCDIRS covers both the synth path and the
+# testbench build.
+V_TOP       := sprite
+V_TB_TOPS   := tb_trigonometric tb_multiply_by_sin_lut tb_sprite_gravity
+V_SRC_FILES := sprite.v
+V_TB_FILES  := test/tb_trigonometric.v \
+               test/tb_multiply_by_sin_lut.v \
+               test/tb_sprite_gravity.v
+V_INCDIRS   := .
+
 include ../mk/common.mk

@@ -191,8 +191,11 @@ jobs:
                 done
                 vcell=""
                 verilog_cell=""
-                [ -n "$vhdl" ]    && vcell="![${vhdl}](${base}/${vhdl})"
-                [ -n "$verilog" ] && verilog_cell="![${verilog}](${base}/${verilog})"
+                # Fixed-width <img> instead of ![alt](url) so a project
+                # whose Verilog netlist synthesises wider than its VHDL
+                # twin (or vice versa) doesn't blow out the table column.
+                [ -n "$vhdl" ]    && vcell="<img src=\"${base}/${vhdl}\" alt=\"${vhdl}\" width=\"480\">"
+                [ -n "$verilog" ] && verilog_cell="<img src=\"${base}/${verilog}\" alt=\"${verilog}\" width=\"480\">"
                 echo "| \`${stem}\` | ${vcell} | ${verilog_cell} |" >> "$summary"
               done
             done
@@ -353,8 +356,10 @@ jobs:
                     [ -z "$verilog" ] && [ -f "$d/${stem}_v.${ext}" ] && verilog="${stem}_v.${ext}"
                   done
                   vcell=""; verilog_cell=""
-                  [ -n "$vhdl" ]    && vcell="![${vhdl}](${base}/${proj}/${vhdl})"
-                  [ -n "$verilog" ] && verilog_cell="![${verilog}](${base}/${proj}/${verilog})"
+                  # Fixed-width <img> — see the rationale in the
+                  # per-project summary step above.
+                  [ -n "$vhdl" ]    && vcell="<img src=\"${base}/${proj}/${vhdl}\" alt=\"${vhdl}\" width=\"480\">"
+                  [ -n "$verilog" ] && verilog_cell="<img src=\"${base}/${proj}/${verilog}\" alt=\"${verilog}\" width=\"480\">"
                   echo "| \`${stem}\` | ${vcell} | ${verilog_cell} |"
                 done
               done

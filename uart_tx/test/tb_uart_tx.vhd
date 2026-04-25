@@ -24,7 +24,11 @@ architecture testbench of tb_uart_tx is
   signal sTxBusy   : std_logic;
   signal sSimulationActive   : boolean := true;
 
-  signal received  : std_logic_vector(7 downto 0);
+  -- Initialise to all zeros: each bit-time sets one bit individually,
+  -- so without this default the unset bits stay `'U'` until they are
+  -- written and the waveform shows a noisy build-up. The Verilog mirror
+  -- declares `reg [7:0] received = 8'h00`, so this matches it.
+  signal received  : std_logic_vector(7 downto 0) := (others => '0');
 begin
 
   dut : entity work.uart_tx
