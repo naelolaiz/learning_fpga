@@ -8,14 +8,16 @@ use ieee.numeric_std.ALL;
 --   * when `alarmBcd(23 downto 4) = mainBcd(23 downto 4)`, buzzerOut is
 --     `tone AND gate`  -> intermittent ~400 Hz tone, pulsed by the 1 Hz
 --     gate, recreating the original 2022 commit 083576f behaviour;
---   * outside the match window, buzzerOut is `'Z'` (high impedance).
+--   * outside the match window, buzzerOut is '0' (driven low). The 2022
+--     source returned 'Z' here -- see AlarmTrigger.vhd for why both
+--     mirrors now drive '0'.
 --
 -- Cause-effect properties under test:
 --   (A) When BCDs match and gate is high, buzzerOut equals tone.
 --   (B) When BCDs match and gate is low, buzzerOut is '0' (gated off).
---   (C) When BCDs mismatch, buzzerOut is 'Z' regardless of tone/gate.
+--   (C) When BCDs mismatch, buzzerOut is '0' regardless of tone/gate.
 --   (D) Toggling alarmBcd to break the match while tone+gate are both
---       active makes buzzerOut transition immediately to 'Z'.
+--       active makes buzzerOut transition immediately to '0'.
 --
 -- Plain VHDL-93 style; no 2008-only constructs.
 
@@ -70,13 +72,13 @@ begin
                 std_logic'image(sBuzzer)
          severity failure;
 
-      -- (C) mismatch + tone+gate both active  ->  buzzer = 'Z'.
+      -- (C) mismatch + tone+gate both active  ->  buzzer = '0'.
       -- Flip a non-seconds-units bit so the match breaks.
       sMainBcd(8) <= '1';     -- minutes-units bit
       sTone <= '1'; sGate <= '1';
       wait for 10 ns;
-      assert sBuzzer = 'Z'
-         report "(C) mismatch: expected buzzer 'Z', got " &
+      assert sBuzzer = '0'
+         report "(C) mismatch: expected buzzer '0', got " &
                 std_logic'image(sBuzzer)
          severity failure;
 
@@ -92,11 +94,11 @@ begin
          severity failure;
 
       -- (D) Break match again, same tone/gate inputs, observe immediate
-      -- transition to 'Z'.
+      -- transition to '0'.
       sMainBcd(7) <= '1';        -- seconds-tens bit (above the units field)
       wait for 10 ns;
-      assert sBuzzer = 'Z'
-         report "(D) match broken: expected buzzer 'Z', got " &
+      assert sBuzzer = '0'
+         report "(D) match broken: expected buzzer '0', got " &
                 std_logic'image(sBuzzer)
          severity failure;
 

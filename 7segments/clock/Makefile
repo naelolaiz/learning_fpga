@@ -22,13 +22,21 @@ TB_FILES := \
 
 VHDL_STANDARD := 08
 
-# Verilog mirrors of the two new leaf entities + their TBs. Per the
-# project roadmap ("leaf modules first, top-levels after") the full
-# top_level_7segments_clock is not mirrored here yet — only the bits
-# this PR adds.
-V_TOP       := DotBlinker
+# Full Verilog mirror — top-level + every leaf entity. Closes the
+# "Verilog mirrors for the bigger SoC-style projects: ... 7segments/clock"
+# roadmap item. V_TOP matches TOP so the gallery's per-stem table
+# (`top_level_7segments_clock | VHDL svg | Verilog svg`) lines up cleanly.
+V_TOP       := top_level_7segments_clock
 V_TB_TOPS   := tb_clock_dot_blink tb_clock_alarm
-V_SRC_FILES := DotBlinker.v AlarmTrigger.v
+V_SRC_FILES := \
+    Timer.v \
+    VariableTimer.v \
+    CounterTimer.v \
+    Debounce.v \
+    7segmentsDigit.v \
+    DotBlinker.v \
+    AlarmTrigger.v \
+    top_level_7segments_clock.v
 V_TB_FILES  := test/tb_clock_dot_blink.v test/tb_clock_alarm.v
 
 include ../../mk/common.mk

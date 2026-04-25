@@ -144,11 +144,11 @@ A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal cou
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| netlist | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/top_level_7segments_clock.svg" alt="clock netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/DotBlinker_v.svg" alt="DotBlinker netlist (Verilog)" width="480"> |
+| `top_level_7segments_clock` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/top_level_7segments_clock.svg" alt="clock netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/top_level_7segments_clock_v.svg" alt="clock netlist (Verilog)" width="480"> |
 | `tb_clock_dot_blink` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/tb_clock_dot_blink.png" alt="dot-blink waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/tb_clock_dot_blink_v.png" alt="dot-blink waveform (Verilog)" width="480"> |
 | `tb_clock_alarm` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/tb_clock_alarm.png" alt="alarm waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-clock/tb_clock_alarm_v.png" alt="alarm waveform (Verilog)" width="480"> |
 
-The two testbenches target the salvaged-from-2022 features as standalone entities: `tb_clock_dot_blink` asserts the 2:1 toggle ratio between MMSS and HHMM views (cause-effect on `isHHMMMode`); `tb_clock_alarm` covers the four match/mismatch × tone/gate combinations and the `'Z'` transition when the match breaks. The leaf entities `DotBlinker` and `AlarmTrigger` ship with Verilog mirrors and identical-shape Verilog testbenches (the full `top_level_7segments_clock` Verilog mirror is on the roadmap — leaf modules first). The VHDL netlist shows the full top-level (six-deep main + alarm `Digit` cascades, the four `Debounce`d buttons, two reusable `Timer` blocks, the new `DotBlinker` and `AlarmTrigger` entities); the Verilog netlist focuses on `DotBlinker` since the two TBs target different leaf modules.
+The two testbenches target the salvaged-from-2022 features as standalone entities: `tb_clock_dot_blink` asserts the 2:1 toggle ratio between MMSS and HHMM views (cause-effect on `isHHMMMode`); `tb_clock_alarm` covers the four match/mismatch × tone/gate combinations and the immediate-low transition when the match breaks. Both flows ship a complete top-to-bottom mirror — every VHDL leaf has a matching Verilog file, the two top-level netlist diagrams render side by side, and the testbenches assert identical properties on each language.
 
 </details>
 
@@ -279,7 +279,7 @@ declares `TOP / TB_TOPS / SRC_FILES / TB_FILES` (and optionally the
 | [simulator_writer](simulator_writer/)                       | ✅ | VHDL + Verilog | VCD writer used to sanity-check the sim flow.                  |
 | [vga_sprites](vga_sprites/)                                 | ✅ | VHDL + Verilog | Rotating VGA sprites (trig LUT) + optional gravity.            |
 | [7segments/text](7segments/text/)                           | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
-| [7segments/clock](7segments/clock/)                         | ✅ | VHDL (+ leaf-V) | Multiplexed clock with HHMM/MMSS view, blinking dot, alarm.    |
+| [7segments/clock](7segments/clock/)                         | ✅ | VHDL + Verilog | Multiplexed clock with HHMM/MMSS view, blinking dot, alarm.    |
 | [7segments/random_generator](7segments/random_generator/)   | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
 | [i2s_test_1](i2s_test_1/)                                   | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
 | [rom_lut](rom_lut/)                                         | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
@@ -344,12 +344,18 @@ Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it
   - [x] Alarm — second `Digit` cascade for the alarm time, view-toggle
     button on `inputButtons(1)`, intermittent ~400 Hz buzzer through
     the new `AlarmTrigger` entity. TB covers all four match/mismatch
-    × tone/gate combinations and the immediate match-broken
-    transition to `'Z'`.
+    × tone/gate combinations and the immediate transition to '0' when
+    the match breaks.
   - [x] Project is CI-compatible: `Makefile` discovered by the
     top-level orchestrator, ghdl `--std=08` fixes applied
-    (`'HIGH` on integers, slicing of type-conversions), screenshots
-    rendered for both testbenches.
+    (`'HIGH` on integers, slicing of type-conversions), both VHDL and
+    Verilog netlists synthesise (no `SKIP_DIAGRAM`), screenshots
+    rendered for all four testbenches.
+  - [x] Full Verilog mirror — every leaf entity (`Timer`,
+    `VariableTimer`, `CounterTimer`, `Debounce`, `Digit`,
+    `DotBlinker`, `AlarmTrigger`) plus the top-level
+    `top_level_7segments_clock` ships a Verilog twin with identical-
+    shape testbenches.
 - Remaining:
   - [ ] Milliseconds view.
   - [ ] Dynamic speed for set-time UX.

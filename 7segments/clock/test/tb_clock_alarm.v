@@ -3,8 +3,8 @@
 // Same four cause-effect properties as the VHDL TB:
 //   (A) match + tone + gate     -> buzzer = '1'
 //   (B) match + tone + !gate    -> buzzer = '0'
-//   (C) mismatch (regardless)   -> buzzer = 'z'
-//   (D) match-broken transition -> buzzer goes 'z' immediately
+//   (C) mismatch (regardless)   -> buzzer = '0'
+//   (D) match-broken transition -> buzzer goes '0' immediately
 
 `timescale 1ns/1ps
 
@@ -59,14 +59,14 @@ module tb_clock_alarm;
             $fatal;
         end
 
-        // (C) mismatch + tone + gate -> 'z'. Toggle a non-seconds-units
+        // (C) mismatch + tone + gate -> '0'. Toggle a non-seconds-units
         // bit so the upper-20 compare fails.
         sMainBcd[8] = 1'b1;        // minutes-units bit
         sTone = 1'b1;
         sGate = 1'b1;
         #10;
-        if (sBuzzer !== 1'bz) begin
-            $display("(C) expected buzzer z, got %b", sBuzzer);
+        if (sBuzzer !== 1'b0) begin
+            $display("(C) expected buzzer 0, got %b", sBuzzer);
             $fatal;
         end
 
@@ -82,11 +82,11 @@ module tb_clock_alarm;
             $fatal;
         end
 
-        // (D) Break match again on a seconds-tens bit -> 'z'.
+        // (D) Break match again on a seconds-tens bit -> '0'.
         sMainBcd[7] = 1'b1;
         #10;
-        if (sBuzzer !== 1'bz) begin
-            $display("(D) match broken: expected buzzer z, got %b", sBuzzer);
+        if (sBuzzer !== 1'b0) begin
+            $display("(D) match broken: expected buzzer 0, got %b", sBuzzer);
             $fatal;
         end
 

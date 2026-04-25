@@ -7,12 +7,15 @@
 --     match holds for ~10 simulated seconds before the units roll over;
 --   * the ~400 Hz tone is AND-gated by the 1 Hz square so the alarm
 --     beeps once per second instead of holding a continuous tone;
---   * outside the match window the output is 'Z' (high impedance) so
---     the FPGA pin floats, matching the original 2022 behaviour.
+--   * outside the match window the output is '0' (driven low).
 --
--- Reproduces the original commit 083576f's intermittent-tone pattern but
--- as a standalone entity with an explicit interface, so testbenches can
--- drive synthetic BCD vectors without having to wait for clock cascades.
+-- The 2022 source emitted 'Z' (high-impedance) when not matched; it was
+-- a quirk of running the buzzer pin straight off the comparator, and
+-- yosys-Verilog + netlistsvg's renderer can't lift a ternary-with-'Z'
+-- into a tri-state cell consistently. Driving '0' instead keeps the
+-- intermittent-tone behaviour identical, makes the VHDL and Verilog
+-- netlists shape-equal, and removes tri-state from internal logic where
+-- it doesn't belong.
 --
 -- Pure VHDL-93 (no 2008 features) so the same source compiles under
 -- either standard.
@@ -26,11 +29,11 @@ entity AlarmTrigger is
       alarmBcd    : in  std_logic_vector(23 downto 0);
       tone        : in  std_logic;        -- ~400 Hz buzzer carrier
       gate        : in  std_logic;        -- 1 Hz square (intermittence)
-      buzzerOut   : out std_logic := 'Z');
+      buzzerOut   : out std_logic := '0');
 end AlarmTrigger;
 
 architecture RTL of AlarmTrigger is
 begin
-   buzzerOut <= tone and gate when alarmBcd(23 downto 4) = mainBcd(23 downto 4)
-                              else 'Z';
+   buzzerOut <= (tone and gate) when alarmBcd(23 downto 4) = mainBcd(23 downto 4)
+                                else '0';
 end RTL;

@@ -5,11 +5,10 @@
 //   * compare bits 23..4 (above seconds-units) -- a single match holds
 //     for ~10 simulated seconds before seconds-tens advances past it;
 //   * `tone & gate` (~400 Hz tone AND-gated by 1 Hz square) when matched;
-//   * `1'bz` (high impedance) when not matched.
+//   * `1'b0` (driven low) when not matched.
 //
-// Reproduces the original commit 083576f intermittent-tone pattern as a
-// standalone module so testbenches can stimulate match/mismatch cases
-// without spinning the BCD cascades.
+// The 2022 source emitted 'Z' on the no-match branch; see the matching
+// note in AlarmTrigger.vhd for why both flows now drive '0' instead.
 
 module AlarmTrigger (
     input  wire [23:0] mainBcd,
@@ -19,10 +18,7 @@ module AlarmTrigger (
     output wire        buzzerOut
 );
 
-    // The compare and the gate output the same 'Z' fallback as the VHDL
-    // mirror (the 2022 design relied on the FPGA pin floating between
-    // alarms; we keep the same semantics in simulation).
     assign buzzerOut = (alarmBcd[23:4] == mainBcd[23:4]) ? (tone & gate)
-                                                          : 1'bz;
+                                                         : 1'b0;
 
 endmodule
