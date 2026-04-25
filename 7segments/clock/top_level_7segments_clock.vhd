@@ -1,5 +1,22 @@
 ------------------------------
 -- top level entitry for clock
+--
+-- VHDL-2008 (compiled with `--std=08`). The original 2022 source used
+-- pre-2008 dialects, but the testbenches that ship with this project
+-- target VHDL-2008, and the entire build runs through ghdl in that
+-- mode. Two specific 2008 incompatibilities had to be cleaned up while
+-- bringing this file forward (both flagged inline below):
+--
+--   1) `<integer-variable>'HIGH` was rejected as "prefix must be an
+--      array"; spell the upper bound as a literal instead. (See
+--      VariableTimer.vhd:50.)
+--   2) Indexing the result of a type conversion --
+--      `std_logic_vector(...)(0)` and `std_logic_vector(... srl ...) (3 downto 0)`
+--      -- is rejected as "type conversion cannot be indexed or sliced".
+--      Bind the conversion to a signal first, then slice the signal.
+--
+-- The body otherwise sticks to constructs that work under both -93 and
+-- -08, so this file remains readable as plain-old VHDL.
 
 LIBRARY ieee;
 
@@ -7,134 +24,281 @@ USE ieee.std_logic_1164.ALL;
 use ieee.numeric_std.ALL;
 
 entity top_level_7segments_clock is
+   -- All timer constants are exposed as generics so testbenches can shrink
+   -- them by orders of magnitude while keeping their ratios; the defaults
+   -- match the 50 MHz on-board clock and produce real-time behaviour.
+   generic (
+         MAX_NUMBER_FOR_1SEC_TIMER       : integer := 50000000;
+         TRIGGER_DURATION_FOR_1SEC_TIMER : integer := 25000000;
+         MAX_NUMBER_FOR_FAST_SET_TIMER   : integer := 75000;
+         MAX_NUMBER_FOR_VARIABLE_TIMER   : integer := 2500000;
+         MAX_NUMBER_FOR_BUZZER_TIMER     : integer := 125000;
+         TRIGGER_DURATION_FOR_BUZZER_TIMER : integer := 62500;
+         MAX_NUMBER_FOR_MUX_TIMER        : integer := 100000);
    port (
          clock: in std_logic;
          resetButton: in std_logic := '1';
          inputButtons : in std_logic_vector(3 downto 0);
          sevenSegments : out std_logic_vector(7 downto 0);
-         cableSelect : buffer std_logic_vector(3 downto 0));
+         cableSelect : buffer std_logic_vector(3 downto 0);
+         buzzer : out std_logic := '1');
 end top_level_7segments_clock;
 
 architecture behavior of top_level_7segments_clock is
-signal bcdDigits: std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
-signal enabledDigit: std_logic_vector (1 downto 0) := "00";
-signal currentDigitValue: std_logic_vector (3 downto 0) := "0000";
+-- Main clock display digits and the alarm display digits live in separate
+-- BCD vectors; bcdDigitsDisplayed is what the multiplexer ultimately reads.
+signal bcdDigits         : std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
+signal alarmBcdDigits    : std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
+signal bcdDigitsDisplayed: std_logic_vector (23 downto 0) := std_logic_vector(to_unsigned(0,24));
 
+signal enabledDigit: std_logic_vector (1 downto 0) := "00";
+-- Full-width sink for the CounterTimer's `counter` port: GHDL-08 rejects
+-- partial port-map associations like `counter(1 downto 0) => enabledDigit`,
+-- so we bind the full 64-bit output and slice off the two LSBs we need.
+signal muxCounterFull : std_logic_vector (63 downto 0) := (others => '0');
+signal currentDigitValue: std_logic_vector (3 downto 0) := "0000";
+-- Pre-shifted form of bcdDigitsDisplayed so we can slice it without
+-- indexing a type-conversion expression (also rejected by VHDL-08).
+signal shiftedBcdDigits : std_logic_vector (23 downto 0) := (others => '0');
+
+-- Carry bits for the main-clock cascade and a parallel alarm-clock cascade.
 signal carryBitSecondsUnit, carryBitSecondsTens, carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit: std_logic := '0';
+signal alarmCarryBitSecondsUnit, alarmCarryBitSecondsTens, alarmCarryBitMinutesUnit, alarmCarryBitMinutesTens, alarmCarryBitHoursUnit: std_logic := '0';
+
 signal variableTimerTickForTimeSet: std_logic := '0';
 signal timerTick00015Sec: std_logic := '0';
 signal mainClockForClock: std_logic := '0';
+signal clockForAlarmSet: std_logic := '0';
 signal oneSecondPeriodSquare: std_logic := '0';
+signal squareWaveForBuzzer: std_logic := '0';
 
 type ClockMode is (MMSS,HHMM);
 signal currentClockMode : ClockMode := MMSS;
 signal buttonClockModeDebounced : std_logic := '0';
 signal resetButtonSignal : std_logic := '0';
 
+-- Currently-displayed clock and the toggle signal driven by inputButtons(1).
+type SelectedClock is (MAIN_CLOCK, ALARM_CLOCK);
+signal currentSelectedClock : SelectedClock := MAIN_CLOCK;
+signal buttonSelectedClockDebounced : std_logic := '1';
+
+signal dotBlinkingSignal : std_logic := '0';
+signal isHHMMModeBit     : std_logic := '0';
+
+-- '1' when the alarm view is currently selected. Used to XOR-invert the
+-- decimal-point polarity in the BCD-to-7-seg encoder. Pulled out into a
+-- standalone signal because the older inline form
+-- `std_logic_vector(to_unsigned(SelectedClock'pos(...), 1))(0)` is
+-- rejected under strict VHDL-08 ("type conversion cannot be indexed").
+signal selectedClockBit : std_logic := '0';
 
 signal increaseTimeButtonDebounced : std_logic := '1';
 signal decreaseTimeButtonDebounced : std_logic := '1';
 
+-- The +/- buttons drive whichever clock is currently selected; the other
+-- always counts forward (decrease=1 means "forward" in the Digit entity).
+signal directionForMainClock  : std_logic := '1';
+signal directionForAlarmClock : std_logic := '1';
+
 begin
 resetButtonSignal <= not resetButton;
-mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1')
+selectedClockBit  <= '1' when currentSelectedClock = ALARM_CLOCK else '0';
+isHHMMModeBit     <= '1' when currentClockMode = HHMM else '0';
+
+-- Main clock keeps ticking on the 1 Hz square wave when the user is idle
+-- OR when the alarm is the focus (so real time doesn't freeze while
+-- setting the alarm). When MAIN is focused and a +/- button is held it
+-- accelerates: variable rate in MMSS, fixed fast rate in HHMM.
+mainClockForClock <= oneSecondPeriodSquare when ((increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1') or currentSelectedClock = ALARM_CLOCK)
                       else variableTimerTickForTimeSet when currentClockMode = MMSS
-							 else timerTick00015Sec;
+                      else timerTick00015Sec;
+
+-- Alarm cascade only ticks while ALARM is focused AND a +/- button is held;
+-- otherwise it stays put (no implicit drift while the user is reading time).
+clockForAlarmSet <= '0' when ((increaseTimeButtonDebounced = '1' and decreaseTimeButtonDebounced = '1') or currentSelectedClock = MAIN_CLOCK)
+                       else variableTimerTickForTimeSet when currentClockMode = MMSS
+                       else timerTick00015Sec;
+
+bcdDigitsDisplayed <= bcdDigits when currentSelectedClock = MAIN_CLOCK else alarmBcdDigits;
+
+directionForMainClock  <= '1' when currentSelectedClock = ALARM_CLOCK else decreaseTimeButtonDebounced;
+directionForAlarmClock <= '1' when currentSelectedClock = MAIN_CLOCK  else decreaseTimeButtonDebounced;
+
+-- Middle-dot blink — delegated to DotBlinker so a testbench can drive
+-- the 1 Hz square directly without paying for the divider chain.
+dotBlinker : entity work.DotBlinker(RTL)
+   port map (
+      oneSecondPeriodSquare => oneSecondPeriodSquare,
+      isHHMMMode            => isHHMMModeBit,
+      dotOut                => dotBlinkingSignal);
 
  --------------------------------
  -- timer to get ticks every 1 sec
    timer1Sec : entity work.Timer(behaviorTimer)
-      generic map ( MAX_NUMBER => 50000000, -- before it was 49999999. It was copied from examples. TODO: Check why!
-		              TRIGGER_DURATION => 25000000 ) -- so we can use the 50% duty cycle for blinking the led
+      generic map ( MAX_NUMBER => MAX_NUMBER_FOR_1SEC_TIMER,
+                    TRIGGER_DURATION => TRIGGER_DURATION_FOR_1SEC_TIMER )
       port map ( clock => clock,
                  timerTriggered => oneSecondPeriodSquare,
                  reset => resetButtonSignal);
-                 
---   timer005Sec : entity work.Timer(behaviorTimer)
---      generic map ( MAX_NUMBER => 2500000 )
---      port map ( clock => clock,
---                 timerTriggered => variableTimerTickForTimeSet,
---                 reset => resetButtonSignal);  
-					  
+
    timer00015Sec : entity work.Timer(behaviorTimer)
-      generic map ( MAX_NUMBER => 75000 )
+      generic map ( MAX_NUMBER => MAX_NUMBER_FOR_FAST_SET_TIMER )
       port map ( clock => clock,
                  timerTriggered => timerTick00015Sec,
                  reset => resetButtonSignal);
-   
-	variableTimerForTimeSet : entity work.VariableTimer(behaviorVariableTimer)
-   generic map ( MAX_NUMBER => 2500000 )
+
+   variableTimerForTimeSet : entity work.VariableTimer(behaviorVariableTimer)
+      generic map ( MAX_NUMBER => MAX_NUMBER_FOR_VARIABLE_TIMER )
       port map ( clock => clock,
                  timerTriggered => variableTimerTickForTimeSet,
-                 reset => resetButtonSignal);  
-                 
-                 
+                 reset => resetButtonSignal);
+
+   -- ~400 Hz square used as the buzzer tone source.
+   square400Hz : entity work.Timer(behaviorTimer)
+      generic map ( MAX_NUMBER => MAX_NUMBER_FOR_BUZZER_TIMER,
+                    TRIGGER_DURATION => TRIGGER_DURATION_FOR_BUZZER_TIMER )
+      port map ( clock => clock,
+                 timerTriggered => squareWaveForBuzzer,
+                 reset => resetButtonSignal);
+
  ------------------------------------------------------------------
- -- counter for for multiplexer (4 digits, one increment every 2ms)                
+ -- counter for for multiplexer (4 digits, one increment every 2ms)
    counterForMux : entity work.CounterTimer(behaviorCounterTimer)
-    generic map (MAX_NUMBER_FOR_TIMER => 100000, -- tick every 100E3 / 50E6 = 2ms
+    generic map (MAX_NUMBER_FOR_TIMER => MAX_NUMBER_FOR_MUX_TIMER,
                  MAX_NUMBER_FOR_COUNTER => 3)
     port map ( clock => clock,
-               counter (1 downto 0) => enabledDigit);
- -- digit instances ...               
+               counter => muxCounterFull);
+   enabledDigit <= muxCounterFull(1 downto 0);
+
+ -- Main-clock digit cascade.
    digitSecsUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 9)
     port map (
       clock => mainClockForClock,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForMainClock,
       currentNumber => bcdDigits(3 downto 0),
       carryBit => carryBitSecondsUnit,
       reset => resetButtonSignal);
 
-      digitSecsTens : entity work.Digit(behaviorDigit)
+   digitSecsTens : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 5)
     port map (
       clock => carryBitSecondsUnit,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForMainClock,
       currentNumber => bcdDigits(7 downto 4),
       carryBit => carryBitSecondsTens,
-      reset => resetButtonSignal); 
-      
+      reset => resetButtonSignal);
+
    digitMinsUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 9)
     port map (
       clock => carryBitSecondsTens,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForMainClock,
       currentNumber => bcdDigits(11 downto 8),
       carryBit => carryBitMinutesUnit,
-      reset => resetButtonSignal); 
-      
+      reset => resetButtonSignal);
+
    digitMinsTens : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 5)
     port map (
       clock => carryBitMinutesUnit,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForMainClock,
       currentNumber => bcdDigits(15 downto 12),
       carryBit => carryBitMinutesTens,
-      reset => resetButtonSignal); 
- 
+      reset => resetButtonSignal);
+
    digitHoursUnit : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 3)
     port map (
       clock => carryBitMinutesTens,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForMainClock,
       currentNumber => bcdDigits(19 downto 16),
       carryBit => carryBitHoursUnit,
-      reset => resetButtonSignal); 
-      
+      reset => resetButtonSignal);
+
    digitHoursTens : entity work.Digit(behaviorDigit)
     generic map (MAX_NUMBER => 2)
     port map (
       clock => carryBitHoursUnit,
-      direction => decreaseTimeButtonDebounced,
+      direction => directionForMainClock,
       currentNumber => bcdDigits(23 downto 20),
       reset => resetButtonSignal);
-		
-	debounce_clock_mode_switch : entity work.Debounce(RTL)
+
+ -- Alarm-clock digit cascade (same shape, fed from clockForAlarmSet).
+   alarmDigitSecsUnit : entity work.Digit(behaviorDigit)
+    generic map (MAX_NUMBER => 9)
+    port map (
+      clock => clockForAlarmSet,
+      direction => directionForAlarmClock,
+      currentNumber => alarmBcdDigits(3 downto 0),
+      carryBit => alarmCarryBitSecondsUnit,
+      reset => resetButtonSignal);
+
+   alarmDigitSecsTens : entity work.Digit(behaviorDigit)
+    generic map (MAX_NUMBER => 5)
+    port map (
+      clock => alarmCarryBitSecondsUnit,
+      direction => directionForAlarmClock,
+      currentNumber => alarmBcdDigits(7 downto 4),
+      carryBit => alarmCarryBitSecondsTens,
+      reset => resetButtonSignal);
+
+   alarmDigitMinsUnit : entity work.Digit(behaviorDigit)
+    generic map (MAX_NUMBER => 9)
+    port map (
+      clock => alarmCarryBitSecondsTens,
+      direction => directionForAlarmClock,
+      currentNumber => alarmBcdDigits(11 downto 8),
+      carryBit => alarmCarryBitMinutesUnit,
+      reset => resetButtonSignal);
+
+   alarmDigitMinsTens : entity work.Digit(behaviorDigit)
+    generic map (MAX_NUMBER => 5)
+    port map (
+      clock => alarmCarryBitMinutesUnit,
+      direction => directionForAlarmClock,
+      currentNumber => alarmBcdDigits(15 downto 12),
+      carryBit => alarmCarryBitMinutesTens,
+      reset => resetButtonSignal);
+
+   alarmDigitHoursUnit : entity work.Digit(behaviorDigit)
+    generic map (MAX_NUMBER => 3)
+    port map (
+      clock => alarmCarryBitMinutesTens,
+      direction => directionForAlarmClock,
+      currentNumber => alarmBcdDigits(19 downto 16),
+      carryBit => alarmCarryBitHoursUnit,
+      reset => resetButtonSignal);
+
+   alarmDigitHoursTens : entity work.Digit(behaviorDigit)
+    generic map (MAX_NUMBER => 2)
+    port map (
+      clock => alarmCarryBitHoursUnit,
+      direction => directionForAlarmClock,
+      currentNumber => alarmBcdDigits(23 downto 20),
+      reset => resetButtonSignal);
+
+   -- Alarm comparator + buzzer gating, factored into AlarmTrigger.
+   alarm : entity work.AlarmTrigger(RTL)
+      port map (
+         mainBcd   => bcdDigits,
+         alarmBcd  => alarmBcdDigits,
+         tone      => squareWaveForBuzzer,
+         gate      => oneSecondPeriodSquare,
+         buzzerOut => buzzer);
+
+   debounce_clock_mode_switch : entity work.Debounce(RTL)
     port map(
     i_Clk    => clock,
     i_Switch => inputButtons(0),
     o_Switch => buttonClockModeDebounced
+  );
+
+  debounce_view_alarm : entity work.Debounce(RTL)
+    port map(
+    i_Clk    => clock,
+    i_Switch => inputButtons(1),
+    o_Switch => buttonSelectedClockDebounced
   );
 
   debounce_increase_time_button : entity work.Debounce(RTL)
@@ -143,17 +307,17 @@ mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '
     i_Switch => inputButtons(2),
     o_Switch => decreaseTimeButtonDebounced
   );
-  
+
   debounce_decrease_time_button : entity work.Debounce(RTL)
     port map(
     i_Clk    => clock,
     i_Switch => inputButtons(3),
     o_Switch => increaseTimeButtonDebounced
   );
-  
+
 
    ---- button handler
-   buttonHandler: process(buttonClockModeDebounced)
+   buttonClockModeHandler: process(buttonClockModeDebounced)
    begin
       if buttonClockModeDebounced'event and buttonClockModeDebounced = '0' then
          -- currentClockMode is toggled with button 0
@@ -162,30 +326,47 @@ mainClockForClock <= oneSecondPeriodSquare when (increaseTimeButtonDebounced = '
          currentClockMode <= ClockMode'val(to_integer(unsigned(not std_logic_vector(to_unsigned(ClockMode'pos(currentClockMode),1)))));
       end if;
    end process;
-   
-   -- MUX to generate anode activating signals for 4 LEDs 
-   process(enabledDigit, bcdDigits, currentClockMode)
+
+   buttonSelectedClockHandler: process(buttonSelectedClockDebounced)
+   begin
+      if buttonSelectedClockDebounced'event and buttonSelectedClockDebounced = '0' then
+         currentSelectedClock <= SelectedClock'val(to_integer(unsigned(not std_logic_vector(to_unsigned(SelectedClock'pos(currentSelectedClock),1)))));
+      end if;
+   end process;
+
+   -- MUX to generate anode activating signals for 4 LEDs.
+   -- Pre-shift bcdDigitsDisplayed into a signal so the slice on the
+   -- right-hand side is a plain object reference, not a slice of a
+   -- type-conversion (which VHDL-08 rejects).
+   shiftedBcdDigits <= std_logic_vector(
+                          unsigned(bcdDigitsDisplayed)
+                          srl ((to_integer(unsigned(enabledDigit))
+                                + (ClockMode'pos(currentClockMode) * 2)) * 4));
+
+   process(enabledDigit, shiftedBcdDigits)
       constant nibbleToShift: std_logic_vector(3 downto 0) := "0001";
    begin
       cableSelect <= not std_logic_vector(unsigned(nibbleToShift) sll to_integer(unsigned(enabledDigit)));
-      currentDigitValue <= std_logic_vector(unsigned(bcdDigits) srl ((to_integer(unsigned(enabledDigit)) + (ClockMode'pos(currentClockMode) * 2))*4)) (3 downto 0);
+      currentDigitValue <= shiftedBcdDigits(3 downto 0);
    end process;
 
-   -- BCD to 7 segments
-   sevenSegments <= (oneSecondPeriodSquare or cableSelect(2)) & "1000000" when currentDigitValue = "0000" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "1111001" when currentDigitValue =  "0001" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0100100" when currentDigitValue =  "0010" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0110000" when currentDigitValue =  "0011" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0011001" when currentDigitValue =  "0100" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0010010" when currentDigitValue =  "0101" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000010" when currentDigitValue =  "0110" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "1111000" when currentDigitValue =  "0111" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000000" when currentDigitValue =  "1000" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0010000" when currentDigitValue =  "1001" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0001000" when currentDigitValue =  "1010" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000011" when currentDigitValue =  "1011" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "1000110" when currentDigitValue =  "1100" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0100001" when currentDigitValue =  "1101" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0000110" when currentDigitValue =  "1110" else
-                    (oneSecondPeriodSquare or cableSelect(2)) & "0001110";
+   -- BCD to 7 segments. The dot bit is dotBlinkingSignal (gated by
+   -- cableSelect(2) so only the middle digit's dot lights), XOR-inverted
+   -- in alarm view as a visual cue that ALARM is selected.
+   sevenSegments <= ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "1000000" when currentDigitValue = "0000" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "1111001" when currentDigitValue =  "0001" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0100100" when currentDigitValue =  "0010" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0110000" when currentDigitValue =  "0011" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0011001" when currentDigitValue =  "0100" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0010010" when currentDigitValue =  "0101" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0000010" when currentDigitValue =  "0110" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "1111000" when currentDigitValue =  "0111" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0000000" when currentDigitValue =  "1000" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0010000" when currentDigitValue =  "1001" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0001000" when currentDigitValue =  "1010" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0000011" when currentDigitValue =  "1011" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "1000110" when currentDigitValue =  "1100" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0100001" when currentDigitValue =  "1101" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0000110" when currentDigitValue =  "1110" else
+                    ((dotBlinkingSignal or cableSelect(2)) xor selectedClockBit) & "0001110";
 end behavior;

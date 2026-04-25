@@ -25,11 +25,11 @@ begin
    counterProcess : process(timerTick, reset)
    begin
       if timerTick'event and timerTick = '1' then
-         if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER_FOR_COUNTER, counterValue'length)) then
-            counterValue <= std_logic_vector(to_unsigned(0,64));
-         else
-            counterValue <= std_logic_vector(to_unsigned(to_integer(unsigned(counterValue))+1, counterValue'length));
-         end if;
+        if counterValue = std_logic_vector(to_unsigned(MAX_NUMBER_FOR_COUNTER, counterValue'length)) then
+           counterValue <= std_logic_vector(to_unsigned(0, counterValue'length));
+        else
+           counterValue <= std_logic_vector(to_unsigned(to_integer(unsigned(counterValue))+1, counterValue'length));
+        end if;
       end if;
       if reset = '1' then
           counterValue <= std_logic_vector(to_unsigned(0,64));
