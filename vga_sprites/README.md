@@ -65,12 +65,21 @@ Thisall_multipliers_used is how the demo looks now:
 
 ![rotating smileys](doc/rotating_with_lut_trigonometric.gif)
 
-## TODO : 
-* optimize code 
-  * [x]try implementing my own multiplier with LUT
+## TODO :
+* optimize code
+  * [x] try implementing my own multiplier with LUT
   * improve rotation (better resolution, fix something?)
 * [x] remove hardcoded values on boundaries for bouncing. Use sprites constants instead
 * integrate input buttons with debouncers
 * [x] use vectors for sprites velocities. Instantiate several sprites.
-* animate sprites
-* add testbench
+* [x] animate sprites — sprites rotate (`rotateSprite` process), bounce off the
+  screen edges, and optionally fall under gravity (`tb_sprite_gravity` covers
+  the fall-and-bounce path).
+* [x] add testbench — `test/` now has four:
+  * `tb_trigonometric`       — algebraic property checks on the rotate() function and LUT.
+  * `tb_multiply_by_sin_lut` — unit tests for the multiplyBySinLUT primitive.
+  * `tb_sprite_gravity`      — sprite entity with gravity on, fall/bounce cause-effect.
+  * `tb_sprite`              — basic sprite-entity smoke test (not CI-wired).
+* [x] mirror the design + the three CI-wired testbenches in Verilog. Source files:
+  `sprite.v`, `trigonometric_functions.vh`, `test/tb_*.v`. Wired through `V_TOP`
+  / `V_TB_TOPS` / `V_SRC_FILES` / `V_TB_FILES` / `V_INCDIRS` in the Makefile.
