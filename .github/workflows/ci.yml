@@ -1,50 +1,421 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
+    branches: [main]
   workflow_dispatch:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
 jobs:
+  # ------------------------------------------------------------------
+  # discover - list every project Makefile so the build job fans out
+  # over it via matrix. Adding a project never means editing this file.
+  # ------------------------------------------------------------------
+  discover:
+    name: Discover projects
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.enumerate.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v6
 
+      - id: enumerate
+        name: Enumerate projects
+        run: |
+          set -euo pipefail
+          # A "project" is any directory that holds a Makefile which
+          # includes mk/common.mk.
+          projects=$(grep -rl --include=Makefile 'mk/common\.mk' . \
+                     | grep -v '^\./Makefile$' \
+                     | xargs -n1 dirname \
+                     | sed 's|^\./||' \
+                     | sort -u \
+                     | jq -R . | jq -sc .)
+          echo "projects=${projects}" >> "$GITHUB_OUTPUT"
+          echo "Discovered: ${projects}"
 
-  ubuntu:
+  # ------------------------------------------------------------------
+  # build - per-project simulate + diagram + screenshot. Runs inside
+  # the hdltools container so the toolchain is pinned by image tag.
+  # ------------------------------------------------------------------
+  build:
+    name: Build ${{ matrix.project }}
+    needs: discover
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        backend: [ '', mcode, llvm, gcc ]
-        version: [ 18.04, 20.04, latest ]
-    runs-on: ubuntu-${{ matrix.version }}
-    name: '🐧 Ubuntu ${{ matrix.version }} · ${{ matrix.backend }}'
+        project: ${{ fromJson(needs.discover.outputs.projects) }}
+    container:
+      image: ghcr.io/naelolaiz/hdltools:release
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-    - name: '🧰 Checkout'
-      uses: actions/checkout@v2
+      # The container already ships ghdl, yosys, ghdl-yosys-plugin,
+      # iverilog, netlistsvg, gtkwave and xvfb. We only need to install
+      # the Python deps required by scripts/vcd2png.py.
+      #
+      # Note: the hdltools image's default shell is POSIX sh (dash),
+      # not bash, so this block must avoid bash-only constructs like
+      # `set -o pipefail`. `sh -e` (the GitHub Actions default for
+      # containers) already gives us exit-on-error.
+      - name: Install Python deps
+        run: pip install --quiet --no-cache-dir -r scripts/requirements.txt
 
-    #- name: Run Action
-    #  uses: ./
-    #  with:
-    #    backend: ${{ matrix.backend }}
+      - name: Tool versions
+        run: |
+          echo "::group::tool versions"
+          ghdl --version | head -n1
+          yosys -V 2>&1 | head -n1 || true
+          netlistsvg --help 2>&1 | head -n1 || true
+          gtkwave --version 2>&1 | head -n1 || true
+          iverilog -V 2>&1 | head -n1 || true
+          python3 --version
+          echo "::endgroup::"
 
-    - uses: ghdl/setup-ghdl-ci@nightly
-      with: 
-        backend: llvm
-    - name: Test
-      run: |
-        echo "GHDL_PREFIX: $GHDL_PREFIX"
-        echo "GHDL: $GHDL"
-        echo "GHDL_LIBS: $GHDL_LIBS"
-        ghdl --version
-        $GHDL --version
-        cd blink_led
-        ghdl -a blink_led.vhd
-        ghdl -e blink_led
-        ls -l 
-        ./blink_led
+      - name: Simulate
+        working-directory: ${{ matrix.project }}
+        run: make simulate
+
+      - name: Generate netlist diagram
+        working-directory: ${{ matrix.project }}
+        run: make diagram
+
+      # GTKWave needs an X server but vcd2png.py spawns its own Xvfb
+      # via pyvirtualdisplay, so we don't wrap with xvfb-run here.
+      # The earlier double-Xvfb (outer xvfb-run + inner pyvirtualdisplay)
+      # masked a frame-capture race that produced empty PNGs in CI
+      # even though the same command rendered correctly locally.
+      - name: Render waveform screenshot
+        working-directory: ${{ matrix.project }}
+        run: make screenshot
+
+      # Optional Verilog flow. mk/common.mk turns these into no-ops for
+      # projects that don't define V_SRC_FILES, so it is safe to run
+      # them unconditionally across the matrix.
+      - name: Simulate (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: make simulate_v
+
+      - name: Generate netlist diagram (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: make diagram_v
+
+      - name: Render waveform screenshot (Verilog)
+        working-directory: ${{ matrix.project }}
+        run: make screenshot_v
+
+      # Normalise the artifact slash in the artifact name (GitHub
+      # artifacts reject '/'); 7segments/counter -> 7segments-counter.
+      - name: Normalise artifact name
+        id: artifact
+        run: |
+          echo "name=$(echo '${{ matrix.project }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
+      # Some projects opt out of `make diagram` (SKIP_DIAGRAM) when TOP
+      # isn't synthesisable by the yosys+ghdl-plugin combo. Their
+      # *.json/*.svg globs then match nothing, so we use `warn` instead
+      # of `error`; the simulate/diagram/screenshot steps above would
+      # have already failed the job if an artifact was missing for a
+      # non-opted-out reason.
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.artifact.outputs.name }}-artifacts
+          path: |
+            ${{ matrix.project }}/build/*.vcd
+            ${{ matrix.project }}/build/*.svg
+            ${{ matrix.project }}/build/*.json
+            ${{ matrix.project }}/build/*.png
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Write the per-project step summary using raw.githubusercontent.com
+      # URLs pointing at the `ci-gallery` branch. The `gallery` job (below)
+      # commits the generated .svg/.png files to that branch at the URL
+      # paths referenced here; by the time anyone views the run summary
+      # page, those URLs resolve and GitHub renders the images inline.
+      #
+      # Data URIs were tried first and silently stripped by GitHub's
+      # markdown sanitizer, so we rely on real URLs instead.
+      - name: Build summary
+        if: always()
+        working-directory: ${{ matrix.project }}
+        run: |
+          summary="$GITHUB_STEP_SUMMARY"
+          base="https://raw.githubusercontent.com/${{ github.repository }}/ci-gallery/run-${{ github.run_id }}/${{ steps.artifact.outputs.name }}"
+          echo "## ${{ matrix.project }}" >> "$summary"
+          echo ""                         >> "$summary"
+
+          # Emit one 3-column table (stem | VHDL | Verilog) covering
+          # every artifact this project produced. The two loops (SVGs
+          # first for netlists, PNGs after for waveforms) preserve a
+          # natural reading order; `seen` de-duplicates so a stem
+          # with both VHDL and Verilog files emits one row, matching
+          # the aggregate gallery layout exactly. See the "Build
+          # consolidated gallery body" step below for the same
+          # shape applied across all projects.
+          if ls build/*.svg >/dev/null 2>&1 || ls build/*.png >/dev/null 2>&1; then
+            echo "|  | VHDL | Verilog |" >> "$summary"
+            echo "| --- | :---: | :---: |" >> "$summary"
+            seen=""
+            for pass_ext in svg png; do
+              for f in build/*."$pass_ext"; do
+                [ -f "$f" ] || continue
+                stem=$(basename "$f" ".$pass_ext")
+                stem=${stem%_v}
+                case " $seen " in
+                  *" $stem "*) continue ;;
+                esac
+                seen="$seen $stem"
+                vhdl=""
+                verilog=""
+                for ext in svg png; do
+                  [ -z "$vhdl"    ] && [ -f "build/${stem}.${ext}"   ] && vhdl="${stem}.${ext}"
+                  [ -z "$verilog" ] && [ -f "build/${stem}_v.${ext}" ] && verilog="${stem}_v.${ext}"
+                done
+                vcell=""
+                verilog_cell=""
+                # Fixed-width <img> instead of ![alt](url) so a project
+                # whose Verilog netlist synthesises wider than its VHDL
+                # twin (or vice versa) doesn't blow out the table column.
+                [ -n "$vhdl" ]    && vcell="<img src=\"${base}/${vhdl}\" alt=\"${vhdl}\" width=\"480\">"
+                [ -n "$verilog" ] && verilog_cell="<img src=\"${base}/${verilog}\" alt=\"${verilog}\" width=\"480\">"
+                echo "| \`${stem}\` | ${vcell} | ${verilog_cell} |" >> "$summary"
+              done
+            done
+          else
+            echo "_No artifacts produced for this project._" >> "$summary"
+          fi
+
+  # ------------------------------------------------------------------
+  # gallery - collects every build's .svg / .png into the `ci-gallery`
+  # orphan branch so the step-summary URLs above (and any PR comment)
+  # resolve to real, inline-renderable raw.githubusercontent.com links.
+  # ------------------------------------------------------------------
+  gallery:
+    name: Publish gallery
+    needs: [build]
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Stage gallery content
+        id: stage
+        run: |
+          set -euo pipefail
+          stage=/tmp/stage
+          mkdir -p "$stage/run-${GITHUB_RUN_ID}"
+          found=0
+          for art in artifacts/*-artifacts; do
+            [ -d "$art" ] || continue
+            proj=$(basename "$art" | sed 's/-artifacts$//')
+            dest="$stage/run-${GITHUB_RUN_ID}/$proj"
+            mkdir -p "$dest"
+            # Copy only the visual outputs; skip the huge VCDs.
+            copied=0
+            for f in "$art"/*.svg "$art"/*.png; do
+              [ -f "$f" ] || continue
+              cp "$f" "$dest/"
+              copied=$((copied+1))
+            done
+            if [ "$copied" -eq 0 ]; then
+              rmdir "$dest"
+            else
+              found=$((found+copied))
+            fi
+          done
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+          echo "stage=$stage" >> "$GITHUB_OUTPUT"
+          ls -R "$stage"
+
+      - name: Commit to ci-gallery branch
+        if: steps.stage.outputs.found != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          repo_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          work=/tmp/gallery
+          if git ls-remote --exit-code "$repo_url" refs/heads/ci-gallery >/dev/null 2>&1; then
+            git clone --branch ci-gallery --depth 1 "$repo_url" "$work"
+          else
+            mkdir -p "$work"
+            cd "$work"
+            git init -q -b ci-gallery
+            git remote add origin "$repo_url"
+            printf '# CI gallery\n\nAuto-generated per-run artifacts from the CI workflow.\n' > README.md
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                add README.md
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                commit -q -m 'init ci-gallery'
+            cd -
+          fi
+
+          cp -r "${{ steps.stage.outputs.stage }}/run-${GITHUB_RUN_ID}" "$work/"
+
+          # On main pushes, refresh the `latest/` pointer so the README
+          # can link to always-current diagrams.
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            rm -rf "$work/latest"
+            cp -r "$work/run-${GITHUB_RUN_ID}" "$work/latest"
+          fi
+
+          cd "$work"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -q -m "gallery: run ${GITHUB_RUN_ID}"
+            git push origin ci-gallery
+          fi
+
+      # The consolidated gallery body is useful in two places:
+      #   1. The Actions run-summary page (so visitors don't have to click
+      #      into every per-project job to see its outputs).
+      #   2. The PR comment (on pull_request events).
+      # Build it once, reuse the file in both downstream steps.
+      - name: Build consolidated gallery body
+        if: steps.stage.outputs.found != '0'
+        id: gallery_body
+        run: |
+          set -euo pipefail
+          out=/tmp/gallery_body.md
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/ci-gallery/run-${GITHUB_RUN_ID}"
+          {
+            echo "<!-- ci-gallery-comment -->"
+            echo "### CI gallery — run \`${GITHUB_RUN_ID}\`"
+            echo ""
+            echo "Netlist diagrams and simulation waveforms for every project in this run."
+            echo ""
+            # Emit a table per project, grouped by artifact stem so
+            # VHDL and Verilog twins sit in adjacent columns of the
+            # same row. A stem is the filename with a trailing `_v`
+            # and the extension stripped; `_v` marks a Verilog twin.
+            # Keeps paired waveforms visually next to each other
+            # instead of alpha-sorted into VHDL1, VHDL2, Verilog2,
+            # Verilog1.
+            for d in "${{ steps.stage.outputs.stage }}/run-${GITHUB_RUN_ID}"/*/; do
+              [ -d "$d" ] || continue
+              proj=$(basename "$d")
+
+              echo "<details open>"
+              echo "<summary><code>${proj}</code></summary>"
+              echo ""
+              # Always use the 3-column VHDL | Verilog layout, even
+              # for VHDL-only projects. Keeping the shape consistent
+              # makes it easy to compare across projects; the empty
+              # Verilog cells are an honest signal that the project
+              # hasn't grown a Verilog mirror yet.
+              echo "|  | VHDL | Verilog |"
+              echo "| --- | :---: | :---: |"
+
+              # Two passes emit rows in a natural reading order:
+              # netlists (SVGs) first, then waveforms (PNGs).
+              # `seen` de-duplicates so a stem with both VHDL and
+              # Verilog files emits one row, not two.
+              seen=""
+              for pass_ext in svg png; do
+                for f in "$d"/*."$pass_ext"; do
+                  [ -f "$f" ] || continue
+                  stem=$(basename "$f" ".$pass_ext")
+                  stem=${stem%_v}
+                  case " $seen " in
+                    *" $stem "*) continue ;;
+                  esac
+                  seen="$seen $stem"
+                  vhdl=""; verilog=""
+                  for ext in svg png; do
+                    [ -z "$vhdl"    ] && [ -f "$d/${stem}.${ext}"   ] && vhdl="${stem}.${ext}"
+                    [ -z "$verilog" ] && [ -f "$d/${stem}_v.${ext}" ] && verilog="${stem}_v.${ext}"
+                  done
+                  vcell=""; verilog_cell=""
+                  # Fixed-width <img> — see the rationale in the
+                  # per-project summary step above.
+                  [ -n "$vhdl" ]    && vcell="<img src=\"${base}/${proj}/${vhdl}\" alt=\"${vhdl}\" width=\"480\">"
+                  [ -n "$verilog" ] && verilog_cell="<img src=\"${base}/${proj}/${verilog}\" alt=\"${verilog}\" width=\"480\">"
+                  echo "| \`${stem}\` | ${vcell} | ${verilog_cell} |"
+                done
+              done
+
+              echo ""
+              echo "</details>"
+              echo ""
+            done
+          } > "$out"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Write gallery to run summary
+        if: steps.stage.outputs.found != '0'
+        run: cat "${{ steps.gallery_body.outputs.path }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upsert PR comment
+        if: github.event_name == 'pull_request' && steps.stage.outputs.found != '0'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('${{ steps.gallery_body.outputs.path }}', 'utf8');
+            const marker = '<!-- ci-gallery-comment -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+            }
+
+  # ------------------------------------------------------------------
+  # status - one job downstream checks can depend on.
+  # ------------------------------------------------------------------
+  status:
+    name: CI status
+    if: always()
+    needs: [build, gallery]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any required job failed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "build failed"
+            exit 1
+          fi
+          if [ "${{ needs.gallery.result }}" != "success" ]; then
+            echo "gallery failed"
+            exit 1
+          fi
+          echo "CI ok"
