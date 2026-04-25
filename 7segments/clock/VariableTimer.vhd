@@ -1,5 +1,10 @@
 ---------------
 -- VariableTimer entity
+--
+-- VHDL-2008 compatible (compiled with `--std=08`). The single 2008
+-- incompatibility found while porting this from the 2022 branch was
+-- `serialInDataCounter'HIGH` on an integer variable (rejected as
+-- "prefix must be an array"); the fix is documented at the line below.
 LIBRARY ieee;
 
 USE ieee.std_logic_1164.ALL;
@@ -47,7 +52,10 @@ begin
                maxNumber := std_logic_vector(to_unsigned(0,64));
                setMaxStarted := true;
             end if;
-            if serialInDataCounter < serialInDataCounter'HIGH then
+            -- Subtype was declared `integer range 0 to 63`; under VHDL-08
+            -- 'HIGH on the variable itself is rejected ("prefix must be an
+            -- array"), so spell the upper bound out.
+            if serialInDataCounter < 63 then
                maxNumber := maxNumber(62 downto 0) & dataIn;
                serialInDataCounter := serialInDataCounter + 1;
             end if;
