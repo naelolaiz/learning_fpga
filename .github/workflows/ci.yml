@@ -151,26 +151,38 @@ jobs:
           echo ""                         >> "$summary"
 
           # Emit one 3-column table (stem | VHDL | Verilog) covering
-          # every artifact this project produced. The two loops (SVGs
-          # first for netlists, PNGs after for waveforms) preserve a
-          # natural reading order; `seen` de-duplicates so a stem
-          # with both VHDL and Verilog files emits one row, matching
-          # the aggregate gallery layout exactly. See the "Build
-          # consolidated gallery body" step below for the same
+          # every artifact this project produced. Stems are collected
+          # first, then emitted in two passes: non-`tb_` (netlists)
+          # first, `tb_*` (testbench waveforms) second. This produces
+          # a stable RTL-then-TB ordering regardless of how the TOP
+          # entity is named — a project whose TOP is `test` would
+          # otherwise have its `tb_test` rows sort before `test`,
+          # since `tb` < `te` lexically. `seen` de-duplicates so a
+          # stem with both VHDL and Verilog files emits one row,
+          # matching the aggregate gallery layout exactly. See the
+          # "Build consolidated gallery body" step below for the same
           # shape applied across all projects.
           if ls build/*.svg >/dev/null 2>&1 || ls build/*.png >/dev/null 2>&1; then
             echo "|  | VHDL | Verilog |" >> "$summary"
             echo "| --- | :---: | :---: |" >> "$summary"
-            seen=""
-            for pass_ext in svg png; do
-              for f in build/*."$pass_ext"; do
-                [ -f "$f" ] || continue
-                stem=$(basename "$f" ".$pass_ext")
-                stem=${stem%_v}
-                case " $seen " in
-                  *" $stem "*) continue ;;
+            stems=""
+            for f in build/*.svg build/*.png; do
+              [ -f "$f" ] || continue
+              stem=$(basename "$f")
+              stem=${stem%.svg}
+              stem=${stem%.png}
+              stem=${stem%_v}
+              case " $stems " in
+                *" $stem "*) continue ;;
+              esac
+              stems="$stems $stem"
+            done
+            for pass in nontb tb; do
+              for stem in $stems; do
+                case "$stem" in
+                  tb_*) [ "$pass" = tb ] || continue ;;
+                  *)    [ "$pass" = nontb ] || continue ;;
                 esac
-                seen="$seen $stem"
                 vhdl=""
                 verilog=""
                 for ext in svg png; do
@@ -324,20 +336,31 @@ jobs:
               echo "|  | VHDL | Verilog |"
               echo "| --- | :---: | :---: |"
 
-              # Two passes emit rows in a natural reading order:
-              # netlists (SVGs) first, then waveforms (PNGs).
-              # `seen` de-duplicates so a stem with both VHDL and
-              # Verilog files emits one row, not two.
-              seen=""
-              for pass_ext in svg png; do
-                for f in "$d"/*."$pass_ext"; do
-                  [ -f "$f" ] || continue
-                  stem=$(basename "$f" ".$pass_ext")
-                  stem=${stem%_v}
-                  case " $seen " in
-                    *" $stem "*) continue ;;
+              # Stems are collected first, then emitted in two
+              # passes: non-`tb_` (netlists) first, `tb_*`
+              # (testbench waveforms) second. Stable RTL-then-TB
+              # ordering regardless of how the TOP entity is named —
+              # see the rationale in the per-project summary step
+              # above. `seen` de-duplicates so a stem with both VHDL
+              # and Verilog files emits one row, not two.
+              stems=""
+              for f in "$d"/*.svg "$d"/*.png; do
+                [ -f "$f" ] || continue
+                stem=$(basename "$f")
+                stem=${stem%.svg}
+                stem=${stem%.png}
+                stem=${stem%_v}
+                case " $stems " in
+                  *" $stem "*) continue ;;
+                esac
+                stems="$stems $stem"
+              done
+              for pass in nontb tb; do
+                for stem in $stems; do
+                  case "$stem" in
+                    tb_*) [ "$pass" = tb ] || continue ;;
+                    *)    [ "$pass" = nontb ] || continue ;;
                   esac
-                  seen="$seen $stem"
                   vhdl=""; verilog=""
                   for ext in svg png; do
                     [ -z "$vhdl"    ] && [ -f "$d/${stem}.${ext}"   ] && vhdl="${stem}.${ext}"
