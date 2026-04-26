@@ -64,7 +64,7 @@ architecture testbench of tb_random_generator is
    end function;
 begin
 
-   DUT : entity work.test(behavior)
+   DUT : entity work.random_generator(behavior)
       generic map (
          IS_SIM      => true,
          DIVIDER_MAX => SIM_DIVIDER,

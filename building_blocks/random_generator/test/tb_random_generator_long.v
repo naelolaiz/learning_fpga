@@ -44,7 +44,7 @@ module tb_random_generator_long;
     reg sUpdateObserved = 1'b0;
     reg sFreezeViolated = 1'b0;
 
-    test #(
+    random_generator #(
         .DIVIDER_MAX (SIM_DIVIDER),
         .ENABLE_HIGH (SIM_GATE)
     ) dut (

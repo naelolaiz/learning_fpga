@@ -28,7 +28,7 @@ use ieee.numeric_std.all;
 -- inputButtons(0) is wired as an active-low freeze: while held, new
 -- bytes from neoTRNG are ignored and the displayed value sticks.
 -- Buttons 1..3 are pinned in the .qsf for future use.
-entity test is
+entity random_generator is
    generic (
       IS_SIM      : boolean := false;
       DIVIDER_MAX : integer := 7_000_000;  -- 7E6  / 50E6 = 140 ms cycle on hardware
@@ -40,9 +40,9 @@ entity test is
       sevenSegments : out std_logic_vector(6 downto 0);
       cableSelect   : out std_logic_vector(3 downto 0);
       leds          : out std_logic_vector(3 downto 0));
-end test;
+end random_generator;
 
-architecture behavior of test is
+architecture behavior of random_generator is
    constant MUX_MAX : integer := 100_000;  -- 100E3 / 50E6 = 2 ms per digit
 
    -- Widths that comfortably hold the maxima above. For DIVIDER_MAX we

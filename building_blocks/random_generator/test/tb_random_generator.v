@@ -33,7 +33,7 @@ module tb_random_generator;
 
     reg sSimulationActive = 1'b1;
 
-    test #(
+    random_generator #(
         .DIVIDER_MAX (SIM_DIVIDER),
         .ENABLE_HIGH (SIM_GATE)
     ) dut (

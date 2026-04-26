@@ -39,7 +39,7 @@
 
 set_global_assignment -name FAMILY "Cyclone IV E"
 set_global_assignment -name DEVICE EP4CE6E22C8
-set_global_assignment -name TOP_LEVEL_ENTITY test
+set_global_assignment -name TOP_LEVEL_ENTITY random_generator
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 21.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:14:37  JUNE 30, 2022"
 set_global_assignment -name LAST_QUARTUS_VERSION "21.1.0 Lite Edition"
@@ -68,7 +68,7 @@ set_location_assignment PIN_133 -to cableSelect[0]
 set_location_assignment PIN_135 -to cableSelect[1]
 set_location_assignment PIN_136 -to cableSelect[2]
 set_global_assignment -name VHDL_FILE neoTRNG.vhd
-set_global_assignment -name VHDL_FILE test.vhd
+set_global_assignment -name VHDL_FILE random_generator.vhd
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_location_assignment PIN_84 -to leds[3]

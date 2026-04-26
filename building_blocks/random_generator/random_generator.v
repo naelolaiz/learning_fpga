@@ -25,7 +25,7 @@
 // inputButtons[0] is wired as an active-low freeze: while held,
 // new bytes from the LFSR are ignored and the displayed value sticks.
 
-module test #(
+module random_generator #(
     parameter integer DIVIDER_MAX = 7_000_000,  // 7E6  / 50E6 = 140 ms cycle on hardware
     parameter integer ENABLE_HIGH = 1000        // 20 us gate open per cycle on hardware
 ) (
