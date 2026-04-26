@@ -100,14 +100,11 @@ module test #(
         endcase
     end
 
-    // Pick the nibble for the currently-active digit.
+    // Pick the nibble for the currently-active digit. Indexed part-
+    // select keeps iverilog quiet (a case with constant `[N:M]` slices
+    // triggers a "sorry: constant selects in always_* …" warning).
     always_comb begin
-        case (enabledDigit)
-            2'd0:    currentDigitValue = numberToDisplay[ 3: 0];
-            2'd1:    currentDigitValue = numberToDisplay[ 7: 4];
-            2'd2:    currentDigitValue = numberToDisplay[11: 8];
-            default: currentDigitValue = numberToDisplay[15:12];
-        endcase
+        currentDigitValue = numberToDisplay[(enabledDigit*4) +: 4];
     end
 
     // Hex 0..F to 7-segment (active-low cathodes, common-anode).
