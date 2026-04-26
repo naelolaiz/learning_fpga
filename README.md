@@ -57,6 +57,8 @@ and Verilog on the right so you can compare the two directly.
 
 <!-- GALLERY:START -->
 
+### Basics
+
 <details open>
 <summary><b><code>blink_led</code></b> — the "hello world": toggle an LED at 1 Hz</summary>
 
@@ -77,15 +79,7 @@ and Verilog on the right so you can compare the two directly.
 
 </details>
 
-<details>
-<summary><b><code>uart_tx</code></b> — a minimal 8N1 UART transmitter</summary>
-
-| | VHDL | Verilog |
-| --- | :---: | :---: |
-| `uart_tx` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx.svg" alt="uart_tx netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx_v.svg" alt="uart_tx netlist (Verilog)" width="480"> |
-| `tb_uart_tx` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx.png" alt="uart_tx waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx_v.png" alt="uart_tx waveform (Verilog)" width="480"> |
-
-</details>
+### Building blocks
 
 <details>
 <summary><b><code>shift_register</code></b> — parameterisable shift register</summary>
@@ -121,6 +115,18 @@ Two testbenches each side: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_f
 The two language sides use different random sources: VHDL drives [`neoTRNG`](building_blocks/random_generator/neoTRNG.vhd) (chaotic ring oscillators on hardware, internal LFSR fallback for sim, gated by the `IS_SIM` generic); Verilog drives a small Galois LFSR ([`lfsr.v`](building_blocks/random_generator/lfsr.v)) in both flows. `inputButtons[0]` freezes the displayed value. A second testbench `tb_random_generator_long` (12 ms) asserts both update-on-release and freeze-on-press.
 
 </details>
+
+<details>
+<summary><b><code>general_components</code></b> — reusable Serial2Parallel block</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `Serial2Parallel` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel.svg" alt="Serial2Parallel netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_v.svg" alt="Serial2Parallel netlist (Verilog)" width="480"> |
+| `Serial2Parallel_tb` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_tb.png" alt="Serial2Parallel waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_tb_v.png" alt="Serial2Parallel waveform (Verilog)" width="480"> |
+
+</details>
+
+### Display
 
 <details>
 <summary><b><code>7segments/counter</code></b> — multiplexed 4-digit counter</summary>
@@ -160,26 +166,6 @@ The two testbenches target the salvaged-from-2022 features as standalone entitie
 </details>
 
 <details>
-<summary><b><code>general_components</code></b> — reusable Serial2Parallel block</summary>
-
-| | VHDL | Verilog |
-| --- | :---: | :---: |
-| `Serial2Parallel` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel.svg" alt="Serial2Parallel netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_v.svg" alt="Serial2Parallel netlist (Verilog)" width="480"> |
-| `Serial2Parallel_tb` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_tb.png" alt="Serial2Parallel waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_tb_v.png" alt="Serial2Parallel waveform (Verilog)" width="480"> |
-
-</details>
-
-<details>
-<summary><b><code>simulator_writer</code></b> — produces a VCD trace for the simulator flow</summary>
-
-| | VHDL | Verilog |
-| --- | :---: | :---: |
-| `tl_simulator_writer` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tl_simulator_writer.svg" alt="simulator_writer netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tl_simulator_writer_v.svg" alt="simulator_writer netlist (Verilog)" width="480"> |
-| `tb_simulator_writer` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tb_simulator_writer.png" alt="simulator_writer waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tb_simulator_writer_v.png" alt="simulator_writer waveform (Verilog)" width="480"> |
-
-</details>
-
-<details>
 <summary><b><code>vga_sprites</code></b> — VGA sprite demo with trigonometric rotation + optional gravity</summary>
 
 | | VHDL | Verilog |
@@ -190,6 +176,30 @@ The two testbenches target the salvaged-from-2022 features as standalone entitie
 | `tb_sprite_gravity` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga_sprites/tb_sprite_gravity.png" alt="vga_sprites tb_sprite_gravity (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga_sprites/tb_sprite_gravity_v.png" alt="vga_sprites tb_sprite_gravity (Verilog)" width="480"> |
 
 Three focused testbenches: `tb_trigonometric` (integration sweep + rotate properties), `tb_multiply_by_sin_lut` (LUT unit tests — odd symmetry, anti-symmetry across π, mirror across π/2, magnitude bound), `tb_sprite_gravity` (sprite entity with gravity on — fall/bounce cause-effect check). VHDL and Verilog twins simulate the same sin/cos LUT and rotate() math; the trig functions live in `trigonometric_functions.vh` and are `\`include`d into each module that needs them.
+
+</details>
+
+### Comm
+
+<details>
+<summary><b><code>uart_tx</code></b> — a minimal 8N1 UART transmitter</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `uart_tx` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx.svg" alt="uart_tx netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx_v.svg" alt="uart_tx netlist (Verilog)" width="480"> |
+| `tb_uart_tx` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx.png" alt="uart_tx waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx_v.png" alt="uart_tx waveform (Verilog)" width="480"> |
+
+</details>
+
+### Tools
+
+<details>
+<summary><b><code>simulator_writer</code></b> — produces a VCD trace for the simulator flow</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `tl_simulator_writer` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tl_simulator_writer.svg" alt="simulator_writer netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tl_simulator_writer_v.svg" alt="simulator_writer netlist (Verilog)" width="480"> |
+| `tb_simulator_writer` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tb_simulator_writer.png" alt="simulator_writer waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/tools-simulator_writer/tb_simulator_writer_v.png" alt="simulator_writer waveform (Verilog)" width="480"> |
 
 </details>
 
@@ -290,26 +300,48 @@ each level deeper your project sits — `display/7segments/text/` uses
 
 ## What's in the repo
 
-| Project                       | CI | Languages      | Notes                                                          |
-| ----------------------------- | :-: | -------------- | -------------------------------------------------------------- |
-| [blink_led](basics/blink_led/)                                     | ✅ | VHDL + Verilog | Hello-world LED toggler.                                       |
-| [pwm_led](basics/pwm_led/)                                         | ✅ | VHDL + Verilog | Brightness via duty-cycle modulation.                          |
-| [uart_tx](comm/uart_tx/)                                         | ✅ | VHDL + Verilog | 8N1 UART transmitter.                                          |
-| [shift_register](building_blocks/shift_register/)                           | ✅ | VHDL + Verilog | Parameterised shift register.                                  |
-| [fifo_sync](building_blocks/fifo_sync/)                                     | ✅ | VHDL + Verilog | Synchronous FIFO.                                              |
-| [random_generator](building_blocks/random_generator/)                       | ✅ | VHDL + Verilog | On-chip RNG (neoTRNG VHDL, LFSR Verilog) shown on a 4-digit 7-segment; button[0] freezes value. |
-| [7segments/counter](display/7segments/counter/)                     | ✅ | VHDL + Verilog | Multiplexed 4-digit counter.                                   |
-| [general_components](building_blocks/general_components/)                   | ✅ | VHDL + Verilog | Serial2Parallel (both languages) + Debounce (VHDL only).       |
-| [simulator_writer](tools/simulator_writer/)                       | ✅ | VHDL + Verilog | VCD writer used to sanity-check the sim flow.                  |
-| [vga_sprites](display/vga_sprites/)                                 | ✅ | VHDL + Verilog | Rotating VGA sprites (trig LUT) + optional gravity.            |
-| [7segments/text](display/7segments/text/)                           | ✅ | VHDL + Verilog | Scrolling ASCII text on a 4-digit display; button[0] pauses scroll. |
-| [7segments/clock](display/7segments/clock/)                         | ✅ | VHDL + Verilog | Multiplexed clock with HHMM/MMSS view, blinking dot, alarm.    |
-| [i2s_test_1](comm/i2s_test_1/)                                   | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
-| [rom_lut](building_blocks/rom_lut/)                                         | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
-| [uda1380](comm/uda1380/)                                         | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
-| [vga](display/vga/)                                                 | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
+Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it takes).
 
-Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it takes).
+### Basics
+
+| Project | CI | Languages | Notes |
+| --- | :-: | --- | --- |
+| [blink_led](basics/blink_led/) | ✅ | VHDL + Verilog | Hello-world LED toggler. |
+| [pwm_led](basics/pwm_led/)     | ✅ | VHDL + Verilog | Brightness via duty-cycle modulation. |
+
+### Building blocks
+
+| Project | CI | Languages | Notes |
+| --- | :-: | --- | --- |
+| [shift_register](building_blocks/shift_register/)         | ✅ | VHDL + Verilog | Parameterised shift register. |
+| [fifo_sync](building_blocks/fifo_sync/)                   | ✅ | VHDL + Verilog | Synchronous FIFO. |
+| [random_generator](building_blocks/random_generator/)     | ✅ | VHDL + Verilog | On-chip RNG (neoTRNG VHDL, LFSR Verilog) shown on a 4-digit 7-segment; button[0] freezes value. |
+| [general_components](building_blocks/general_components/) | ✅ | VHDL + Verilog | Serial2Parallel (both languages) + Debounce (VHDL only). |
+| [rom_lut](building_blocks/rom_lut/)                       | ⏳ | VHDL           | Sources present, no Makefile yet. |
+
+### Display
+
+| Project | CI | Languages | Notes |
+| --- | :-: | --- | --- |
+| [7segments/counter](display/7segments/counter/) | ✅ | VHDL + Verilog | Multiplexed 4-digit counter. |
+| [7segments/text](display/7segments/text/)       | ✅ | VHDL + Verilog | Scrolling ASCII text on a 4-digit display; button[0] pauses scroll. |
+| [7segments/clock](display/7segments/clock/)     | ✅ | VHDL + Verilog | Multiplexed clock with HHMM/MMSS view, blinking dot, alarm. |
+| [vga_sprites](display/vga_sprites/)             | ✅ | VHDL + Verilog | Rotating VGA sprites (trig LUT) + optional gravity. |
+| [vga](display/vga/)                             | ⏳ | VHDL           | Sources present, no Makefile yet. |
+
+### Comm
+
+| Project | CI | Languages | Notes |
+| --- | :-: | --- | --- |
+| [uart_tx](comm/uart_tx/)       | ✅ | VHDL + Verilog | 8N1 UART transmitter. |
+| [i2s_test_1](comm/i2s_test_1/) | ⏳ | VHDL           | Sources present, no Makefile yet. |
+| [uda1380](comm/uda1380/)       | ⏳ | VHDL           | Sources present, no Makefile yet. |
+
+### Tools
+
+| Project | CI | Languages | Notes |
+| --- | :-: | --- | --- |
+| [simulator_writer](tools/simulator_writer/) | ✅ | VHDL + Verilog | VCD writer used to sanity-check the sim flow. |
 
 ---
 
