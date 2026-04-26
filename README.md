@@ -117,12 +117,28 @@ The two language sides use different random sources: VHDL drives [`neoTRNG`](bui
 </details>
 
 <details>
-<summary><b><code>general_components</code></b> — reusable Serial2Parallel block</summary>
+<summary><b><code>serial_to_parallel</code></b> — SIPO shift + snapshot register; wrapper around <code>shift_register</code></summary>
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| `Serial2Parallel` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel.svg" alt="Serial2Parallel netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_v.svg" alt="Serial2Parallel netlist (Verilog)" width="480"> |
-| `Serial2Parallel_tb` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_tb.png" alt="Serial2Parallel waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-general_components/Serial2Parallel_tb_v.png" alt="Serial2Parallel waveform (Verilog)" width="480"> |
+| `Serial2Parallel` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-serial_to_parallel/Serial2Parallel.svg" alt="Serial2Parallel netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-serial_to_parallel/Serial2Parallel_v.svg" alt="Serial2Parallel netlist (Verilog)" width="480"> |
+| `tb_serial_to_parallel_basic` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-serial_to_parallel/tb_serial_to_parallel_basic.png" alt="Serial2Parallel basic waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-serial_to_parallel/tb_serial_to_parallel_basic_v.png" alt="Serial2Parallel basic waveform (Verilog)" width="480"> |
+| `tb_serial_to_parallel_print_gating` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-serial_to_parallel/tb_serial_to_parallel_print_gating.png" alt="Serial2Parallel print-gating waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-serial_to_parallel/tb_serial_to_parallel_print_gating_v.png" alt="Serial2Parallel print-gating waveform (Verilog)" width="480"> |
+
+Two focused testbenches: `tb_serial_to_parallel_basic` shifts in 0xB4 MSB-first, pulses `inPrint`, and asserts the latched outData; `tb_serial_to_parallel_print_gating` checks that the snapshot register actually gates — outData stays at its initial value while `inPrint=0`, latches on the first pulse, then survives a second wave of shifting before re-latching on the second pulse.
+
+</details>
+
+<details>
+<summary><b><code>debounce</code></b> — switch / button debouncer</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `Debounce` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-debounce/Debounce.svg" alt="Debounce netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-debounce/Debounce_v.svg" alt="Debounce netlist (Verilog)" width="480"> |
+| `tb_debounce_bounce` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-debounce/tb_debounce_bounce.png" alt="Debounce bounce waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-debounce/tb_debounce_bounce_v.png" alt="Debounce bounce waveform (Verilog)" width="480"> |
+| `tb_debounce_glitch` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-debounce/tb_debounce_glitch.png" alt="Debounce glitch waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-debounce/tb_debounce_glitch_v.png" alt="Debounce glitch waveform (Verilog)" width="480"> |
+
+`DEBOUNCE_LIMIT` is overridden in both testbenches to 100 cycles (2 µs) so the wait window fits in a short sim. `tb_debounce_bounce` drives a bouncing input that settles high — output must stay 0 while bouncing, then propagate to 1 once steady. `tb_debounce_glitch` drives a single sub-limit pulse — output must stay 0.
 
 </details>
 
@@ -316,7 +332,8 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | [shift_register](building_blocks/shift_register/)         | ✅ | VHDL + Verilog | Parameterised shift register. |
 | [fifo_sync](building_blocks/fifo_sync/)                   | ✅ | VHDL + Verilog | Synchronous FIFO. |
 | [random_generator](building_blocks/random_generator/)     | ✅ | VHDL + Verilog | On-chip RNG (neoTRNG VHDL, LFSR Verilog) shown on a 4-digit 7-segment; button[0] freezes value. |
-| [general_components](building_blocks/general_components/) | ✅ | VHDL + Verilog | Serial2Parallel (both languages) + Debounce (VHDL only). |
+| [serial_to_parallel](building_blocks/serial_to_parallel/) | ✅ | VHDL + Verilog | SIPO shift + snapshot register; thin wrapper around `shift_register`. |
+| [debounce](building_blocks/debounce/)                     | ✅ | VHDL + Verilog | Switch / button debouncer (from nandland.com), with `DEBOUNCE_LIMIT` generic so testbenches can compress sim time. |
 | [rom_lut](building_blocks/rom_lut/)                       | ⏳ | VHDL           | Sources present, no Makefile yet. |
 
 ### Display

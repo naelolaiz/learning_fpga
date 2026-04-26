@@ -10,6 +10,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity Debounce is
+  generic (
+    -- Default 250 000 ticks of a 25 MHz clock = 10 ms. Testbenches
+    -- override to a much smaller value so sim time stays bounded.
+    DEBOUNCE_LIMIT : integer := 250000
+  );
   port (
     i_Clk    : in std_logic;
     i_Switch : in std_logic;
@@ -19,11 +24,8 @@ end entity Debounce;
 
 architecture RTL of Debounce is
 
-  -- Set for 250,000 clock ticks of 25 MHz clock (10 ms)
-  constant c_DEBOUNCE_LIMIT : integer := 250000;
-
-  signal r_Count : integer range 0 to c_DEBOUNCE_LIMIT := 0;
-  signal r_State : std_logic                           := '0';
+  signal r_Count : integer range 0 to DEBOUNCE_LIMIT := 0;
+  signal r_State : std_logic                         := '0';
 
 begin
 
@@ -32,12 +34,12 @@ begin
     if rising_edge(i_Clk) then
 
       -- Switch input is different than internal switch value, so an input is
-      -- changing.  Increase counter until it is stable for c_DEBOUNCE_LIMIT.
-      if (i_Switch /= r_State and r_Count < c_DEBOUNCE_LIMIT) then
+      -- changing.  Increase counter until it is stable for DEBOUNCE_LIMIT.
+      if (i_Switch /= r_State and r_Count < DEBOUNCE_LIMIT) then
         r_Count <= r_Count + 1;
 
         -- End of counter reached, switch is stable, register it, reset counter
-      elsif r_Count = c_DEBOUNCE_LIMIT then
+      elsif r_Count = DEBOUNCE_LIMIT then
         r_State <= i_Switch;
         r_Count <= 0;
 
