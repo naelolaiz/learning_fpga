@@ -7,7 +7,7 @@ This example creates a memory block as ROM. The content is read from a hex-text 
 ## Simulation
 This is the testbench testing a single array of 32 values from ROM.
 
-![simulation](doc/gtkwave_tb_rom_lut.png)
+![simulation](doc/tb_rom_lut.png)
 
 ## Logic diagram
 This is the diagram of the entity which instantiates the memory block

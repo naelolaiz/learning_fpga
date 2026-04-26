@@ -32,7 +32,7 @@ architecture testbench of tb_counter is
    -- 0->1->2->3) and a bit more, which is all the assertions need.
    -- Keep this short: GHDL dumps at 1 fs timescale by default, so
    -- long runs produce multi-hundred-MB VCDs that the gallery's
-   -- GTKWave screenshot pipeline can't render in time.
+   -- waveform render pipeline can't process in time.
    constant TEST_DURATION : time := 10 ms;
    signal sClock50MHz       : std_logic := '0';
    -- Initialise to a valid encoding so the continuous invariants

@@ -95,11 +95,11 @@ clocks, and wraps back.
 
 `tb_blink_led_minimal` (1-FF, WIDTH=4, MSB toggles every 8 cycles):
 
-![tb_blink_led_minimal](doc/gtkwave_tb_blink_led_minimal.png)
+![tb_blink_led_minimal](doc/tb_blink_led_minimal.png)
 
 `tb_blink_led` (2-FF, CLOCKS_TO_OVERFLOW=10, exact 10-cycle toggle):
 
-![tb_blink_led](doc/gtkwave_tb_blink_led.png)
+![tb_blink_led](doc/tb_blink_led.png)
 
 ## Going further
 

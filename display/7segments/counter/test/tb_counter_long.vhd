@@ -10,8 +10,8 @@ use ieee.numeric_std.ALL;
 -- ticks every ~62.5 ms — is observed incrementing.
 --
 -- At 1 fs GHDL timescale a 150 ms VCD would be ~650 MB (too large for
--- the GTKWave screenshot pipeline). Dumped in FST format instead via
--- `FST_TBS := tb_counter_long` in the Makefile; GTKWave reads FST
+-- the waveform render pipeline). Dumped in FST format instead via
+-- `FST_TBS := tb_counter_long` in the Makefile; waveview reads FST
 -- natively, so the rest of the flow is unchanged.
 --
 -- Assertion added on top of the tb_counter three:

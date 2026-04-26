@@ -175,7 +175,7 @@ through the sequential ones, asserting the row of each truth/behaviour
 table that gets exercised. A failure means a primitive's behaviour
 diverged from its definition above.
 
-![tb_glossary waveform](doc/tb_glossary_waveform.png)
+![tb_glossary waveform](doc/tb_glossary.png)
 
 The testbenches use `av = 1100`, `bv = 0011`, `sel = 1`, `sel4 = 10`
 during the combinational phase, then sweep `(en, rst, a)` to cover the

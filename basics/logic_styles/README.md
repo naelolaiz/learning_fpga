@@ -54,7 +54,7 @@ on `seq_sync_reset_a`.
    transparent → hold → transparent and verify the held value
    survives unrelated `a` toggles.
 
-![tb_logic_styles waveform](doc/tb_logic_styles_waveform.png)
+![tb_logic_styles waveform](doc/tb_logic_styles.png)
 
 In the waveform, look for: `seq_decl_init` defined from the very
 start (red `'1'` line at t = 0), `seq_no_init` and `seq_sync_reset`
