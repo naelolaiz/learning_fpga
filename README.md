@@ -60,6 +60,83 @@ and Verilog on the right so you can compare the two directly.
 ### Basics
 
 <details open>
+<summary><b><code>glossary</code></b> — symbol legend: every primitive on one diagram, with truth tables</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `glossary` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-glossary/glossary.svg" alt="glossary netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-glossary/glossary_v.svg" alt="glossary netlist (Verilog)" width="480"> |
+| `tb_glossary` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-glossary/tb_glossary.png" alt="glossary waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-glossary/tb_glossary_v.png" alt="glossary waveform (Verilog)" width="480"> |
+
+A flat module that drives one output per primitive (bitwise gates, vector reductions, 2:1 / 4:1 muxes, adder / sub, comparators, shifters, plain / enabled / sync-reset D flip-flops, counter) so every cell appears once in the synthesised netlist with no fan-out clutter. The project ships a small custom `netlistsvg` skin that adds a text label across each IEEE gate shape (`AND`, `OR`, `NOT`, `XOR`, `NAND`, `NOR`, `XNOR`) so you can map shape ↔ name at a glance and then spot the same symbols in any other diagram below.
+
+<details>
+<summary>Truth tables for every primitive (click to expand)</summary>
+
+**Bitwise gates** (1-bit `a`, `b`)
+
+| `a` | `b` | `o_and` | `o_or` | `o_nand` | `o_nor` | `o_xor` | `o_xnor` |
+| :-: | :-: | :-----: | :----: | :------: | :-----: | :-----: | :------: |
+|  0  |  0  |    0    |   0    |    1     |    1    |    0    |     1    |
+|  0  |  1  |    0    |   1    |    1     |    0    |    1    |     0    |
+|  1  |  0  |    0    |   1    |    1     |    0    |    1    |     0    |
+|  1  |  1  |    1    |   1    |    0     |    0    |    0    |     1    |
+
+| `a` | `o_not` |
+| :-: | :-----: |
+|  0  |    1    |
+|  1  |    0    |
+
+**Vector reductions** (4-bit `av`)
+
+`reduce_or = av[3] | av[2] | av[1] | av[0]` (1 iff *any* bit is 1) · `reduce_and = av[3] & av[2] & av[1] & av[0]` (1 iff *all* bits are 1) · `reduce_xor = av[3] ^ av[2] ^ av[1] ^ av[0]` (1 iff an *odd* number of bits is 1 — parity).
+
+| `av`   | `o_reduce_or` | `o_reduce_and` | `o_reduce_xor` |
+| :----: | :-----------: | :------------: | :------------: |
+| `0000` |       0       |       0        |       0        |
+| `0001` |       1       |       0        |       1        |
+| `1010` |       1       |       0        |       0        |
+| `1100` |       1       |       0        |       0        |
+| `1101` |       1       |       0        |       1        |
+| `1111` |       1       |       1        |       0        |
+
+**Multiplexers**
+
+| `sel` | `o_mux2` |     | `sel4` | `o_mux4` |
+| :---: | :------: | --- | :----: | :------: |
+|   0   |   `b`    |     |  `00`  | `av[0]`  |
+|   1   |   `a`    |     |  `01`  | `av[1]`  |
+|       |          |     |  `10`  | `av[2]`  |
+|       |          |     |  `11`  | `av[3]`  |
+
+**Arithmetic, comparators, shifts** (4-bit operands, mod-16 wrap; example column uses `av = 1100` (12), `bv = 0011` (3))
+
+| Output  | Definition                          | Example                                  |
+| :-----: | ----------------------------------- | ---------------------------------------- |
+| `o_add` | `(av + bv) mod 16`                  | `1100 + 0011 = 1111` (12+3 = 15)         |
+| `o_sub` | `(av - bv) mod 16`                  | `1100 - 0011 = 1001` (12-3 = 9)          |
+| `o_eq`  | `1` iff `av == bv`                  | `0` (12 ≠ 3)                             |
+| `o_lt`  | `1` iff `av < bv` (unsigned)        | `0` (12 ≥ 3)                             |
+| `o_shl` | `av << 1`, MSB shifted out, LSB ← 0 | `1100 << 1 = 1000`                       |
+| `o_shr` | `av >> 1`, LSB shifted out, MSB ← 0 | `1100 >> 1 = 0110`                       |
+
+**Sequential cells** (`Q_next` is the value the register takes at the next rising edge of `clk`; outside a rising edge it simply *holds*)
+
+| Cell      | `clk` | `en` | `rst` | `a` | `Q_next`   |
+| :-------- | :---: | :--: | :---: | :-: | :--------: |
+| `dff`     |   ↑   |  —   |   —   |  0  |     0      |
+| `dff`     |   ↑   |  —   |   —   |  1  |     1      |
+| `dff_en`  |   ↑   |  0   |   —   |  x  |  *hold*    |
+| `dff_en`  |   ↑   |  1   |   —   |  a  |     a      |
+| `dff_rst` |   ↑   |  —   |   1   |  x  |     0      |
+| `dff_rst` |   ↑   |  —   |   0   |  a  |     a      |
+| `counter4`|   ↑   |  —   |   1   |  —  |  `0000`    |
+| `counter4`|   ↑   |  —   |   0   |  —  | `Q + 1` (mod 16) |
+
+</details>
+
+</details>
+
+<details>
 <summary><b><code>blink_led</code></b> — the "hello world": toggle an LED at 1 Hz</summary>
 
 | | VHDL | Verilog |
@@ -322,6 +399,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
+| [glossary](basics/glossary/)   | ✅ | VHDL + Verilog | Symbol legend: every primitive on one diagram (gates, muxes, arith, registers) with truth tables and a custom labelled-gate `netlistsvg` skin. |
 | [blink_led](basics/blink_led/) | ✅ | VHDL + Verilog | Hello-world LED toggler. |
 | [pwm_led](basics/pwm_led/)     | ✅ | VHDL + Verilog | Brightness via duty-cycle modulation. |
 
