@@ -15,6 +15,19 @@ TB_FILES  := test/tb_serial_to_parallel_basic.vhd \
 
 VHDL_STANDARD := 08
 
+# Diagram tweaks:
+#   - SVG_RELABEL rewrites the visible label on the wrapped sub-instance
+#     from yosys's auto-generated cruft (`shift_register_Brtl_16` on the
+#     VHDL side via ghdl-yosys-plugin, `$paramod\shift_register\WIDTH=…`
+#     on the Verilog side) back to the bare `shift_register` name.
+#   - SVG_LINKS turns the wrapped sub-instance into a hyperlink to the
+#     shift_register project's own diagram in the published gallery —
+#     click to drill from the wrapper into the wrapped module's RTL.
+SVG_RELABEL    := inner=shift_register
+V_SVG_RELABEL  := inner=shift_register
+SVG_LINKS      := inner=../building_blocks-shift_register/shift_register.svg
+V_SVG_LINKS    := inner=../building_blocks-shift_register/shift_register_v.svg
+
 V_TOP       := Serial2Parallel
 V_TB_TOPS   := tb_serial_to_parallel_basic tb_serial_to_parallel_print_gating
 V_SRC_FILES := ../shift_register/shift_register.v Serial2Parallel.v
