@@ -13,4 +13,4 @@ V_TB_TOPS   := tb_fifo_sync tb_fifo_sync_overlapping
 V_SRC_FILES := fifo_sync.v
 V_TB_FILES  := test/tb_fifo_sync.v test/tb_fifo_sync_overlapping.v
 
-include ../mk/common.mk
+include ../../mk/common.mk

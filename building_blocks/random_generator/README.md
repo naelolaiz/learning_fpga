@@ -1,8 +1,8 @@
-4-digit hex display of an on-chip random number.
+On-chip random number generator, viewed on a 4-digit 7-segment.
 
-A slow gating divider pulses the random source's enable input high
-for a short window every ~140 ms. New random bytes are shifted into
-a 16-bit register on each `valid` strobe while the gate is open;
+A slow gating divider pulses the generator's enable input high for
+a short window every ~140 ms. New random bytes are shifted into a
+16-bit register on each `valid` strobe while the gate is open;
 between pulses the displayed value is stable.
 
 `inputButtons[0]` is wired as an active-low freeze: hold to keep

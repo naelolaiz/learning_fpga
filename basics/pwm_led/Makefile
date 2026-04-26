@@ -13,4 +13,4 @@ V_TB_TOPS   := tb_pwm_led
 V_SRC_FILES := pwm_led.v
 V_TB_FILES  := test/tb_pwm_led.v
 
-include ../mk/common.mk
+include ../../mk/common.mk

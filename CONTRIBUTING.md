@@ -39,7 +39,7 @@
    V_SRC_FILES := my_top.v
    V_TB_FILES  := test/tb_my_top.v
 
-   include ../mk/common.mk    # adjust ../ depth if your project is deeper
+   include ../../mk/common.mk    # adjust ../ depth to your project's nesting
    ```
 
    For Verilog testbenches, dump waveforms via the supplied `VCD_OUT`
@@ -56,20 +56,24 @@
 3. Build locally:
 
    ```bash
-   make -C my_new_project
+   make -C basics/my_new_project
    ```
 
-4. Push. CI auto-discovers the new directory — no workflow edit needed.
+4. Push. CI auto-discovers the new directory at any depth — no workflow edit needed.
 
 ## Layout rules
 
+- Projects live under a category subdirectory (`basics/`, `building_blocks/`,
+  `display/`, `comm/`, `tools/`). The categorisation is informal — pick
+  the one that fits, or propose a new bucket in the PR description.
 - The VHDL work library, VCDs, PNGs, SVGs and JSON netlists all land in
   `build/` under the project directory. `make clean` is a single `rm -rf`.
 - Paths in `SRC_FILES` / `TB_FILES` are relative to the `Makefile`. That's
   why the testbench in a `test/` subdir is listed as `test/tb_*.vhd`.
-- The `include` path follows the nesting depth:
-  - `blink_led/Makefile` uses `../mk/common.mk`
-  - `7segments/counter/Makefile` uses `../../mk/common.mk`
+- The `include` path follows the nesting depth — count the `../`s back
+  to the repo root:
+  - `basics/blink_led/Makefile` uses `../../mk/common.mk`
+  - `display/7segments/counter/Makefile` uses `../../../mk/common.mk`
 
 ## Running CI locally
 
@@ -78,9 +82,9 @@ and `make waveform`. You can reproduce any of those verbatim on your
 laptop:
 
 ```bash
-make -C blink_led simulate
-make -C blink_led diagram
-make -C blink_led waveform
+make -C basics/blink_led simulate
+make -C basics/blink_led diagram
+make -C basics/blink_led waveform
 ```
 
 Or, the same container CI uses:

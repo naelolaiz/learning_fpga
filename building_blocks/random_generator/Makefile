@@ -23,4 +23,4 @@ V_TB_TOPS   := tb_random_generator tb_random_generator_long
 V_SRC_FILES := test.v lfsr.v
 V_TB_FILES  := test/tb_random_generator.v test/tb_random_generator_long.v
 
-include ../mk/common.mk
+include ../../mk/common.mk

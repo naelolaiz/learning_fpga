@@ -14,4 +14,4 @@ V_TB_TOPS   := tb_simulator_writer
 V_SRC_FILES := tl_simulator_writer.v
 V_TB_FILES  := test/tb_simulator_writer.v
 
-include ../mk/common.mk
+include ../../mk/common.mk

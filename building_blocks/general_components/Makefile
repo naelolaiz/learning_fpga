@@ -19,4 +19,4 @@ V_TB_TOPS   := Serial2Parallel_tb
 V_SRC_FILES := Serial2Parallel.v Debounce.v
 V_TB_FILES  := Serial2Parallel_tb.v
 
-include ../mk/common.mk
+include ../../mk/common.mk

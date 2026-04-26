@@ -13,4 +13,4 @@ V_TB_TOPS   := tb_shift_register
 V_SRC_FILES := shift_register.v
 V_TB_FILES  := test/tb_shift_register.v
 
-include ../mk/common.mk
+include ../../mk/common.mk

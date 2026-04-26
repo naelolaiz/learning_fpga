@@ -13,4 +13,4 @@ V_TB_TOPS   := tb_uart_tx
 V_SRC_FILES := uart_tx.v
 V_TB_FILES  := test/tb_uart_tx.v
 
-include ../mk/common.mk
+include ../../mk/common.mk

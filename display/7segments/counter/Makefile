@@ -37,4 +37,4 @@ V_TB_TOPS   := tb_test tb_test_long
 V_SRC_FILES := test.v
 V_TB_FILES  := test/tb_test.v test/tb_test_long.v
 
-include ../../mk/common.mk
+include ../../../mk/common.mk

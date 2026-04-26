@@ -28,4 +28,4 @@ V_TB_FILES  := test/tb_trigonometric.v \
                test/tb_sprite_gravity.v
 V_INCDIRS   := .
 
-include ../mk/common.mk
+include ../../mk/common.mk

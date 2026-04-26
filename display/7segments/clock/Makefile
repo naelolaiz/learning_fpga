@@ -39,4 +39,4 @@ V_SRC_FILES := \
     top_level_7segments_clock.v
 V_TB_FILES  := test/tb_clock_dot_blink.v test/tb_clock_alarm.v
 
-include ../../mk/common.mk
+include ../../../mk/common.mk
