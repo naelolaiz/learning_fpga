@@ -109,7 +109,7 @@ Two testbenches each side: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_f
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| `test` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-random_generator/test.svg" alt="random_generator netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-random_generator/test_v.svg" alt="random_generator netlist (Verilog)" width="480"> |
+| `random_generator` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-random_generator/random_generator.svg" alt="random_generator netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-random_generator/random_generator_v.svg" alt="random_generator netlist (Verilog)" width="480"> |
 | `tb_random_generator` (10 ms) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-random_generator/tb_random_generator.png" alt="random_generator waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-random_generator/tb_random_generator_v.png" alt="random_generator waveform (Verilog)" width="480"> |
 
 The two language sides use different random sources: VHDL drives [`neoTRNG`](building_blocks/random_generator/neoTRNG.vhd) (chaotic ring oscillators on hardware, internal LFSR fallback for sim, gated by the `IS_SIM` generic); Verilog drives a small Galois LFSR ([`lfsr.v`](building_blocks/random_generator/lfsr.v)) in both flows. `inputButtons[0]` freezes the displayed value. A second testbench `tb_random_generator_long` (12 ms) asserts both update-on-release and freeze-on-press.
@@ -149,10 +149,10 @@ Two focused testbenches: `tb_serial_to_parallel_basic` shifts in 0xB4 MSB-first,
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| `test` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/test.svg" alt="7seg counter netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/test_v.svg" alt="7seg counter netlist (Verilog)" width="480"> |
-| `tb_test` (10 ms) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/tb_test.png" alt="7seg counter waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/tb_test_v.png" alt="7seg counter waveform (Verilog)" width="480"> |
+| `counter` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/counter.svg" alt="7seg counter netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/counter_v.svg" alt="7seg counter netlist (Verilog)" width="480"> |
+| `tb_counter` (10 ms) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/tb_counter.png" alt="7seg counter waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-counter/tb_counter_v.png" alt="7seg counter waveform (Verilog)" width="480"> |
 
-A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal counter ticks, but dumps FST without a rendered waveform (at that zoom level the 20 ns clock period is sub-pixel anyway).
+A second testbench `tb_counter_long` (150 ms) runs in CI asserting the internal counter ticks, but dumps FST without a rendered waveform (at that zoom level the 20 ns clock period is sub-pixel anyway).
 
 </details>
 
@@ -161,7 +161,7 @@ A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal cou
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| `test` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-text/test.svg" alt="7seg text netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-text/test_v.svg" alt="7seg text netlist (Verilog)" width="480"> |
+| `text` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-text/text.svg" alt="7seg text netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-text/text_v.svg" alt="7seg text netlist (Verilog)" width="480"> |
 | `tb_text` (10 ms) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-text/tb_text.png" alt="7seg text waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-text/tb_text_v.png" alt="7seg text waveform (Verilog)" width="480"> |
 
 `inputButtons[0]` is wired as an active-low scroll-pause; `sevenSegments[7]` is the decimal point. A second testbench `tb_text_long` (40 ms) compresses the scroll period via the `SCROLL_MAX` generic and asserts both that the scroll advances when the button is released and that it freezes when the button is held; dumps FST without a rendered waveform.
@@ -395,7 +395,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 - New testbenches: `vga_sprites/tb_multiply_by_sin_lut` (LUT unit
   tests), `vga_sprites/tb_sprite_gravity` (gravity cause-effect),
   `fifo_sync/tb_fifo_sync_overlapping` (simultaneous read+write
-  invariants). Rewrote `7segments/counter/tb_test` from 0 assertions
+  invariants). Rewrote `display/7segments/counter/tb_counter` from 0 assertions
   to three invariants (mux one-hot, valid 7-seg encodings, full
   digit rotation).
 

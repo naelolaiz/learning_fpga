@@ -74,11 +74,38 @@ def _find_cell_extent(svg: str, cell_id: str) -> tuple[int, int] | None:
     return (m.start(), pos)
 
 
+def _make_cell_rect_clickable(svg: str, cell_id: str) -> str:
+    """Add `pointer-events="all"` to the cell's body rect.
+
+    netlistsvg's stylesheet sets `svg { fill: none }`, so the rect
+    that draws the box has no fill and therefore captures pointer
+    events only on its 1-pixel stroke — making the click target
+    practically a hairline border. `pointer-events="all"` makes the
+    rect capture clicks across its full bounding box regardless of
+    fill, so the whole box is the clickable area for the wrapping
+    `<a>`.
+    """
+    pattern = re.compile(
+        r'(<rect\b[^>]*\bclass="cell_' + re.escape(cell_id) + r'")(\s*/?>)'
+    )
+
+    def add_pe(m: re.Match) -> str:
+        if "pointer-events" in m.group(0):
+            return m.group(0)
+        return f'{m.group(1)} pointer-events="all"{m.group(2)}'
+
+    svg, _ = pattern.subn(add_pe, svg)
+    return svg
+
+
 def wrap_link(svg: str, cell_id: str, url: str) -> tuple[str, int]:
     extent = _find_cell_extent(svg, cell_id)
     if extent is None:
         return svg, 0
-    start, end = extent
+    svg = _make_cell_rect_clickable(svg, cell_id)
+    # Re-find the extent after the rect mutation: the byte offsets shift
+    # by the inserted attribute's length.
+    start, end = _find_cell_extent(svg, cell_id)
     href = url.replace('"', "&quot;")
     wrapped = f'<a xlink:href="{href}">{svg[start:end]}</a>'
     return svg[:start] + wrapped + svg[end:], 1
