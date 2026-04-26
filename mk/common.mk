@@ -96,6 +96,44 @@ SKIP_V_DIAGRAM ?=
 SKIP_V_WAVEFORM ?=
 V_NO_WAVEFORM_TBS ?=
 
+# Per-project hooks decorating the rendered netlist diagram.
+# Both run after netlistsvg writes its SVG, via mk/svg_add_links.py.
+#
+# SVG_LINKS turns the named cell into a hyperlink. Format:
+#   cell_id=url
+# (multiple entries separated by spaces). The script wraps the cell's
+# `<g id="cell_<cell_id>" ...>` element with `<a xlink:href="url">`,
+# so an SVG viewer can drill from a wrapper's diagram into the
+# wrapped module's own diagram. URLs are relative to the SVG itself;
+# for the published gallery that means `../<sibling-artifact>/<top>.svg`.
+#
+# SVG_RELABEL rewrites the displayed text on the named cell. Same
+# format (cell_id=label). Useful when a wrapped sub-instance arrives
+# with yosys's `$paramod\<sub>\<param>=<val>` (Verilog) or
+# `<sub>_B<arch>_<width>` (VHDL via ghdl-yosys-plugin) auto-name
+# stamped on the box: post-rewrite the label back to the bare
+# submodule name. yosys's own `rename` won't propagate to cell-type
+# references, so post-processing the SVG is the practical fix.
+#
+# SVG_PREVIEW inlines the SVG at `local_path` as a nested `<svg>`
+# inside cell_<cell_id>. Format: `cell_id=local_path`. We can't use
+# `<image href="other.svg">` because GitHub's raw.githubusercontent.com
+# serves SVGs with `Content-Security-Policy: default-src 'none'`,
+# which blocks the cross-document fetch that an `<image>` needs;
+# inlining bypasses that. Project Makefiles using SVG_PREVIEW need
+# to add the sibling's SVG as a prereq on the diagram step so it
+# exists at preview-inline time (CI builds projects in parallel
+# matrix jobs that don't share artifacts otherwise).
+SVG_LINKS     ?=
+V_SVG_LINKS   ?=
+SVG_RELABEL   ?=
+V_SVG_RELABEL ?=
+SVG_PREVIEW   ?=
+V_SVG_PREVIEW ?=
+
+# Used to locate svg_add_links.py — common.mk lives next to it.
+COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
 WORK_DIR      := $(BUILD_DIR)/work
@@ -245,6 +283,11 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
+	$(if $(or $(strip $(SVG_LINKS)),$(strip $(SVG_RELABEL)),$(strip $(SVG_PREVIEW))), \
+	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
+	        $(addprefix --link ,$(SVG_LINKS)) \
+	        $(addprefix --relabel ,$(SVG_RELABEL)) \
+	        $(addprefix --preview ,$(SVG_PREVIEW)))
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -311,6 +354,11 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
+	$(if $(or $(strip $(V_SVG_LINKS)),$(strip $(V_SVG_RELABEL)),$(strip $(V_SVG_PREVIEW))), \
+	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
+	        $(addprefix --link ,$(V_SVG_LINKS)) \
+	        $(addprefix --relabel ,$(V_SVG_RELABEL)) \
+	        $(addprefix --preview ,$(V_SVG_PREVIEW)))
 endif
 
 else
