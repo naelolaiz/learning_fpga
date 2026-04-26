@@ -98,13 +98,63 @@ def _make_cell_rect_clickable(svg: str, cell_id: str) -> str:
     return svg
 
 
+def _embed_preview_image(svg: str, cell_id: str, url: str) -> str:
+    """Embed `url` as an `<image>` at the bottom of the cell's `<g>`
+    z-stack, sized to the cell's body rect.
+
+    Browsers render referenced SVGs inside `<image>` tags, so for a
+    wrapper that links to a sibling project's SVG this yields an
+    inline thumbnail of the wrapped module's own diagram — a
+    "look inside" preview without enlarging the cell or disturbing
+    netlistsvg's layout. preserveAspectRatio keeps the embedded SVG
+    legible at the (small) cell size.
+
+    Inserted as the first child of the cell's `<g>` so it sits at
+    the back of the painter's-algorithm stack — the cell's own
+    label, body stroke, and port markers stay drawn on top of it.
+    `pointer-events="none"` keeps the click target the wrapping
+    `<a>`, not the image itself.
+    """
+    rect_match = re.search(
+        r'<rect\b([^/>]*)\bclass="cell_' + re.escape(cell_id) + r'"([^/>]*)/>',
+        svg,
+    )
+    if rect_match is None:
+        return svg
+    width_m = re.search(r'\bwidth="([0-9.]+)"', rect_match.group(0))
+    height_m = re.search(r'\bheight="([0-9.]+)"', rect_match.group(0))
+    if not (width_m and height_m):
+        return svg
+    width = width_m.group(1)
+    height = height_m.group(1)
+
+    # Insert position: right after the cell's <g ...> opening tag, so
+    # the image is the first painted element in the cell.
+    open_match = re.search(
+        r'<g\b[^>]*\bid="cell_' + re.escape(cell_id) + r'"[^>]*>',
+        svg,
+    )
+    if open_match is None:
+        return svg
+
+    href = url.replace('"', "&quot;")
+    image = (
+        f'<image xlink:href="{href}" x="0" y="0" '
+        f'width="{width}" height="{height}" '
+        f'preserveAspectRatio="xMidYMid meet" '
+        f'opacity="0.85" pointer-events="none"/>'
+    )
+    insert_at = open_match.end()
+    return svg[:insert_at] + image + svg[insert_at:]
+
+
 def wrap_link(svg: str, cell_id: str, url: str) -> tuple[str, int]:
     extent = _find_cell_extent(svg, cell_id)
     if extent is None:
         return svg, 0
+    svg = _embed_preview_image(svg, cell_id, url)
     svg = _make_cell_rect_clickable(svg, cell_id)
-    # Re-find the extent after the rect mutation: the byte offsets shift
-    # by the inserted attribute's length.
+    # Re-find the extent after the inserts: byte offsets have shifted.
     start, end = _find_cell_extent(svg, cell_id)
     href = url.replace('"', "&quot;")
     wrapped = f'<a xlink:href="{href}">{svg[start:end]}</a>'
