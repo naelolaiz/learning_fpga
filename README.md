@@ -123,6 +123,30 @@ A second testbench `tb_test_long` (150 ms) runs in CI asserting the internal cou
 </details>
 
 <details>
+<summary><b><code>7segments/text</code></b> — scrolling ASCII text on a 4-digit display</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `test` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-text/test.svg" alt="7seg text netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-text/test_v.svg" alt="7seg text netlist (Verilog)" width="480"> |
+| `tb_text` (10 ms) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-text/tb_text.png" alt="7seg text waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-text/tb_text_v.png" alt="7seg text waveform (Verilog)" width="480"> |
+
+`inputButtons[0]` is wired as an active-low scroll-pause; `sevenSegments[7]` is the decimal point. A second testbench `tb_text_long` (40 ms) compresses the scroll period via the `SCROLL_MAX` generic and asserts both that the scroll advances when the button is released and that it freezes when the button is held; dumps FST without a rendered waveform.
+
+</details>
+
+<details>
+<summary><b><code>7segments/random_generator</code></b> — 4-digit hex display from on-chip random source</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `test` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-random_generator/test.svg" alt="7seg random_generator netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-random_generator/test_v.svg" alt="7seg random_generator netlist (Verilog)" width="480"> |
+| `tb_random_generator` (10 ms) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-random_generator/tb_random_generator.png" alt="7seg random_generator waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/7segments-random_generator/tb_random_generator_v.png" alt="7seg random_generator waveform (Verilog)" width="480"> |
+
+The two language sides use different random sources: VHDL drives [`neoTRNG`](7segments/random_generator/neoTRNG.vhd) (chaotic ring oscillators on hardware, internal LFSR fallback for sim, gated by the `IS_SIM` generic); Verilog drives a small Galois LFSR ([`lfsr.v`](7segments/random_generator/lfsr.v)) in both flows. `inputButtons[0]` freezes the displayed value. A second testbench `tb_random_generator_long` (12 ms) asserts both update-on-release and freeze-on-press.
+
+</details>
+
+<details>
 <summary><b><code>7segments/clock</code></b> — multiplexed clock with HHMM/MMSS view, blinking dot, alarm</summary>
 
 | | VHDL | Verilog |
@@ -275,9 +299,9 @@ declares `TOP / TB_TOPS / SRC_FILES / TB_FILES` (and optionally the
 | [general_components](general_components/)                   | ✅ | VHDL + Verilog | Serial2Parallel (both languages) + Debounce (VHDL only).       |
 | [simulator_writer](simulator_writer/)                       | ✅ | VHDL + Verilog | VCD writer used to sanity-check the sim flow.                  |
 | [vga_sprites](vga_sprites/)                                 | ✅ | VHDL + Verilog | Rotating VGA sprites (trig LUT) + optional gravity.            |
-| [7segments/text](7segments/text/)                           | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
+| [7segments/text](7segments/text/)                           | ✅ | VHDL + Verilog | Scrolling ASCII text on a 4-digit display; button[0] pauses scroll. |
 | [7segments/clock](7segments/clock/)                         | ✅ | VHDL + Verilog | Multiplexed clock with HHMM/MMSS view, blinking dot, alarm.    |
-| [7segments/random_generator](7segments/random_generator/)   | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
+| [7segments/random_generator](7segments/random_generator/)   | ✅ | VHDL + Verilog | 4-digit hex display from on-chip random source (neoTRNG VHDL, LFSR Verilog); button[0] freezes value. |
 | [i2s_test_1](i2s_test_1/)                                   | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
 | [rom_lut](rom_lut/)                                         | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
 | [uda1380](uda1380/)                                         | ⏳ | VHDL           | Sources present, no Makefile yet.                              |
@@ -360,14 +384,14 @@ Legend: ✅ built in CI · ⏳ pending adoption (dropping a `Makefile` is all it
 
 ### Next up 🎯
 
-- Verilog mirrors for the bigger SoC-style projects: `vga`,
-  `i2s_test_1`, `uda1380`, `7segments/clock`, `vga_sprites` —
-  leaf modules first, top-levels after.
+- Verilog mirrors for the remaining VHDL-only projects: `vga`,
+  `i2s_test_1`, `uda1380` — leaf modules first, top-levels after.
 - Wire the "pending adoption" projects above into CI once their
   sources build cleanly (the old `rom_lut` was intentionally disabled
   in the legacy workflow; it will need work before it can join).
 - Small game using the buttons + 7-segment display (snake / space
-  invaders). Prerequisite: on-FPGA RNG.
+  invaders). On-FPGA RNG is now available via
+  [`7segments/random_generator`](7segments/random_generator/).
 - VGA text driver, then adapt the 7-seg examples (clock, game, …) to
   render on VGA.
 - I²S driver + an FFT implementation → spectral analyser (I²S → FFT →
