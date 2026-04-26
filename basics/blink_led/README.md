@@ -1,13 +1,29 @@
 # Blink led
-Simple test of FPGA. 
-It blinks a led with a period of 2 seconds. Done by a syncronic process, depending on the input clock, which is of 50MHz (50E6 == 0x2FAF080).
 
-A second led is handled by an active-low button XNOR the led1. So the led2 is not inverted respect to led1 when the button is not pressed (**Button1 is HIGH**), and inverted when is pushed (**Button1 is LOW**)
+Smallest possible "the FPGA is alive" example.
+
+A counter clocked from the 50 MHz board clock toggles `led` every
+`CLOCKS_TO_OVERFLOW` cycles. With the default `CLOCKS_TO_OVERFLOW =
+50_000_000` the led switches state once per second (≈2 s period).
 
 ## Generated logic diagram
-Since we are using a syncronic process, there are two D flip-flops: one for the counter, and the other for the output state signals.
+
+The synthesised design is exactly two cells: a counter (register fed
+by an adder) and a single D flip-flop holding the toggled `pulse`.
+
 ![logic diagram](doc/blink_led_diagram.svg)
 
 ## Simulation
-Automatically generated view from gtkwave. Changing output led state every 200ns instead of 1s:
+
+Automatically generated view from waveview. The testbench overrides
+`CLOCKS_TO_OVERFLOW` to `10`, so the led toggles every 200 ns instead
+of every second.
+
 ![tb simulation signals view](doc/gtkwave_tb_blink_led.png)
+
+## Going further
+
+Want buttons in the picture, or to see what AND/OR/XOR look like as
+synthesised cells? See [`basics/glossary`](../glossary) — same shared
+inputs (two buttons), every basic combinational primitive on its own
+LED, plus the same gate written in three different HDL styles.

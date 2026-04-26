@@ -1,16 +1,14 @@
 // Verilog mirror of blink_led.vhd.
 //
-// Toggles `led` every CLOCKS_TO_OVERFLOW cycles of `clk`; `led2` is the
-// XNOR of the same toggle with `button1` (the button is active-low on
-// the board, so unpressed = 1 leaves led2 in phase with led).
+// Toggles `led` every CLOCKS_TO_OVERFLOW cycles of `clk`. Minimal
+// example — for the same counter wired together with buttons / logic
+// gates, see basics/glossary.
 
 module blink_led #(
     parameter integer CLOCKS_TO_OVERFLOW = 50_000_000
 ) (
     input  wire clk,
-    input  wire button1,
-    output wire led,
-    output wire led2
+    output wire led
 );
 
     reg pulse = 1'b0;
@@ -25,7 +23,6 @@ module blink_led #(
         end
     end
 
-    assign led  = pulse;
-    assign led2 = ~(pulse ^ button1);
+    assign led = pulse;
 
 endmodule
