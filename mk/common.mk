@@ -114,10 +114,22 @@ V_NO_WAVEFORM_TBS ?=
 # stamped on the box: post-rewrite the label back to the bare
 # submodule name. yosys's own `rename` won't propagate to cell-type
 # references, so post-processing the SVG is the practical fix.
-SVG_LINKS    ?=
-V_SVG_LINKS  ?=
-SVG_RELABEL  ?=
+#
+# SVG_PREVIEW inlines the SVG at `local_path` as a nested `<svg>`
+# inside cell_<cell_id>. Format: `cell_id=local_path`. We can't use
+# `<image href="other.svg">` because GitHub's raw.githubusercontent.com
+# serves SVGs with `Content-Security-Policy: default-src 'none'`,
+# which blocks the cross-document fetch that an `<image>` needs;
+# inlining bypasses that. Project Makefiles using SVG_PREVIEW need
+# to add the sibling's SVG as a prereq on the diagram step so it
+# exists at preview-inline time (CI builds projects in parallel
+# matrix jobs that don't share artifacts otherwise).
+SVG_LINKS     ?=
+V_SVG_LINKS   ?=
+SVG_RELABEL   ?=
 V_SVG_RELABEL ?=
+SVG_PREVIEW   ?=
+V_SVG_PREVIEW ?=
 
 # Used to locate svg_add_links.py — common.mk lives next to it.
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -271,10 +283,11 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	$(if $(or $(strip $(SVG_LINKS)),$(strip $(SVG_RELABEL))), \
+	$(if $(or $(strip $(SVG_LINKS)),$(strip $(SVG_RELABEL)),$(strip $(SVG_PREVIEW))), \
 	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
 	        $(addprefix --link ,$(SVG_LINKS)) \
-	        $(addprefix --relabel ,$(SVG_RELABEL)))
+	        $(addprefix --relabel ,$(SVG_RELABEL)) \
+	        $(addprefix --preview ,$(SVG_PREVIEW)))
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -341,10 +354,11 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	$(if $(or $(strip $(V_SVG_LINKS)),$(strip $(V_SVG_RELABEL))), \
+	$(if $(or $(strip $(V_SVG_LINKS)),$(strip $(V_SVG_RELABEL)),$(strip $(V_SVG_PREVIEW))), \
 	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
 	        $(addprefix --link ,$(V_SVG_LINKS)) \
-	        $(addprefix --relabel ,$(V_SVG_RELABEL)))
+	        $(addprefix --relabel ,$(V_SVG_RELABEL)) \
+	        $(addprefix --preview ,$(V_SVG_PREVIEW)))
 endif
 
 else

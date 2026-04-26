@@ -98,63 +98,94 @@ def _make_cell_rect_clickable(svg: str, cell_id: str) -> str:
     return svg
 
 
-def _embed_preview_image(svg: str, cell_id: str, url: str) -> str:
-    """Embed `url` as an `<image>` at the bottom of the cell's `<g>`
-    z-stack, sized to the cell's body rect.
+def _read_text(path: str) -> str | None:
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return None
 
-    Browsers render referenced SVGs inside `<image>` tags, so for a
-    wrapper that links to a sibling project's SVG this yields an
-    inline thumbnail of the wrapped module's own diagram — a
-    "look inside" preview without enlarging the cell or disturbing
-    netlistsvg's layout. preserveAspectRatio keeps the embedded SVG
-    legible at the (small) cell size.
 
-    Inserted as the first child of the cell's `<g>` so it sits at
-    the back of the painter's-algorithm stack — the cell's own
-    label, body stroke, and port markers stay drawn on top of it.
-    `pointer-events="none"` keeps the click target the wrapping
-    `<a>`, not the image itself.
+def _strip_xml_decl(svg: str) -> str:
+    return re.sub(r"^\s*<\?xml[^?]*\?>\s*", "", svg)
+
+
+def embed_preview_inline(svg: str, cell_id: str, source_path: str) -> tuple[str, int]:
+    """Inline the SVG at `source_path` as a nested `<svg>` inside the
+    cell's `<g>`, sized to the cell's body rect.
+
+    Used in preference to `<image href="…">` because GitHub's
+    raw.githubusercontent.com sets a `Content-Security-Policy:
+    default-src 'none'` on every served file, which blocks the
+    sub-resource fetch that an `<image>` would have to make. Inlining
+    sidesteps the policy entirely — the submodule's diagram is part of
+    the parent SVG document, no extra network access required.
+
+    The nested element is inserted as the first child of the cell's
+    `<g>` so it paints behind the cell's own label, body stroke, and
+    port markers. preserveAspectRatio keeps the inlined SVG legible
+    at the (small) cell-rect size.
+
+    Composes naturally: if `source_path`'s SVG was itself produced by
+    a project that inlined its own previews, those nested previews
+    ride along inside this preview.
     """
+    sub = _read_text(source_path)
+    if sub is None:
+        print(f"svg_add_links: warning: preview source missing: {source_path}",
+              file=sys.stderr)
+        return svg, 0
+    sub = _strip_xml_decl(sub)
+
+    sub_open = re.search(r"<svg\b([^>]*)>", sub)
+    if sub_open is None:
+        return svg, 0
+    sub_attrs = sub_open.group(1)
+    sub_w = re.search(r'\bwidth="([0-9.]+)"', sub_attrs)
+    sub_h = re.search(r'\bheight="([0-9.]+)"', sub_attrs)
+    if not (sub_w and sub_h):
+        return svg, 0
+    orig_w, orig_h = sub_w.group(1), sub_h.group(1)
+
+    sub_inner = sub[sub_open.end():]
+    sub_inner = re.sub(r"</svg\s*>\s*$", "", sub_inner)
+
     rect_match = re.search(
         r'<rect\b([^/>]*)\bclass="cell_' + re.escape(cell_id) + r'"([^/>]*)/>',
         svg,
     )
     if rect_match is None:
-        return svg
-    width_m = re.search(r'\bwidth="([0-9.]+)"', rect_match.group(0))
-    height_m = re.search(r'\bheight="([0-9.]+)"', rect_match.group(0))
-    if not (width_m and height_m):
-        return svg
-    width = width_m.group(1)
-    height = height_m.group(1)
+        return svg, 0
+    cell_w_m = re.search(r'\bwidth="([0-9.]+)"', rect_match.group(0))
+    cell_h_m = re.search(r'\bheight="([0-9.]+)"', rect_match.group(0))
+    if not (cell_w_m and cell_h_m):
+        return svg, 0
+    cell_w, cell_h = cell_w_m.group(1), cell_h_m.group(1)
 
-    # Insert position: right after the cell's <g ...> opening tag, so
-    # the image is the first painted element in the cell.
     open_match = re.search(
         r'<g\b[^>]*\bid="cell_' + re.escape(cell_id) + r'"[^>]*>',
         svg,
     )
     if open_match is None:
-        return svg
+        return svg, 0
 
-    href = url.replace('"', "&quot;")
-    image = (
-        f'<image xlink:href="{href}" x="0" y="0" '
-        f'width="{width}" height="{height}" '
-        f'preserveAspectRatio="xMidYMid meet" '
-        f'opacity="0.85" pointer-events="none"/>'
+    nested = (
+        f'<svg x="0" y="0" width="{cell_w}" height="{cell_h}" '
+        f'viewBox="0 0 {orig_w} {orig_h}" '
+        f'preserveAspectRatio="xMidYMid meet">'
+        + sub_inner
+        + '</svg>'
     )
     insert_at = open_match.end()
-    return svg[:insert_at] + image + svg[insert_at:]
+    return svg[:insert_at] + nested + svg[insert_at:], 1
 
 
 def wrap_link(svg: str, cell_id: str, url: str) -> tuple[str, int]:
     extent = _find_cell_extent(svg, cell_id)
     if extent is None:
         return svg, 0
-    svg = _embed_preview_image(svg, cell_id, url)
     svg = _make_cell_rect_clickable(svg, cell_id)
-    # Re-find the extent after the inserts: byte offsets have shifted.
+    # Re-find the extent after the rect mutation: byte offsets shifted.
     start, end = _find_cell_extent(svg, cell_id)
     href = url.replace('"', "&quot;")
     wrapped = f'<a xlink:href="{href}">{svg[start:end]}</a>'
@@ -194,6 +225,11 @@ def main() -> int:
     parser.add_argument("--relabel", action="append", default=[],
                         metavar="cell_id=text",
                         help="rewrite cell_<cell_id>'s visible label")
+    parser.add_argument("--preview", action="append", default=[],
+                        metavar="cell_id=local_path",
+                        help="inline the SVG at local_path as a nested <svg> "
+                             "inside cell_<cell_id> (read at build time, no "
+                             "live cross-document reference)")
     args = parser.parse_args()
 
     with open(args.svg_path, encoding="utf-8") as f:
@@ -215,6 +251,21 @@ def main() -> int:
                   file=sys.stderr)
         else:
             print(f"svg_add_links: {args.svg_path}: relabel cell_{cell_id} -> {text}")
+
+    # Previews must run *before* link-wrapping: the wrap inserts an
+    # `<a>` between the cell's `<g>` and its parent, but the inline
+    # preview wants to be a child of that same `<g>`. Doing previews
+    # first keeps the regex-based child insertion unaffected by the
+    # later <a> wrapping.
+    for arg in args.preview:
+        try:
+            cell_id, source = parse_mapping(arg)
+        except ValueError as e:
+            print(f"svg_add_links: {e}", file=sys.stderr)
+            return 2
+        svg, count = embed_preview_inline(svg, cell_id, source)
+        if count > 0:
+            print(f"svg_add_links: {args.svg_path}: preview cell_{cell_id} <- {source}")
 
     for arg in args.link:
         try:
