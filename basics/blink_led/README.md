@@ -33,6 +33,14 @@ no exact rate.
 
 ![logic diagram (minimal)](doc/blink_led_minimal_diagram.svg)
 
+> *Reading the diagram:* the box with the clock-edge notch is the
+> 25-bit counter register. The hatched cell labelled **`24`** is a
+> bit-extract — "take bit 24 of the counter bus" — whose 1-bit
+> output drives `led`. netlistsvg labels the slice with the bit
+> *index*, not the source bus's width; the width isn't drawn at
+> all, you have to infer it from the slice (highest index referenced
+> = `WIDTH - 1`).
+
 ## `blink_led` — two flip-flops, exact period
 
 Add a 1-bit `pulse` register that toggles every time the counter
