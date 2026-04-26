@@ -34,13 +34,54 @@ import re
 import sys
 
 
-def wrap_link(svg: str, cell_id: str, url: str) -> tuple[str, int]:
-    pattern = re.compile(
-        r'(<g\b[^>]*\bid="cell_' + re.escape(cell_id) + r'"[^>]*>.*?</g>)',
+_G_OPEN  = re.compile(r"<g\b[^>]*?(/?)>", re.DOTALL)
+_G_CLOSE = re.compile(r"</g\s*>")
+
+
+def _find_cell_extent(svg: str, cell_id: str) -> tuple[int, int] | None:
+    """Return the (start, end) byte range of the `<g ... id="cell_<id>"
+    ...>...</g>` element in svg, or None if not present.
+
+    Walks the string with a tag-depth counter rather than a non-greedy
+    regex, so cells that contain nested `<g>` elements (e.g. one per
+    port label) get their *matching* outer `</g>` rather than the
+    first inner one.
+    """
+    open_anchor = re.compile(
+        r'<g\b[^>]*\bid="cell_' + re.escape(cell_id) + r'"[^>]*?(/?)>',
         re.DOTALL,
     )
-    replacement = '<a xlink:href="' + url.replace('"', '&quot;') + r'">\1</a>'
-    return pattern.subn(replacement, svg)
+    m = open_anchor.search(svg)
+    if not m:
+        return None
+    if m.group(1) == "/":
+        return (m.start(), m.end())  # self-closing, no body
+
+    depth = 1
+    pos = m.end()
+    while depth > 0:
+        next_open = _G_OPEN.search(svg, pos)
+        next_close = _G_CLOSE.search(svg, pos)
+        if next_close is None:
+            return None  # malformed — bail rather than guess
+        if next_open is not None and next_open.start() < next_close.start():
+            if next_open.group(1) != "/":
+                depth += 1
+            pos = next_open.end()
+        else:
+            depth -= 1
+            pos = next_close.end()
+    return (m.start(), pos)
+
+
+def wrap_link(svg: str, cell_id: str, url: str) -> tuple[str, int]:
+    extent = _find_cell_extent(svg, cell_id)
+    if extent is None:
+        return svg, 0
+    start, end = extent
+    href = url.replace('"', "&quot;")
+    wrapped = f'<a xlink:href="{href}">{svg[start:end]}</a>'
+    return svg[:start] + wrapped + svg[end:], 1
 
 
 def relabel(svg: str, cell_id: str, text: str) -> tuple[str, int]:
