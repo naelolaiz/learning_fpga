@@ -49,7 +49,7 @@ module tb_debounce_bounce;
         $dumpvars(1, dut);
     end
 
-    integer i;
+    integer i = 0;
     initial begin : driver
         sSwitchIn = 1'b0;
         #2_000;          // 2 us steady-low warmup

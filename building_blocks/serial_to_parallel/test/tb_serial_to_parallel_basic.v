@@ -32,7 +32,7 @@ module tb_serial_to_parallel_basic;
         $dumpvars(1, dut);
     end
 
-    integer i;
+    integer i = 0;
     initial begin : driver
         for (i = N-1; i >= 0; i = i - 1) begin
             @(negedge sClock);

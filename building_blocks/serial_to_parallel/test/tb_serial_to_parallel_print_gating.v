@@ -31,6 +31,7 @@ module tb_serial_to_parallel_print_gating;
     task automatic shift_in(input [N-1:0] pat);
         integer j;
         begin
+            j = 0;          // initialise so waveview doesn't render an x stripe before first iter
             for (j = N-1; j >= 0; j = j - 1) begin
                 @(negedge sClock);
                 sData = pat[j];
@@ -44,7 +45,7 @@ module tb_serial_to_parallel_print_gating;
         $dumpvars(1, dut);
     end
 
-    reg [N-1:0] snapshotA;
+    reg [N-1:0] snapshotA = {N{1'b0}};
     initial begin : driver
         sPrint = 1'b0;
         shift_in(PATTERN_A);
