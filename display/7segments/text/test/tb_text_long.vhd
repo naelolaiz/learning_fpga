@@ -57,7 +57,7 @@ architecture testbench of tb_text_long is
    signal sFreezeViolated : boolean := false;
 begin
 
-   DUT : entity work.test(behavior)
+   DUT : entity work.text(behavior)
       generic map (SCROLL_MAX => SIM_SCROLL)
       port map (
          clock         => sClock50MHz,

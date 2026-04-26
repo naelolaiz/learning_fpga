@@ -12,7 +12,7 @@
 // sevenSegments is 8 bits: [6:0] drives the seven cathodes,
 // [7] is the decimal point. The '.' character lights only the DP.
 
-module test #(
+module text #(
     parameter integer SCROLL_MAX = 8_000_000  // 8E6 / 50E6 = 160 ms scroll period on hardware
 ) (
     input  wire       clock,

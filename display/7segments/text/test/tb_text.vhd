@@ -54,7 +54,7 @@ architecture testbench of tb_text is
    end function;
 begin
 
-   DUT : entity work.test(behavior)
+   DUT : entity work.text(behavior)
       port map (
          clock         => sClock50MHz,
          inputButtons  => sInputButtons,

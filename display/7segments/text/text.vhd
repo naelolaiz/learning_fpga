@@ -26,7 +26,7 @@ use ieee.numeric_std.all;
 --               for hardware (160 ms scroll period); the long testbench
 --               overrides to a smaller value so freeze-vs-tick can be
 --               exercised in a short sim window.
-entity test is
+entity text is
    generic (
       SCROLL_MAX : integer := 8_000_000  -- 8E6 / 50E6 = 160 ms per scroll tick on hardware
    );
@@ -35,9 +35,9 @@ entity test is
       inputButtons  : in  std_logic_vector(3 downto 0);
       sevenSegments : out std_logic_vector(7 downto 0);
       cableSelect   : out std_logic_vector(3 downto 0));
-end test;
+end text;
 
-architecture behavior of test is
+architecture behavior of text is
    constant stringToPrint : string := "_-+-_- Hello FPGA Wworld _-+-==- ";
 
    constant MUX_MAX : integer := 100_000;  -- 100E3 / 50E6 = 2 ms per digit

@@ -27,7 +27,7 @@ module tb_text;
 
     reg sSimulationActive = 1'b1;
 
-    test dut (
+    text dut (
         .clock         (sClock50MHz),
         .inputButtons  (sInputButtons),
         .sevenSegments (sSevenSegments),

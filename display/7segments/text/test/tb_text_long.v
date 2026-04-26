@@ -43,7 +43,7 @@ module tb_text_long;
     reg sScrollObserved = 1'b0;
     reg sFreezeViolated = 1'b0;
 
-    test #(.SCROLL_MAX(SIM_SCROLL)) dut (
+    text #(.SCROLL_MAX(SIM_SCROLL)) dut (
         .clock         (sClock50MHz),
         .inputButtons  (sInputButtons),
         .sevenSegments (sSevenSegments),
