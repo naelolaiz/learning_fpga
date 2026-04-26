@@ -137,12 +137,28 @@ A flat module that drives one output per primitive (bitwise gates, vector reduct
 </details>
 
 <details>
-<summary><b><code>blink_led</code></b> — the "hello world": toggle an LED at 1 Hz</summary>
+<summary><b><code>logic_styles</code></b> — coding-style tutorial: combinational vs. sequential vs. latch, register-init strategies, the latch trap</summary>
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| `blink_led` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led.svg" alt="blink_led netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_v.svg" alt="blink_led netlist (Verilog)" width="480"> |
+| `logic_styles` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-logic_styles/logic_styles.svg" alt="logic_styles netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-logic_styles/logic_styles_v.svg" alt="logic_styles netlist (Verilog)" width="480"> |
+| `tb_logic_styles` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-logic_styles/tb_logic_styles.png" alt="logic_styles waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-logic_styles/tb_logic_styles_v.png" alt="logic_styles waveform (Verilog)" width="480"> |
+
+A small companion to `glossary` that focuses on **how the cell got there** rather than which gate it is. The same module surfaces three families — combinational (good and broken), sequential (three init strategies side-by-side: no-init, declaration-init, explicit reset), and an intentional level-sensitive latch — so the netlist diagram shows them all next to each other (`$and`, three `$dff`, two `$dlatch`). The board top wires the latch trap onto LED1 and a real transparent latch onto LED3 so the holding behaviour is visible by hand. The testbench reads each register at t=1 ns *before* the first clock edge to make the init-style differences observable as `'U'` / `'1'` / `'U'`.
+
+</details>
+
+<details>
+<summary><b><code>blink_led</code></b> — the "hello world", in two variants: 1-FF minimal vs. 2-FF exact-period</summary>
+
+Two designs that do almost the same thing but synthesise to clearly different netlists. `blink_led_minimal` is the absolute minimum (counter + wire to its top bit, period fixed to a power of two); `blink_led` adds a second flip-flop that toggles on counter wrap so the period is exactly `CLOCKS_TO_OVERFLOW` cycles. Read the source side by side to see what each line costs in cells.
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `blink_led_minimal` (netlist, 1 FF) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_minimal.svg" alt="blink_led_minimal netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_minimal_v.svg" alt="blink_led_minimal netlist (Verilog)" width="480"> |
+| `blink_led` (netlist, 2 FF, exact period) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led.svg" alt="blink_led netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_v.svg" alt="blink_led netlist (Verilog)" width="480"> |
 | `tb_blink_led` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led.png" alt="blink_led waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led_v.png" alt="blink_led waveform (Verilog)" width="480"> |
+| `tb_blink_led_minimal` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led_minimal.png" alt="blink_led_minimal waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led_minimal_v.png" alt="blink_led_minimal waveform (Verilog)" width="480"> |
 
 </details>
 
@@ -399,9 +415,10 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
-| [glossary](basics/glossary/)   | ✅ | VHDL + Verilog | Symbol legend: every primitive on one diagram (gates, muxes, arith, registers) with truth tables and a custom labelled-gate `netlistsvg` skin. |
-| [blink_led](basics/blink_led/) | ✅ | VHDL + Verilog | Hello-world LED toggler. |
-| [pwm_led](basics/pwm_led/)     | ✅ | VHDL + Verilog | Brightness via duty-cycle modulation. |
+| [glossary](basics/glossary/)         | ✅ | VHDL + Verilog | Symbol legend: every primitive on one diagram (gates, muxes, arith, registers) with truth tables and a custom labelled-gate `netlistsvg` skin. Board top wires `a`,`b` to two buttons and shows AND / OR / XOR / XNOR on the four LEDs. |
+| [logic_styles](basics/logic_styles/) | ✅ | VHDL + Verilog | Coding-style tutorial: combinational vs. sequential vs. latch with annotated good/bad examples, three register-init strategies side-by-side, the classic incomplete-process latch trap, plus a board top that surfaces the latch holding behaviour onto an LED. |
+| [blink_led](basics/blink_led/)       | ✅ | VHDL + Verilog | Hello-world LED toggler in two flavours: `blink_led_minimal` (1 FF, MSB-of-counter, power-of-two period) and `blink_led` (2 FF, exactly tunable period via `CLOCKS_TO_OVERFLOW`). Side-by-side netlist contrast. |
+| [pwm_led](basics/pwm_led/)           | ✅ | VHDL + Verilog | Brightness via duty-cycle modulation. |
 
 ### Building blocks
 

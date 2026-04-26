@@ -7,6 +7,16 @@ VHDL flow, `build/glossary_v.svg` for Verilog) to map each
 [netlistsvg](https://github.com/nturley/netlistsvg) shape to the
 construct that produced it.
 
+The companion module `top_glossary_board` wires four of `glossary`'s
+combinational outputs to the on-board LEDs and the two on-board
+buttons to the shared inputs `a`, `b` so a learner can poke the gates
+by hand on the RZ EasyFPGA A2.2.
+
+For the *coding-style* tutorial layered above the gate primitives —
+combinational vs. sequential vs. latch, register init strategies, the
+classic "incomplete process infers a latch" trap — see the sibling
+project [`basics/logic_styles`](../logic_styles).
+
 ## Why
 
 `netlistsvg` renders the cells `yosys prep` leaves behind — a mix of
@@ -23,7 +33,31 @@ them. `Makefile` points netlistsvg at it via
 `NETLISTSVG := netlistsvg --skin skin.svg`. Other projects in the repo
 keep using the bare default skin and are unaffected.
 
+## On the board
+
+`top_glossary_board.{vhd,v}` is the Quartus synthesis top. The 4 LEDs
+display:
+
+| LED  | What       | Where it comes from |
+| ---- | ---------- | ------------------- |
+| LED0 | `a AND b`  | `glossary.o_and`    |
+| LED1 | `a OR  b`  | `glossary.o_or`     |
+| LED2 | `a XOR b`  | `glossary.o_xor`    |
+| LED3 | `a XNOR b` | `glossary.o_xnor`   |
+
+Buttons are active-low on this board (idle high, pressed low), so
+the design re-inverts: `a = NOT button1`, `b = NOT button2`. Press
+button combinations and read the corresponding row of each gate's
+truth table off the LEDs.
+
+The board's 4-LED budget forces a pick — the remaining glossary
+outputs (NOT / NAND / NOR / reductions / muxes / arithmetic /
+sequential variants) live in the same `glossary` entity and are
+visible in the netlist diagram, just not on LEDs.
+
 ## What's in it
+
+![glossary netlist](doc/glossary_diagram.svg)
 
 The top-level `glossary` entity is purely for diagram-rendering: every
 output drives one isolated primitive, so each gets its own cell in the
@@ -140,6 +174,8 @@ pattern through the combinational outputs and three rising clock edges
 through the sequential ones, asserting the row of each truth/behaviour
 table that gets exercised. A failure means a primitive's behaviour
 diverged from its definition above.
+
+![tb_glossary waveform](doc/tb_glossary.png)
 
 The testbenches use `av = 1100`, `bv = 0011`, `sel = 1`, `sel4 = 10`
 during the combinational phase, then sweep `(en, rst, a)` to cover the

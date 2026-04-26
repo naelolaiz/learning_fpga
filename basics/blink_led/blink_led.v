@@ -1,16 +1,18 @@
 // Verilog mirror of blink_led.vhd.
 //
-// Toggles `led` every CLOCKS_TO_OVERFLOW cycles of `clk`; `led2` is the
-// XNOR of the same toggle with `button1` (the button is active-low on
-// the board, so unpressed = 1 leaves led2 in phase with led).
+// Precise-period blinker: a counter wraps at exactly
+// CLOCKS_TO_OVERFLOW cycles, and on each wrap a 1-bit `pulse`
+// register toggles. `led` follows `pulse`.
+//
+// Cost: TWO flip-flops (counter + pulse) plus a comparator and a
+// mux. For a strictly simpler ONE-flip-flop version that fixes the
+// period to a power of two, see `blink_led_minimal.v`.
 
 module blink_led #(
     parameter integer CLOCKS_TO_OVERFLOW = 50_000_000
 ) (
     input  wire clk,
-    input  wire button1,
-    output wire led,
-    output wire led2
+    output wire led
 );
 
     reg pulse = 1'b0;
@@ -25,7 +27,6 @@ module blink_led #(
         end
     end
 
-    assign led  = pulse;
-    assign led2 = ~(pulse ^ button1);
+    assign led = pulse;
 
 endmodule

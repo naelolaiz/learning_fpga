@@ -16,7 +16,7 @@
 
 module tb_trigonometric;
 
-    // Signals driven by the sweep (visible in the GTKWave PNG).
+    // Signals driven by the sweep (visible in the rendered waveform PNG).
     reg  [4:0]         indexForTableStdTestRotate = 5'd0;
     reg  signed [31:0] sInputPosX                  = 32'd0;
     reg  signed [31:0] sInputPosY                  = 32'd0;

@@ -16,10 +16,14 @@ work-obj*.cf
 !**/tb_*.vhd
 !**/tb_*.v
 !**/tb_*.py
+!**/tb_*.png
+!**/tb_*.svg
 **/*_tb
 !**/*_tb.vhd
 !**/*_tb.v
 !**/*_tb.py
+!**/*_tb.png
+!**/*_tb.svg
 **/e~*.o
 **/e~*
 

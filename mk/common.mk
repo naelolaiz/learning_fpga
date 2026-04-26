@@ -70,6 +70,13 @@ SYNTH_STD     ?= $(VHDL_STANDARD)
 ASSERT_LEVEL  ?= error
 SIM_TIME      ?=
 EXTRA_GHDL    ?=
+# Extra flags appended to the ghdl invocation that runs *inside* yosys
+# during the diagram synth step (NOT the simulation `ghdl -a/-e/-r`
+# flow, which uses EXTRA_GHDL). The default is empty: ghdl-yosys-plugin
+# treats inferred latches as a hard error, which is what we want
+# repo-wide. Projects that *intentionally* infer latches (e.g. the
+# logic_styles latch-trap tutorial) set this to `--latches`.
+GHDL_SYNTH_EXTRA ?=
 SKIP_DIAGRAM  ?=
 SKIP_WAVEFORM ?=
 # Per-TB opt-in to FST dump format (GHDL --fst) instead of VCD.
@@ -277,7 +284,7 @@ diagram: $(DIAGRAM_SVG)
 
 $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 	$(YOSYS) -m ghdl -p \
-	    "ghdl $(GHDL_SYNTH_STD) -fsynopsys $(SRC_FILES) -e $(TOP); \
+	    "ghdl $(GHDL_SYNTH_STD) -fsynopsys $(GHDL_SYNTH_EXTRA) $(SRC_FILES) -e $(TOP); \
 	     prep -top $(TOP); \
 	     write_json -compat-int $@"
 

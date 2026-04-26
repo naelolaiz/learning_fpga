@@ -17,7 +17,7 @@ use work.definitions.all;
 --   producing bad visuals.
 --
 --   sweep_for_waveform -- drives a systematic stimulus sweep into
---   signals so the GTKWave screenshot in the gallery shows every
+--   signals so the rendered waveform in the gallery shows every
 --   rotation index applied to a small grid of (x, y). Waveform-only,
 --   no assertions.
 --
@@ -31,7 +31,7 @@ end tb_trigonometric;
 
 architecture testbench of tb_trigonometric is
 
-   -- Signals the waveform sweep writes to (visible in the GTKWave PNG).
+   -- Signals the waveform sweep writes to (visible in the rendered waveform PNG).
    signal indexForTableStdTestRotate : std_logic_vector(4 downto 0) := (others => '0');
    signal sInputPos                  : Pos2D := (0, 0);
    signal sOutputPos                 : Pos2D := (0, 0);
