@@ -93,7 +93,13 @@ toggles in tens of nanoseconds instead of seconds. They check that
 the LED starts at 0, transitions to 1 after the expected number of
 clocks, and wraps back.
 
-![tb simulation signals view](doc/gtkwave_tb_blink_led.png)
+`tb_blink_led_minimal` (1-FF, WIDTH=4, MSB toggles every 8 cycles):
+
+![tb_blink_led_minimal](doc/gtkwave_tb_blink_led_minimal.png)
+
+`tb_blink_led` (2-FF, CLOCKS_TO_OVERFLOW=10, exact 10-cycle toggle):
+
+![tb_blink_led](doc/gtkwave_tb_blink_led.png)
 
 ## Going further
 
