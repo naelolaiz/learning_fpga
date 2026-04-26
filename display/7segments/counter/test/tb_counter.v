@@ -1,4 +1,4 @@
-// Verilog mirror of tb_test.vhd.
+// Verilog mirror of tb_counter.vhd.
 //
 // The DUT multiplexes one of four digits onto a shared 7-segment
 // display, cycling through them via cableSelect (active-low,
@@ -14,7 +14,7 @@
 
 `timescale 1ns/1ps
 
-module tb_test;
+module tb_counter;
 
     // Shorter than the VHDL TB (150 ms) but long enough to rotate
     // through all four digits: mux period is 2 ms at 50 MHz, so
@@ -33,7 +33,7 @@ module tb_test;
 
     reg sSimulationActive = 1'b1;
 
-    test dut (
+    counter dut (
         .clock         (sClock50MHz),
         .sevenSegments (sSevenSegments),
         .cableSelect   (sCableSelect)
@@ -105,7 +105,7 @@ module tb_test;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(1, tb_test);
+        $dumpvars(1, tb_counter);
         $dumpvars(1, dut);
     end
 
@@ -117,7 +117,7 @@ module tb_test;
             $fatal(1, "mux stuck: seen digits = %b%b%b%b",
                    sSeenDigit0, sSeenDigit1, sSeenDigit2, sSeenDigit3);
 
-        $display("tb_test simulation done!");
+        $display("tb_counter simulation done!");
         sSimulationActive = 1'b0;
         $finish;
     end

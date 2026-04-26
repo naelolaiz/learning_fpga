@@ -3,14 +3,14 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 use ieee.numeric_std.ALL;
 
-entity test is
+entity counter is
    port (
          clock : in std_logic;
          sevenSegments : out std_logic_vector(6 downto 0);
          cableSelect : out std_logic_vector(3 downto 0));
-end test;
+end counter;
 
-architecture behavior of test is
+architecture behavior of counter is
    constant NUMBER_OF_DIGITS : integer := 4;
    constant BITS_PER_NIBBLE  : integer := 4;
    constant COUNTER_MAX      : integer := 3_125_000;  -- ticks every 3.125E6 / 50E6 = 62.5 ms

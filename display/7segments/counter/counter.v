@@ -6,7 +6,7 @@
 // counter ticking on the rightmost digit, with carry propagating to the
 // digits to the left.
 
-module test (
+module counter (
     input  wire       clock,
     output reg  [6:0] sevenSegments,
     output reg  [3:0] cableSelect

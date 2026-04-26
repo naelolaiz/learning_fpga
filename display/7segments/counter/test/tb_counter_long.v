@@ -1,6 +1,6 @@
-// Verilog mirror of tb_test_long.vhd.
+// Verilog mirror of tb_counter_long.vhd.
 //
-// Long-window companion to tb_test.v (10 ms, shows clock edges +
+// Long-window companion to tb_counter.v (10 ms, shows clock edges +
 // mux rotation). This one runs for 150 ms so the internal
 // numberToDisplay counter — which ticks every ~62.5 ms — is
 // observed incrementing.
@@ -18,7 +18,7 @@
 
 `timescale 1ns/1ps
 
-module tb_test_long;
+module tb_counter_long;
 
     localparam time TEST_DURATION = 150_000_000;   // 150 ms in ns
 
@@ -34,7 +34,7 @@ module tb_test_long;
     // while digit 0 is selected means the counter has advanced.
     localparam [6:0] ENCODING_ZERO = 7'b1000000;
 
-    test dut (
+    counter dut (
         .clock         (sClock50MHz),
         .sevenSegments (sSevenSegments),
         .cableSelect   (sCableSelect)
@@ -50,7 +50,7 @@ module tb_test_long;
 
     initial begin
         $dumpfile(`VCD_OUT);
-        $dumpvars(1, tb_test_long);
+        $dumpvars(1, tb_counter_long);
         $dumpvars(1, dut);
     end
 
@@ -60,7 +60,7 @@ module tb_test_long;
         if (!sCounterTicked)
             $fatal(1, "counter stuck: numberToDisplay never incremented in 150 ms");
 
-        $display("tb_test_long simulation done!");
+        $display("tb_counter_long simulation done!");
         sSimulationActive = 1'b0;
         $finish;
     end

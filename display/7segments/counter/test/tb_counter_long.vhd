@@ -4,30 +4,30 @@ use ieee.numeric_std.ALL;
 
 -- Long-window view of the 4-digit 7-segment multiplexed counter.
 --
--- Companion to `tb_test` (10 ms window, useful for seeing individual
+-- Companion to `tb_counter` (10 ms window, useful for seeing individual
 -- clock edges and mux rotation in the gallery PNG). This one zooms
 -- out to 150 ms so the internal `numberToDisplay` counter — which
 -- ticks every ~62.5 ms — is observed incrementing.
 --
 -- At 1 fs GHDL timescale a 150 ms VCD would be ~650 MB (too large for
 -- the GTKWave screenshot pipeline). Dumped in FST format instead via
--- `FST_TBS := tb_test_long` in the Makefile; GTKWave reads FST
+-- `FST_TBS := tb_counter_long` in the Makefile; GTKWave reads FST
 -- natively, so the rest of the flow is unchanged.
 --
--- Assertion added on top of the tb_test three:
+-- Assertion added on top of the tb_counter three:
 --   (D) By end-of-sim, the internal counter must have incremented
 --       at least once. Observed via sevenSegments transitioning to a
 --       non-zero BCD encoding while digit 0 is selected.
 --
--- (A), (B), (C) from tb_test are intentionally NOT duplicated here -
+-- (A), (B), (C) from tb_counter are intentionally NOT duplicated here -
 -- they cover the same invariants and run against the same DUT; the
 -- short-window TB asserts them. This TB's job is purely the slower
--- observation tb_test can't afford to wait for.
+-- observation tb_counter can't afford to wait for.
 
-entity tb_test_long is
-end tb_test_long;
+entity tb_counter_long is
+end tb_counter_long;
 
-architecture testbench of tb_test_long is
+architecture testbench of tb_counter_long is
    constant TEST_DURATION : time := 150 ms;
 
    signal sClock50MHz       : std_logic := '0';
@@ -45,7 +45,7 @@ architecture testbench of tb_test_long is
    constant ENCODING_ZERO : std_logic_vector(6 downto 0) := "1000000";
 begin
 
-   DUT : entity work.test(behavior)
+   DUT : entity work.counter(behavior)
       port map (
          clock         => sClock50MHz,
          sevenSegments => sSevenSegments,

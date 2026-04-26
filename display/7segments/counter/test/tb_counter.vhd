@@ -24,10 +24,10 @@ use ieee.numeric_std.ALL;
 -- doesn't need that level of rigor. Catching a stuck mux + catching
 -- out-of-set encodings together already localise any real regression.
 
-entity tb_test is
-end tb_test;
+entity tb_counter is
+end tb_counter;
 
-architecture testbench of tb_test is
+architecture testbench of tb_counter is
    -- 10 ms covers a full mux rotation (2 ms per digit -> 8 ms for
    -- 0->1->2->3) and a bit more, which is all the assertions need.
    -- Keep this short: GHDL dumps at 1 fs timescale by default, so
@@ -73,7 +73,7 @@ architecture testbench of tb_test is
    end function;
 begin
 
-   DUT : entity work.test(behavior)
+   DUT : entity work.counter(behavior)
       port map (
          clock         => sClock50MHz,
          sevenSegments => sSevenSegments,
