@@ -1,6 +1,6 @@
 PROJECT_NAME := vga_sprites
 
-# Three focused testbenches, each renders its own VCD + PNG in CI:
+# Three focused testbenches, each renders its own FST + PNG in CI:
 #   tb_trigonometric      integration sweep + algebraic property checks
 #                         on the rotate() function and LUT.
 #   tb_multiply_by_sin_lut unit tests for the multiplyBySinLUT primitive.

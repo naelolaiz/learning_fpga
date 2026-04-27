@@ -303,7 +303,7 @@ Three focused testbenches: `tb_trigonometric` (integration sweep + rotate proper
 ### Tools
 
 <details>
-<summary><b><code>simulator_writer</code></b> — produces a VCD trace for the simulator flow</summary>
+<summary><b><code>simulator_writer</code></b> — produces a waveform trace for the simulator flow</summary>
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
@@ -340,9 +340,9 @@ any `Makefile` that includes `mk/common.mk`.
 
 | Stage        | Tool chain                                        | Output                          |
 | ------------ | ------------------------------------------------- | ------------------------------- |
-| simulate     | GHDL (VHDL) / iverilog (Verilog)                  | `build/<tb>.vcd`                |
+| simulate     | GHDL (VHDL) / iverilog (Verilog)                  | `build/<tb>.fst`                |
 | diagram      | yosys + ghdl-yosys-plugin → netlistsvg            | `build/<top>.svg`               |
-| waveform     | VCD/FST → waveview                                | `build/<tb>.svg`, `build/<tb>.png` |
+| waveform     | FST → waveview                                    | `build/<tb>.svg`, `build/<tb>.png` |
 
 Each matrix job:
 
@@ -382,18 +382,19 @@ Swap `podman` for `docker` if that is your local runtime.
 The build machinery is **bilingual**. A project that defines `V_TOP` /
 `V_TB_TOPS` / `V_SRC_FILES` / `V_TB_FILES` in its `Makefile` also gets a
 parallel iverilog / yosys flow whose artifacts share `build/` with the
-VHDL ones via a `_v` suffix (`build/<top>_v.svg`, `build/<tb>_v.vcd`,
+VHDL ones via a `_v` suffix (`build/<top>_v.svg`, `build/<tb>_v.fst`,
 `build/<tb>_v.png`) — both languages coexist without colliding.
 
 | target         | tooling                              |
 | -------------- | ------------------------------------ |
-| `simulate_v`   | `iverilog -g2012` → `vvp`            |
+| `simulate_v`   | `iverilog -g2012` → `vvp` (FST)      |
 | `diagram_v`    | `yosys read_verilog` → `netlistsvg`  |
-| `waveform_v`   | `vvp` VCD → waveview                 |
+| `waveform_v`   | FST → waveview                       |
 
 `make all` runs both flows when both language sets are populated.
-Verilog testbenches must call `` $dumpfile(`VCD_OUT) `` — the Makefile
-supplies that define so the dump file always lands in `build/`. See
+Verilog testbenches must call `` $dumpfile(`FST_OUT) `` — the Makefile
+supplies that define so the dump file always lands in `build/`, and
+runs `vvp` with `IVERILOG_DUMPER=fst` so iverilog 13 emits FST. See
 [blink_led/test/tb_blink_led.v](basics/blink_led/test/tb_blink_led.v) for the
 canonical pattern.
 
@@ -453,7 +454,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
-| [simulator_writer](tools/simulator_writer/) | ✅ | VHDL + Verilog | VCD writer used to sanity-check the sim flow. |
+| [simulator_writer](tools/simulator_writer/) | ✅ | VHDL + Verilog | Waveform writer used to sanity-check the sim flow. |
 
 ---
 

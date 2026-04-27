@@ -40,9 +40,9 @@ module tb_fifo_sync;
 
     // Level 1 restricts the dump to the TB's own top-level signals and
     // the DUT's top-level signals — loop counters inside `driver` and
-    // any function-local hierarchy stay hidden, matching GHDL's VCD.
+    // any function-local hierarchy stay hidden, matching GHDL's FST dump.
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_fifo_sync);
         $dumpvars(1, dut);
     end

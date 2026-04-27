@@ -31,7 +31,7 @@ help:
 	@echo "  all         simulate + diagram + waveform"
 	@echo "  analyze     ghdl -a"
 	@echo "  elaborate   ghdl -e"
-	@echo "  simulate    ghdl -r (emits a VCD)"
+	@echo "  simulate    ghdl -r (emits an FST)"
 	@echo "  diagram     yosys + netlistsvg (emits an SVG)"
 	@echo "  waveform    waveview render (emits an SVG + PNG)"
 	@echo "  clean       remove every build/ directory"

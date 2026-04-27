@@ -28,7 +28,7 @@ module tl_simulator_writer #(
     reg        sCurrentBlank;
 
     // The VHDL twin keeps these as process *variables*; GHDL does not
-    // surface them in the VCD. They live at module scope here for
+    // surface them in the FST dump. They live at module scope here for
     // yosys compatibility (static locals inside a named always block
     // are not yet accepted by the yosys SV frontend) — the testbench
     // hides them via an explicit $dumpvars signal list so the two

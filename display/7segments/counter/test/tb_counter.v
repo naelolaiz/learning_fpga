@@ -19,7 +19,7 @@ module tb_counter;
     // Shorter than the VHDL TB (150 ms) but long enough to rotate
     // through all four digits: mux period is 2 ms at 50 MHz, so
     // 10 ms covers one full rotation and the start of the next.
-    // Keeps iverilog's runtime + VCD size manageable in CI.
+    // Keeps iverilog's runtime + FST size manageable in CI.
     localparam time TEST_DURATION = 10_000_000;  // 10 ms in ns
     reg        sClock50MHz   = 1'b0;
     wire [6:0] sSevenSegments;
@@ -104,7 +104,7 @@ module tb_counter;
     end
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_counter);
         $dumpvars(1, dut);
     end

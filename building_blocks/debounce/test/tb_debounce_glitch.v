@@ -34,7 +34,7 @@ module tb_debounce_glitch;
     end
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_debounce_glitch);
         $dumpvars(1, dut);
     end

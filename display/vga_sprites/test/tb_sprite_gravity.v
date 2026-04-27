@@ -58,11 +58,11 @@ module tb_sprite_gravity;
 
     // VHDL's sprite process variables (counters, nextPositionToTest,
     // currentSpeed, collisionDetected, indexForSpriteRotation, etc.) do
-    // not appear in GHDL's VCD. sprite.v keeps them as module-scope regs
+    // not appear in GHDL's FST dump. sprite.v keeps them as module-scope regs
     // for yosys compatibility — list the signals we actually want dumped
     // here so the waveform matches the VHDL twin.
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_sprite_gravity);
         $dumpvars(0, dut.inClock, dut.inEnabled, dut.inColision,
                      dut.outShouldDraw,

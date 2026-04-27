@@ -6,11 +6,9 @@ TB_TOPS := tb_random_generator tb_random_generator_long
 SRC_FILES := random_generator.vhd neoTRNG.vhd
 TB_FILES  := test/tb_random_generator.vhd test/tb_random_generator_long.vhd
 
-# tb_random_generator_long runs for 12 ms; FST keeps the dump small,
-# and the per-clock-edge waveform is unreadable at this zoom anyway.
-# Assertions still gate CI through GHDL's --assert-level=error.
-FST_TBS := tb_random_generator_long
-
+# tb_random_generator_long runs for 12 ms; the per-clock-edge waveform
+# is unreadable at this zoom, so skip the waveform render. Assertions
+# still gate CI through GHDL's --assert-level=error.
 NO_WAVEFORM_TBS   := tb_random_generator_long
 V_NO_WAVEFORM_TBS := tb_random_generator_long
 

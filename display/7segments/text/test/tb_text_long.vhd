@@ -22,9 +22,9 @@ use ieee.numeric_std.all;
 --           offset constant: every sample of digit 0 in this phase
 --           must equal the latched value from the start of the phase.
 --
--- This TB pairs with FST_TBS / NO_WAVEFORM_TBS in the Makefile: the
--- VCD would be large at 40 ms and unreadable when rendered, but the
--- assertions still gate CI via GHDL's --assert-level=error.
+-- This TB pairs with NO_WAVEFORM_TBS in the Makefile: the dump would
+-- be unreadable when rendered at 40 ms, but the assertions still
+-- gate CI via GHDL's --assert-level=error.
 
 entity tb_text_long is
 end tb_text_long;

@@ -8,7 +8,7 @@
 // No PNG is generated for this testbench (see V_NO_PNG_TBS in the
 // Makefile): at 150 ms the 20 ns clock period is sub-pixel in the
 // gallery image anyway, and the TB's value is its assertion, not
-// its waveform. The VCD still dumps (to keep the flow uniform) and
+// its waveform. The FST still dumps (to keep the flow uniform) and
 // the assertion guards CI via the $fatal exit code.
 //
 // Assertion:
@@ -49,7 +49,7 @@ module tb_counter_long;
     end
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_counter_long);
         $dumpvars(1, dut);
     end

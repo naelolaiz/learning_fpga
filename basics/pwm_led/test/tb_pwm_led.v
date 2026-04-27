@@ -22,7 +22,7 @@ module tb_pwm_led;
     always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_pwm_led);
         $dumpvars(1, dut);
     end

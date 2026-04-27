@@ -77,7 +77,7 @@ module tb_text_long;
     end
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_text_long);
         $dumpvars(1, dut);
     end

@@ -27,7 +27,7 @@ module tb_serial_to_parallel_basic;
     always #10 if (sSimulationActive) sClock = ~sClock;
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_serial_to_parallel_basic);
         $dumpvars(1, dut);
     end

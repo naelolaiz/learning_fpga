@@ -126,7 +126,7 @@ jobs:
         with:
           name: ${{ steps.artifact.outputs.name }}-artifacts
           path: |
-            ${{ matrix.project }}/build/*.vcd
+            ${{ matrix.project }}/build/*.fst
             ${{ matrix.project }}/build/*.svg
             ${{ matrix.project }}/build/*.json
             ${{ matrix.project }}/build/*.png
@@ -234,7 +234,7 @@ jobs:
             proj=$(basename "$art" | sed 's/-artifacts$//')
             dest="$stage/run-${GITHUB_RUN_ID}/$proj"
             mkdir -p "$dest"
-            # Copy only the visual outputs; skip the huge VCDs.
+            # Copy only the visual outputs; skip the FST dumps.
             copied=0
             for f in "$art"/*.svg "$art"/*.png; do
               [ -f "$f" ] || continue

@@ -96,7 +96,7 @@ module tb_random_generator;
     end
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_random_generator);
         $dumpvars(1, dut);
     end

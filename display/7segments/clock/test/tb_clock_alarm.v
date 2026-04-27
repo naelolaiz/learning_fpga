@@ -25,7 +25,7 @@ module tb_clock_alarm;
     );
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_clock_alarm);
         $dumpvars(1, dut);
     end
