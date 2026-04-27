@@ -31,7 +31,7 @@ module tb_shift_register;
     always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_shift_register);
         $dumpvars(1, dut);
     end

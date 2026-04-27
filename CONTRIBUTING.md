@@ -23,7 +23,7 @@
    # TB_TOPS is a space-separated list. Projects with a single
    # testbench write a one-entry list; projects that have multiple
    # focused testbenches (e.g. unit vs. integration) list them all and
-   # each one renders its own VCD + PNG in `build/`.
+   # each one renders its own FST + PNG in `build/`.
    TB_TOPS := tb_my_top
 
    SRC_FILES := my_top.vhd
@@ -42,16 +42,20 @@
    include ../../mk/common.mk    # adjust ../ depth to your project's nesting
    ```
 
-   For Verilog testbenches, dump waveforms via the supplied `VCD_OUT`
+   For Verilog testbenches, dump waveforms via the supplied `FST_OUT`
    define so the file lands in `build/`:
 
    ```verilog
    initial begin
-       $dumpfile(`VCD_OUT);
+       $dumpfile(`FST_OUT);
        $dumpvars(0, tb_my_top);
        // ...
    end
    ```
+
+   The Makefile runs `vvp` with `IVERILOG_DUMPER=fst`, so iverilog 13
+   emits FST natively — no testbench-side change needed beyond the
+   filename extension.
 
 3. Build locally:
 
@@ -66,7 +70,7 @@
 - Projects live under a category subdirectory (`basics/`, `building_blocks/`,
   `display/`, `comm/`, `tools/`). The categorisation is informal — pick
   the one that fits, or propose a new bucket in the PR description.
-- The VHDL work library, VCDs, PNGs, SVGs and JSON netlists all land in
+- The VHDL work library, FST dumps, PNGs, SVGs and JSON netlists all land in
   `build/` under the project directory. `make clean` is a single `rm -rf`.
 - Paths in `SRC_FILES` / `TB_FILES` are relative to the `Makefile`. That's
   why the testbench in a `test/` subdir is listed as `test/tb_*.vhd`.

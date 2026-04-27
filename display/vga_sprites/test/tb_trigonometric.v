@@ -36,7 +36,7 @@ module tb_trigonometric;
     localparam integer SPRITE_SIZE_CHECK_H = 11;
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_trigonometric);
     end
 

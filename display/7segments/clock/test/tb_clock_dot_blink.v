@@ -31,7 +31,7 @@ module tb_clock_dot_blink;
     );
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_clock_dot_blink);
         $dumpvars(1, dut);
     end

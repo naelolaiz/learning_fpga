@@ -1,9 +1,9 @@
 name: release_tags
 
 # Builds every project end-to-end (simulate + diagram + waveform) using
-# the same Makefile targets CI uses, collects the generated VCDs, PNGs,
-# SVGs and JSON netlists into a single zip, and publishes a GitHub
-# Release when a tag is pushed.
+# the same Makefile targets CI uses, collects the generated FST dumps,
+# PNGs, SVGs and JSON netlists into a single zip, and publishes a
+# GitHub Release when a tag is pushed.
 
 on:
   push:
@@ -55,8 +55,8 @@ jobs:
       - name: Collect artifacts
         run: |
           set -e
-          mkdir -p release/vcd release/svg release/png release/json
-          find . -path '*/build/*.vcd'  -exec cp {} release/vcd/  \;
+          mkdir -p release/fst release/svg release/png release/json
+          find . -path '*/build/*.fst'  -exec cp {} release/fst/  \;
           find . -path '*/build/*.svg'  -exec cp {} release/svg/  \;
           find . -path '*/build/*.png'  -exec cp {} release/png/  \;
           find . -path '*/build/*.json' -exec cp {} release/json/ \;

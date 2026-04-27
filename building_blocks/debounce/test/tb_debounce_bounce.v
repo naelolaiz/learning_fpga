@@ -44,7 +44,7 @@ module tb_debounce_bounce;
     end
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_debounce_bounce);
         $dumpvars(1, dut);
     end

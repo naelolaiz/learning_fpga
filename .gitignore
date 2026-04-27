@@ -4,7 +4,6 @@ work/
 work-obj*.cf
 *.cf
 *.o
-*.vcd
 *.ghw
 *.fst
 

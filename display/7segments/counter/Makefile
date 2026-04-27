@@ -13,12 +13,6 @@ TB_TOPS := tb_counter tb_counter_long
 SRC_FILES := counter.vhd
 TB_FILES  := test/tb_counter.vhd test/tb_counter_long.vhd
 
-# A 150 ms sim at GHDL's 1 fs timescale produces a ~650 MB VCD;
-# dumping in FST format instead keeps the file small without
-# coarsening any timestamps we care about. waveview reads FST
-# natively.
-FST_TBS := tb_counter_long
-
 # tb_counter_long's value is its counter-tick assertion, not its
 # waveform: at 150 ms the 20 ns clock period is sub-pixel in any
 # raster render. Skip the waveform render; simulate still runs and

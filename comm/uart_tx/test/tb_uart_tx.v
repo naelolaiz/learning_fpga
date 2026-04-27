@@ -29,7 +29,7 @@ module tb_uart_tx;
     always #(CLK_PERIOD/2) if (sSimulationActive) sClk = ~sClk;
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_uart_tx);
         $dumpvars(1, dut);
     end

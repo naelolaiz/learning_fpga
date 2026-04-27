@@ -6,7 +6,7 @@
 #   PROJECT_NAME   Identifier used for artifact names and logs.
 #   TOP            Top-level entity (used for diagram synthesis).
 #   TB_TOPS        Space-separated list of testbench top-levels. Each
-#                  produces its own `build/<tb>.vcd` and
+#                  produces its own `build/<tb>.fst` and
 #                  `build/<tb>.png`. Projects with a single testbench
 #                  write `TB_TOPS := tb_foo` (one entry).
 #   SRC_FILES      VHDL sources of the design, relative to the Makefile.
@@ -28,7 +28,7 @@
 #
 #   V_TOP          Verilog top-level module name (for diagram synthesis).
 #   V_TB_TOPS      Space-separated list of Verilog testbench top modules.
-#                  One VCD + PNG is produced per entry, suffixed with `_v`.
+#                  One FST + PNG is produced per entry, suffixed with `_v`.
 #   V_SRC_FILES    Verilog sources of the design.
 #   V_TB_FILES     Verilog sources of every testbench.
 #   V_DEFINES      Extra `-D` macros for iverilog/yosys (e.g. WIDTH=8).
@@ -43,16 +43,20 @@
 # Artifact locations (all under build/ for trivial `make clean`):
 #
 #   build/work/                  GHDL work library
-#   build/<tb>.vcd               VHDL simulation waveform dump (one per TB_TOPS entry)
+#   build/<tb>.fst               VHDL simulation waveform dump (one per TB_TOPS entry)
 #   build/<tb>.svg               VHDL waveform diagram, vector (one per TB_TOPS entry)
 #   build/<tb>.png               VHDL waveform diagram, raster (one per TB_TOPS entry)
 #   build/<TOP>.json             VHDL synthesised netlist
 #   build/<TOP>.svg              VHDL netlist diagram
-#   build/<tb>_v.vcd             Verilog simulation waveform (one per V_TB_TOPS entry)
+#   build/<tb>_v.fst             Verilog simulation waveform (one per V_TB_TOPS entry)
 #   build/<tb>_v.svg             Verilog waveform diagram, vector (one per V_TB_TOPS entry)
 #   build/<tb>_v.png             Verilog waveform diagram, raster (one per V_TB_TOPS entry)
 #   build/<V_TOP>_v.json         Verilog synthesised netlist
 #   build/<V_TOP>_v.svg          Verilog netlist diagram
+#
+# Both the GHDL and iverilog flows dump FST natively — GHDL via `--fst=`,
+# iverilog via `IVERILOG_DUMPER=fst` at vvp runtime. FST is ~10-100x
+# smaller than VCD on long-window TBs and is what waveview reads anyway.
 # ---------------------------------------------------------------------------
 
 # ---- Tool discovery (overridable from the environment) --------------------
@@ -79,13 +83,6 @@ EXTRA_GHDL    ?=
 GHDL_SYNTH_EXTRA ?=
 SKIP_DIAGRAM  ?=
 SKIP_WAVEFORM ?=
-# Per-TB opt-in to FST dump format (GHDL --fst) instead of VCD.
-# FST is ~10-100x smaller; use for long-window testbenches where the
-# VCD would be many hundreds of MB. waveview reads FST natively, but
-# very long timelines often render to a sub-pixel-per-edge waveform —
-# pair with NO_WAVEFORM_TBS (see below) when the dump is interesting
-# only for its assertions.
-FST_TBS       ?=
 # Per-TB opt-out of the `waveform` step. Use when a testbench's
 # contribution is its assertions, not its waveform — e.g. a
 # long-window TB whose waveform would be sub-pixel-per-clock-edge
@@ -144,21 +141,20 @@ COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
 WORK_DIR      := $(BUILD_DIR)/work
-# Waveform path for a given testbench. VHDL TBs in FST_TBS dump FST
-# (GHDL --fst=); everything else is VCD.
-tb_wave   = $(BUILD_DIR)/$(1)$(if $(filter $(1),$(FST_TBS)),.fst,.vcd)
-v_tb_wave = $(BUILD_DIR)/$(1)_v.vcd
+# Waveform path for a given testbench. Both flows dump FST.
+tb_wave   = $(BUILD_DIR)/$(1).fst
+v_tb_wave = $(BUILD_DIR)/$(1)_v.fst
 
 # Per-TB artifact lists. The netlist is still singular (it's the design
 # top-level, not a testbench), but simulation/waveform fan out over
 # $(TB_TOPS) / $(V_TB_TOPS). TBs in NO_WAVEFORM_TBS contribute to simulate
 # (their assertions run) but are excluded from the waveform output.
-VCD_FILES     := $(foreach tb,$(TB_TOPS),$(call tb_wave,$(tb)))
+WAVE_FILES    := $(foreach tb,$(TB_TOPS),$(call tb_wave,$(tb)))
 WAVEFORM_PNGS := $(foreach tb,$(filter-out $(NO_WAVEFORM_TBS),$(TB_TOPS)),$(BUILD_DIR)/$(tb).png)
 NETLIST_JSON  := $(BUILD_DIR)/$(TOP).json
 DIAGRAM_SVG   := $(BUILD_DIR)/$(TOP).svg
 
-V_VCD_FILES     := $(foreach tb,$(V_TB_TOPS),$(call v_tb_wave,$(tb)))
+V_WAVE_FILES    := $(foreach tb,$(V_TB_TOPS),$(call v_tb_wave,$(tb)))
 V_WAVEFORM_PNGS := $(foreach tb,$(filter-out $(V_NO_WAVEFORM_TBS),$(V_TB_TOPS)),$(BUILD_DIR)/$(tb)_v.png)
 V_NETLIST_JSON  := $(BUILD_DIR)/$(V_TOP)_v.json
 V_DIAGRAM_SVG   := $(BUILD_DIR)/$(V_TOP)_v.svg
@@ -196,7 +192,7 @@ endif
 	@echo "VHDL targets:"
 	@echo "  analyze     Parse and type-check the VHDL sources."
 	@echo "  elaborate   Elaborate every testbench in TB_TOPS."
-	@echo "  simulate    Run every testbench, emit one VCD per TB."
+	@echo "  simulate    Run every testbench, emit one FST per TB."
 	@echo "  diagram     Synthesise $(TOP) via yosys+ghdl, render SVG."
 	@echo "  waveform    Render one waveview SVG+PNG per simulation dump."
 ifneq ($(strip $(V_SRC_FILES)),)
@@ -238,21 +234,19 @@ $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_ELAB_RULE,$(tb))))
 elaborate: $(foreach tb,$(TB_TOPS),elaborate-$(tb))
 
 # ---- Simulate (VHDL) -------------------------------------------------------
-# One waveform file per TB. Dumps VCD by default, FST when the TB is
-# listed in FST_TBS (GHDL handles both via --vcd= / --fst=).
+# One FST waveform file per TB.
 define GHDL_SIM_RULE
 $$(call tb_wave,$(1)): elaborate-$(1) | $$(BUILD_DIR)
 	$$(GHDL) -r $$(GHDL_SIM_FLAGS) $(1) --assert-level=$$(ASSERT_LEVEL) \
-	    $$(if $$(filter $(1),$$(FST_TBS)),--fst=$$@,--vcd=$$@) $$(SIM_STOPTIME)
+	    --fst=$$@ $$(SIM_STOPTIME)
 endef
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_SIM_RULE,$(tb))))
 
-simulate: $(VCD_FILES)
+simulate: $(WAVE_FILES)
 
 # ---- Waveform render (VHDL) -----------------------------------------------
-# waveview reads both VCD and FST, so the rule just points at whichever
-# format the simulate step produced. waveview always emits an SVG;
-# --png adds the PNG alongside at the same stem. We route the SVG to
+# waveview reads FST natively. waveview always emits an SVG; --png adds
+# the PNG alongside at the same stem. We route the SVG to
 # build/<tb>.svg (a free vector-quality artifact picked up by the CI
 # gallery) and rely on --png to land build/<tb>.png.
 ifneq ($(strip $(SKIP_WAVEFORM)),)
@@ -303,32 +297,33 @@ endif
 ifneq ($(strip $(V_SRC_FILES)),)
 
 # ---- Simulate (Verilog) ---------------------------------------------------
-# One VVP binary, one VCD per testbench. The iverilog invocation per TB
-# supplies its own -DVCD_OUT so each `$dumpfile(`VCD_OUT)` lands in its
-# own build/<tb>_v.vcd file.
+# One VVP binary, one FST per testbench. The iverilog invocation per TB
+# supplies its own -DFST_OUT so each `$dumpfile(`FST_OUT)` lands in its
+# own build/<tb>_v.fst file. iverilog 13 switches its dump format from
+# VCD to FST when IVERILOG_DUMPER=fst is set in vvp's environment.
 define IVERILOG_RULE
 $$(BUILD_DIR)/$(1)_v.vvp: $$(V_SRC_FILES) $$(V_TB_FILES) | $$(BUILD_DIR)
 	$$(IVERILOG) -g2012 \
-	    -DVCD_OUT='"$(1)_v.vcd"' \
+	    -DFST_OUT='"$(1)_v.fst"' \
 	    $$(addprefix -D,$$(V_DEFINES)) \
 	    $$(addprefix -I,$$(V_INCDIRS)) \
 	    -s $(1) -o $$@ \
 	    $$(V_SRC_FILES) $$(V_TB_FILES)
 
-# Run vvp from build/ so the VCD path supplied via the VCD_OUT define
-# lands inside build/. Testbenches do `$dumpfile(`VCD_OUT)`, which
-# expands to "<tb>_v.vcd".
-$$(BUILD_DIR)/$(1)_v.vcd: $$(BUILD_DIR)/$(1)_v.vvp
-	cd $$(BUILD_DIR) && $$(VVP) -n $$(notdir $$<)
+# Run vvp from build/ so the FST path supplied via the FST_OUT define
+# lands inside build/. Testbenches do `$dumpfile(`FST_OUT)`, which
+# expands to "<tb>_v.fst".
+$$(BUILD_DIR)/$(1)_v.fst: $$(BUILD_DIR)/$(1)_v.vvp
+	cd $$(BUILD_DIR) && IVERILOG_DUMPER=fst $$(VVP) -n $$(notdir $$<)
 	@if [ ! -f $$@ ]; then \
 	    echo "ERROR: $(1) did not produce $$@" >&2; \
-	    echo "       (testbench should call \$$$$dumpfile(\`VCD_OUT))" >&2; \
+	    echo "       (testbench should call \$$$$dumpfile(\`FST_OUT))" >&2; \
 	    exit 1; \
 	fi
 endef
 $(foreach tb,$(V_TB_TOPS),$(eval $(call IVERILOG_RULE,$(tb))))
 
-simulate_v: $(V_VCD_FILES)
+simulate_v: $(V_WAVE_FILES)
 
 # ---- Waveform render (Verilog) --------------------------------------------
 ifneq ($(strip $(SKIP_V_WAVEFORM)),)

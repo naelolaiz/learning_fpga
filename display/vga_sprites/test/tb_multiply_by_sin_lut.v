@@ -45,7 +45,7 @@ module tb_multiply_by_sin_lut;
     endfunction
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_multiply_by_sin_lut);
     end
 

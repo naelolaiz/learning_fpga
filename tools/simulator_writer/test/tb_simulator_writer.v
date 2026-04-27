@@ -15,7 +15,7 @@ module tb_simulator_writer;
     reg        sSimulationActive = 1'b1;
 
     // The DUT's `done` is referenced via `dut.done` throughout — no
-    // TB-level wire so the VCD does not expose the same signal twice.
+    // TB-level wire so the dump does not expose the same signal twice.
     tl_simulator_writer dut (
         .inClock  (clock),
         .outLines (outLines),
@@ -28,10 +28,10 @@ module tb_simulator_writer;
     // Dump TB-level signals plus the DUT signals that the VHDL side
     // also exposes. tl_simulator_writer keeps the v* state counters
     // as module-scope integers for yosys synthesis; listing signals
-    // explicitly here hides them from the VCD so the VHDL and Verilog
+    // explicitly here hides them from the FST so the VHDL and Verilog
     // waveforms carry the same set.
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_simulator_writer);
         $dumpvars(0, dut.inClock, dut.outLines, dut.done,
                      dut.sOutRow, dut.sCurrentBlank);

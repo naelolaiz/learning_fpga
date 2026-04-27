@@ -40,7 +40,7 @@ module tb_serial_to_parallel_print_gating;
     endtask
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_serial_to_parallel_print_gating);
         $dumpvars(1, dut);
     end

@@ -10,9 +10,8 @@ use ieee.numeric_std.ALL;
 -- ticks every ~62.5 ms — is observed incrementing.
 --
 -- At 1 fs GHDL timescale a 150 ms VCD would be ~650 MB (too large for
--- the waveform render pipeline). Dumped in FST format instead via
--- `FST_TBS := tb_counter_long` in the Makefile; waveview reads FST
--- natively, so the rest of the flow is unchanged.
+-- the waveform render pipeline). FST keeps the dump small; waveview
+-- reads FST natively, so the rest of the flow is unchanged.
 --
 -- Assertion added on top of the tb_counter three:
 --   (D) By end-of-sim, the internal counter must have incremented

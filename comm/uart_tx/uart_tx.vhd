@@ -28,8 +28,9 @@ entity uart_tx is
 end entity uart_tx;
 
 architecture rtl of uart_tx is
-  -- `state` is an encoded vector (not an enum) so GHDL dumps it to the
-  -- VCD and the Verilog + VHDL waveforms carry the same signal set.
+  -- `state` is an encoded vector (not an enum) so GHDL surfaces it in
+  -- the FST dump and the Verilog + VHDL waveforms carry the same
+  -- signal set.
   constant S_IDLE  : std_logic_vector(1 downto 0) := "00";
   constant S_START : std_logic_vector(1 downto 0) := "01";
   constant S_DATA  : std_logic_vector(1 downto 0) := "10";

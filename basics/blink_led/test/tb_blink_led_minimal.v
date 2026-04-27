@@ -18,7 +18,7 @@ module tb_blink_led_minimal;
     always #10 if (sSimulationActive) sClock50MHz = ~sClock50MHz;
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_blink_led_minimal);
         $dumpvars(1, dut);
     end

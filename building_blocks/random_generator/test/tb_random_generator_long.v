@@ -79,7 +79,7 @@ module tb_random_generator_long;
     end
 
     initial begin
-        $dumpfile(`VCD_OUT);
+        $dumpfile(`FST_OUT);
         $dumpvars(1, tb_random_generator_long);
         $dumpvars(1, dut);
     end

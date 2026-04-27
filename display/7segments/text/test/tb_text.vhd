@@ -6,7 +6,7 @@ use ieee.numeric_std.all;
 --
 -- 10 ms run with inputButtons all-high (no scroll-pause) - long
 -- enough to see the mux rotate through every digit at 2 ms/digit
--- (~8 ms full rotation), short enough to keep the VCD small for the
+-- (~8 ms full rotation), short enough to keep the dump small for the
 -- gallery PNG.
 --
 -- Asserts:
