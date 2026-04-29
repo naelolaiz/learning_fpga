@@ -30,7 +30,12 @@ module tb_rom_lut;
         $dumpvars(1, dut);
     end
 
-    integer a, n, k, v_first;
+    // Initialise the loop locals so the waveform doesn't open with a
+    // red `'x` band on `k` and `v_first` before they're first written.
+    integer a       = 0;
+    integer n       = 0;
+    integer k       = 0;
+    integer v_first = 0;
 
     // Drive helpers using `task` so the procedure body sees the
     // testbench signals directly (Verilog procedural assignments

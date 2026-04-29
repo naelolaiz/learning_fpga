@@ -49,8 +49,11 @@ module tb_rom_lut_methods;
         $dumpvars(1, rom_a);
     end
 
-    integer a, n;
-    integer mismatches;
+    // Init at declaration so the waveform doesn't render `a`, `n`,
+    // `mismatches` red until first written inside the initial block.
+    integer a          = 0;
+    integer n          = 0;
+    integer mismatches = 0;
 
     initial begin : driver
         mismatches = 0;

@@ -18,4 +18,16 @@ V_TB_TOPS   := tb_rom_lut tb_rom_lut_methods
 V_SRC_FILES := rom_lut.v rom_lut_hex.v rom_lut_func.v tl_rom_lut.v
 V_TB_FILES  := test/tb_rom_lut.v test/tb_rom_lut_methods.v
 
+# Rewrite the auto-generated submodule labels in the rendered netlists
+# back to the bare entity / module names. Without this:
+#   * VHDL cell shows `single_clock_rom_Brtl_32_9` (ghdl-yosys-plugin
+#     stamps `_B<arch>_<generics>` onto the type name).
+#   * Verilog cell shows `$paramod$<sha>\rom_lut` (yosys's parametrised-
+#     module mangling).
+# Both are unreadable in the rendered SVG. Cell IDs come from the
+# instance names in tl_rom_lut: `ROM_INSTANCE` (lowercased by GHDL to
+# `rom_instance`) on the VHDL side, `rom_inst` on the Verilog side.
+SVG_RELABEL   := rom_instance=single_clock_rom
+V_SVG_RELABEL := rom_inst=rom_lut
+
 include ../../mk/common.mk
