@@ -235,6 +235,19 @@ Two focused testbenches: `tb_serial_to_parallel_basic` shifts in 0xB4 MSB-first,
 
 </details>
 
+<details>
+<summary><b><code>rom_lut</code></b> — same lookup table, three storage methods (inline literal, external hex file, computed at elaboration)</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `tl_rom_lut` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-rom_lut/tl_rom_lut.svg" alt="tl_rom_lut netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-rom_lut/tl_rom_lut_v.svg" alt="tl_rom_lut netlist (Verilog)" width="480"> |
+| `tb_rom_lut` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-rom_lut/tb_rom_lut.png" alt="tb_rom_lut waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-rom_lut/tb_rom_lut_v.png" alt="tb_rom_lut waveform (Verilog)" width="480"> |
+| `tb_rom_lut_methods` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-rom_lut/tb_rom_lut_methods.png" alt="tb_rom_lut_methods waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-rom_lut/tb_rom_lut_methods_v.png" alt="tb_rom_lut_methods waveform (Verilog)" width="480"> |
+
+A 32 × 16 ROM of precomputed `sin(angle) × nibble` values for the first quadrant; the wrapping logic mirrors around π/2 and negates across π so a 7-bit angle index covers the full circle. The interesting part is the **multi-method demo**: the same table is populated three different ways — inline literal, external hex file (`textio` / `$readmemh`), and computed at elaboration from `IEEE.MATH_REAL` / `$sin` — and a dedicated testbench (`tb_rom_lut_methods`) drives all three implementations in parallel and asserts bit-identical outputs across the entire 2048-address space. The synthesised TOP wraps method A (inline); methods B and C live alongside as simulation-time alternatives.
+
+</details>
+
 ### Display
 
 <details>
@@ -430,7 +443,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | [random_generator](building_blocks/random_generator/)     | ✅ | VHDL + Verilog | On-chip RNG (neoTRNG VHDL, LFSR Verilog) shown on a 4-digit 7-segment; button[0] freezes value. |
 | [serial_to_parallel](building_blocks/serial_to_parallel/) | ✅ | VHDL + Verilog | SIPO shift + snapshot register; thin wrapper around `shift_register`. |
 | [debounce](building_blocks/debounce/)                     | ✅ | VHDL + Verilog | Switch / button debouncer (from nandland.com), with `DEBOUNCE_LIMIT` generic so testbenches can compress sim time. |
-| [rom_lut](building_blocks/rom_lut/)                       | ⏳ | VHDL           | Sources present, no Makefile yet. |
+| [rom_lut](building_blocks/rom_lut/)                       | ✅ | VHDL + Verilog | Same `sin(angle)*nibble` ROM stored three ways (inline literal, external hex file, math-computed at elaboration); a multi-method TB drives all three in parallel and asserts bit-identical outputs across 2048 addresses. |
 
 ### Display
 
@@ -533,9 +546,8 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 - Verilog mirrors for the remaining VHDL-only projects: `vga`,
   `i2s_test_1`, `uda1380` — leaf modules first, top-levels after.
-- Wire the "pending adoption" projects above into CI once their
-  sources build cleanly (the old `rom_lut` was intentionally disabled
-  in the legacy workflow; it will need work before it can join).
+- Wire the remaining "pending adoption" projects above into CI once
+  their sources build cleanly.
 - Small game using the buttons + 7-segment display (snake / space
   invaders). On-FPGA RNG is now available via
   [`random_generator`](building_blocks/random_generator/).
