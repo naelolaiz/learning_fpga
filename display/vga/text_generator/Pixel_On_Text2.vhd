@@ -28,7 +28,7 @@ use work.commonPak.all;
 
 entity Pixel_On_Text2 is
 	generic(
-		displayText: string  := (others => NUL)
+		displayText: string := ""
 	);
 	port (
 		clk: in std_logic;
