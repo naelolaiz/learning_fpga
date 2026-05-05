@@ -5,16 +5,40 @@ use work.VgaUtils.all;
 
 entity top_level_vga_test is
   port (
-    clk   : in std_logic; -- Pin 23, 50MHz from the onboard oscilator.
-    rgb   : out std_logic_vector (2 downto 0); -- Pins 106, 105 and 104
-    hsync : out std_logic; -- Pin 101
-    vsync : out std_logic -- Pin 103
+    clk          : in  std_logic;                        -- Pin 23, 50MHz onboard osc.
+    inputButtons : in  std_logic_vector(2 downto 0);     -- Pins 88, 89, 90 (active-low)
+                                                         --   (0) pause/resume animation
+                                                         --   (1) reset square to centre
+                                                         --   (2) cycle speed slow/med/fast
+    leds         : out std_logic_vector(3 downto 0);     -- Pins 87, 86, 85, 84
+                                                         --   (0) square step pulse (one clk
+                                                         --       wide per step — visible on a
+                                                         --       scope/waveform, blends to dim
+                                                         --       on a physical LED at 50 MHz)
+                                                         --   (1) pause indicator (lit = paused)
+                                                         --   (2) heartbeat (~12.5 Hz blink)
+                                                         --   (3) speed: lit while in fast mode
+    rgb          : out std_logic_vector (2 downto 0);    -- Pins 106, 105, 104
+    hsync        : out std_logic;                        -- Pin 101
+    vsync        : out std_logic                         -- Pin 103
   );
 end entity top_level_vga_test;
 
 architecture rtl of top_level_vga_test is
   constant SQUARE_SIZE  : integer := 30; -- In pixels
-  constant SQUARE_SPEED : integer := 100_000;
+
+  -- Three step periods for the square's position update, picked by
+  -- the speed-cycle button (inputButtons(2)). Counted in 50 MHz
+  -- master-clock ticks; the live update toggles every period, so
+  -- one step = 2 * period clock cycles.
+  constant SQUARE_PERIOD_FAST   : integer :=  90000;  --  ~1.8 ms / step
+  constant SQUARE_PERIOD_MEDIUM : integer := 180000;  --  ~3.6 ms / step  (original tune)
+  constant SQUARE_PERIOD_SLOW   : integer := 360000;  --  ~7.2 ms / step
+
+  -- Static-text horizontal scroll bounds.
+  constant STATIC_TEXT_PIXELS : integer := 37 * 8;             -- "VGA with FPGA. 1 bit per component :)"
+  constant STATIC_SCROLL_MAX  : integer := (HDATA_END - HDATA_BEGIN) - STATIC_TEXT_PIXELS;
+  constant STATIC_SCROLL_DIV  : integer := 1500000;            -- 50 MHz / 1.5M = ~33 px/s
 
   -- VGA Clock - 25 MHz clock derived from the 50MHz built-in clock
   signal vga_clk : std_logic;
@@ -28,9 +52,6 @@ architecture rtl of top_level_vga_test is
 
   signal square_x           : integer range HDATA_BEGIN to HDATA_END := HDATA_BEGIN + H_HALF - SQUARE_SIZE/2;
   signal square_y           : integer range VDATA_BEGIN to VDATA_END := VDATA_BEGIN + V_HALF - SQUARE_SIZE/2;
-  signal square_speed_count : integer range 0 to SQUARE_SPEED        := 0;
-
-  signal should_move_square : boolean;
 
   signal should_draw_square : boolean;
   signal should_draw_text_static : std_logic;
@@ -38,20 +59,37 @@ architecture rtl of top_level_vga_test is
   signal should_draw_text_changing : std_logic;
   signal should_draw_text_changing2 : std_logic;
 
-  -- nael
   signal counterForHalfSecond : integer range 0 to 25000000 := 0;
-  signal ticksForHalfSecond : std_logic := '0';
+  signal ticksForHalfSecond : std_logic := '0';                   -- ~12.5 Hz toggle (heartbeat)
   signal halfSecondCounter : integer := 0;
   signal counterForSquarePositionUpdate : integer range 0 to 12500000 := 0;
   signal ticksForSquarePositionUpdate : std_logic := '0';
   signal counterForDynamicTextPositionUpdate : integer range 0 to 12500000 := 0;
   signal ticksForDynamicTextPositionUpdate : std_logic := '0';
-  signal xPosSquare, yPosSquare : integer := 0;
-  signal xPosNael, yPosNael : integer := 5;
-  signal xDirectionSquare, yDirectionSquare : boolean := true; 
-  signal xDirectionText, yDirectionText : boolean := true; 
+  signal counterForStaticTextScroll : integer range 0 to STATIC_SCROLL_DIV := 0;
+  signal xPosStaticTextOffset : integer range 0 to STATIC_SCROLL_MAX := 0;
+  -- Square position seeds the ranged `square_x`/`square_y` mirrors
+  -- below, which are constrained to HDATA_BEGIN..HDATA_END /
+  -- VDATA_BEGIN..VDATA_END. Initialise inside that range so sim
+  -- doesn't fail the bound check at t=0 before the first reset.
+  signal xPosSquare : integer := HDATA_BEGIN + H_HALF - SQUARE_SIZE/2;
+  signal yPosSquare : integer := VDATA_BEGIN + V_HALF - SQUARE_SIZE/2;
+  signal xPosText, yPosText : integer := 5;
+  signal xDirectionSquare, yDirectionSquare : boolean := true;
+  signal xDirectionText, yDirectionText : boolean := true;
   signal hitOnStaticText1 : std_logic := '0';
   signal lastHitWasText : boolean := false;
+  signal should_move_square : boolean := false;                   -- one-cycle pulse on each step
+
+  -- Control surface state — produced by the control_panel building
+  -- block (debouncers + pause toggle + speed cycler + LED panel).
+  signal sPaused      : std_logic;
+  signal sResetActive : std_logic;
+  signal sSpeedSelect : std_logic_vector(1 downto 0);
+  signal sPanelLeds   : std_logic_vector(2 downto 0);
+  -- Selected period for square steps, decoded from sSpeedSelect.
+  signal squareStepPeriod : integer range SQUARE_PERIOD_FAST to SQUARE_PERIOD_SLOW
+                          := SQUARE_PERIOD_MEDIUM;
 
   constant changingStringSize : integer := 20;
   signal changingString : string (1 to changingStringSize) := "                    ";
@@ -69,69 +107,51 @@ architecture rtl of top_level_vga_test is
     );
   end component;
 
-  component Debounce is
-    port (
-      i_Clk    : in std_logic;
-      i_Switch : in std_logic;
-      o_Switch : out std_logic
-    );
-  end component;
 begin
 
-changingString(1) <= character'val(halfSecondCounter);
-changingString(2) <= character'val(halfSecondCounter +1);
-changingString(3) <= character'val(halfSecondCounter +2);
-changingString(4) <= character'val(halfSecondCounter +3);
-changingString(5) <= character'val(halfSecondCounter +4);
-changingString(6) <= character'val(halfSecondCounter +5);
-changingString(7) <= character'val(halfSecondCounter +6);
-changingString(8) <= character'val(halfSecondCounter +7);
-changingString(9) <= character'val(halfSecondCounter +8);
-changingString(10) <= character'val(halfSecondCounter +9);
-changingString(11) <= character'val(halfSecondCounter +10);
-changingString(12) <= character'val(halfSecondCounter +11);
-changingString(13) <= character'val(halfSecondCounter +12);
-changingString(14) <= character'val(halfSecondCounter +13);
-changingString(15) <= character'val(halfSecondCounter +14);
-changingString(16) <= character'val(halfSecondCounter +15);
-changingString(17) <= character'val(halfSecondCounter +16);
-
-changingString2(17) <= character'val(halfSecondCounter);
-changingString2(16) <= character'val(halfSecondCounter +1);
-changingString2(15) <= character'val(halfSecondCounter +2);
-changingString2(14) <= character'val(halfSecondCounter +3);
-changingString2(13) <= character'val(halfSecondCounter +4);
-changingString2(12) <= character'val(halfSecondCounter +5);
-changingString2(11) <= character'val(halfSecondCounter +6);
-changingString2(10) <= character'val(halfSecondCounter +7);
-changingString2(9) <= character'val(halfSecondCounter +8);
-changingString2(8) <= character'val(halfSecondCounter +9);
-changingString2(7) <= character'val(halfSecondCounter +10);
-changingString2(6) <= character'val(halfSecondCounter +11);
-changingString2(5) <= character'val(halfSecondCounter +12);
-changingString2(4) <= character'val(halfSecondCounter +13);
-changingString2(3) <= character'val(halfSecondCounter +14);
-changingString2(2) <= character'val(halfSecondCounter +15);
-changingString2(1) <= character'val(halfSecondCounter +16);
+-- The two strings advance by one ASCII code per half-second tick;
+-- changingString prints the run forward, changingString2 prints it
+-- mirrored. Positions 18..20 keep their initial spaces and act as a
+-- trailing buffer for the scroll. character'val rolls over at 256 —
+-- harmless for the demo, just the glyphs cycle through ISO-8859-1.
+gen_changing : for i in 1 to 17 generate
+   changingString (i)      <= character'val(halfSecondCounter + i - 1);
+   changingString2(18 - i) <= character'val(halfSecondCounter + i - 1);
+end generate;
 TickProcess : process (clk)
 begin
     if (rising_edge(clk)) then
-       if counterForSquarePositionUpdate = 180000 then
-          counterForSquarePositionUpdate <= 0;
-	  ticksForSquarePositionUpdate <= not ticksForSquarePositionUpdate;
-       else
-          counterForSquarePositionUpdate <= counterForSquarePositionUpdate + 1;
+       -- Square step + dynamic-text + static-text-scroll counters all
+       -- freeze when paused. The half-second / heartbeat counters keep
+       -- running so the LED heartbeat keeps blinking even while paused.
+       if sPaused = '0' then
+          if counterForSquarePositionUpdate = squareStepPeriod then
+             counterForSquarePositionUpdate <= 0;
+             ticksForSquarePositionUpdate <= not ticksForSquarePositionUpdate;
+          else
+             counterForSquarePositionUpdate <= counterForSquarePositionUpdate + 1;
+          end if;
+          if counterForDynamicTextPositionUpdate = 220000 then
+             counterForDynamicTextPositionUpdate <= 0;
+             ticksForDynamicTextPositionUpdate <= not ticksForDynamicTextPositionUpdate;
+          else
+             counterForDynamicTextPositionUpdate <= counterForDynamicTextPositionUpdate + 1;
+          end if;
+          if counterForStaticTextScroll = STATIC_SCROLL_DIV then
+             counterForStaticTextScroll <= 0;
+             if xPosStaticTextOffset = STATIC_SCROLL_MAX then
+                xPosStaticTextOffset <= 0;
+             else
+                xPosStaticTextOffset <= xPosStaticTextOffset + 1;
+             end if;
+          else
+             counterForStaticTextScroll <= counterForStaticTextScroll + 1;
+          end if;
        end if;
-       if counterForDynamicTextPositionUpdate = 220000 then
-          counterForDynamicTextPositionUpdate <= 0;
-	  ticksForDynamicTextPositionUpdate <= not ticksForDynamicTextPositionUpdate;
-       else
-          counterForDynamicTextPositionUpdate <= counterForDynamicTextPositionUpdate + 1;
-       end if;
-       if counterForHalfSecond = 4000000 then -- 25000000-1 then
+       if counterForHalfSecond = 4000000 then
           counterForHalfSecond <= 0;
-	  ticksForHalfSecond <= not ticksForHalfSecond;
-	  halfSecondCounter <= halfSecondCounter + 1;
+          ticksForHalfSecond <= not ticksForHalfSecond;
+          halfSecondCounter <= halfSecondCounter + 1;
        else
           counterForHalfSecond <= counterForHalfSecond + 1;
        end if;
@@ -139,9 +159,17 @@ begin
 end process;
 
 
-moveSquare : process (ticksForSquarePositionUpdate)
+-- Async-reset moveSquare: while the reset button (active-low) is
+-- held, the square snaps to the centre and direction state resets.
+-- Otherwise it bounces and recolours on each tick edge as before.
+moveSquare : process (ticksForSquarePositionUpdate, sResetActive)
 begin
-   if rising_edge(ticksForSquarePositionUpdate) then
+   if sResetActive = '1' then
+      xPosSquare <= HDATA_BEGIN + (HDATA_END - HDATA_BEGIN) / 2 - SQUARE_SIZE / 2;
+      yPosSquare <= VDATA_BEGIN + (VDATA_END - VDATA_BEGIN) / 2 - SQUARE_SIZE / 2;
+      xDirectionSquare <= true;
+      yDirectionSquare <= true;
+   elsif rising_edge(ticksForSquarePositionUpdate) then
       if xDirectionSquare then
          if xPosSquare = HDATA_END - SQUARE_SIZE then
 	    xDirectionSquare <= not xDirectionSquare;
@@ -150,7 +178,7 @@ begin
 	    xPosSquare <= xPosSquare + 1;
 	 end if;
       else
-         if xPosSquare = HDATA_BEGIN then -- 300 then --HDATA_BEGIN + HSYNC_END then
+         if xPosSquare = HDATA_BEGIN then
 	    xDirectionSquare <= not xDirectionSquare;
 	    rgb_square_color <= rgb_square_color(0) & rgb_square_color(2 downto 1);
 	 else
@@ -159,7 +187,6 @@ begin
       end if;
       if yDirectionSquare then
          if yPosSquare = VDATA_END - SQUARE_SIZE - 30 then
-	    -- yPosSquare <= 220;
 	    yDirectionSquare <= not yDirectionSquare;
 	    rgb_square_color <= rgb_square_color(2) & rgb_square_color(0) & rgb_square_color(1);
 	 else
@@ -167,51 +194,89 @@ begin
 	 end if;
       else
          if yPosSquare = VDATA_BEGIN then
-	    -- yPosSquare <= 360;
 	    yDirectionSquare <= not yDirectionSquare;
 	    rgb_square_color <= rgb_square_color(1) & rgb_square_color(2) & rgb_square_color(0);
 	 else
 	    yPosSquare <= yPosSquare - 1;
 	 end if;
       end if;
-      should_move_square <= true;
-   else
-      should_move_square <= false;
    end if;
 end process;
+
+-- One-clock pulse on every step. ticksForSquarePositionUpdate is a
+-- toggle that flips on each step, so an edge detector against its
+-- previous-cycle value picks up every transition. Without this
+-- pulser, driving should_move_square from inside moveSquare's
+-- rising_edge clause would latch it true after the first tick and
+-- never clear — leds(0) would stick on instead of pulsing.
+stepPulseGen : process (clk)
+   variable lastTick : std_logic := '0';
+begin
+   if rising_edge(clk) then
+      should_move_square <= (ticksForSquarePositionUpdate /= lastTick);
+      lastTick := ticksForSquarePositionUpdate;
+   end if;
+end process;
+
+-- Buttons + LED panel are factored out into the control_panel
+-- building block so the integration TB can exercise them through a
+-- 1:1 Verilog mirror without dragging in the VGA timing or text
+-- rendering. The panel returns the pause flag, an active-high reset
+-- level, a 2-bit speed select, and the three status LEDs (pause,
+-- heartbeat, fast-mode). The top decodes speedSelect to one of the
+-- SQUARE_PERIOD_* constants and wires its own per-step pulse on
+-- leds(0) since the step toggle lives in TickProcess.
+panel : entity work.control_panel
+   port map (
+      clk           => clk,
+      inputButtons  => inputButtons,
+      heartbeatTick => ticksForHalfSecond,
+      paused        => sPaused,
+      resetActive   => sResetActive,
+      speedSelect   => sSpeedSelect,
+      panelLeds     => sPanelLeds
+   );
+
+with sSpeedSelect select squareStepPeriod <=
+   SQUARE_PERIOD_FAST   when "10",
+   SQUARE_PERIOD_SLOW   when "01",
+   SQUARE_PERIOD_MEDIUM when others;
+
+leds(0)          <= '1' when should_move_square else '0';
+leds(3 downto 1) <= sPanelLeds;
 
 moveText : process (ticksForDynamicTextPositionUpdate)
 begin
    if rising_edge(ticksForDynamicTextPositionUpdate) then
       if xDirectionText then
-         if xPosNael = HDATA_END - (297 * 2) then
+         if xPosText = HDATA_END - (297 * 2) then
 	    xDirectionText <= not xDirectionText;
 	    text_dynamic_rgb(0) <= '1';
 	    text_dynamic_rgb <= text_dynamic_rgb(0) & text_dynamic_rgb(2 downto 1);
 	 else
-	    xPosNael <= xPosNael + 1;
+	    xPosText <= xPosText + 1;
 	 end if;
       else
-         if xPosNael = HDATA_BEGIN then
+         if xPosText = HDATA_BEGIN then
 	    xDirectionText <= not xDirectionText;
 	    text_dynamic_rgb <= text_dynamic_rgb(1 downto 0) & text_dynamic_rgb(2);
 	 else
-	    xPosNael <= xPosNael - 1;
+	    xPosText <= xPosText - 1;
 	 end if;
       end if;
       if yDirectionText then
-         if yPosNael = VDATA_END - 50 then
+         if yPosText = VDATA_END - 50 then
 	    yDirectionText <= not yDirectionText;
 	    text_dynamic_rgb <= text_dynamic_rgb(1) & text_dynamic_rgb(2) & text_dynamic_rgb(0);
 	 else
-	    yPosNael <= yPosNael + 1;
+	    yPosText <= yPosText + 1;
 	 end if;
       else
-         if yPosNael = VDATA_BEGIN then
+         if yPosText = VDATA_BEGIN then
 	    yDirectionText <= not yDirectionText;
 	    text_dynamic_rgb <= text_dynamic_rgb(2) & text_dynamic_rgb(0) & text_dynamic_rgb(1);
 	 else
-	    yPosNael <= yPosNael - 1;
+	    yPosText <= yPosText - 1;
 	 end if;
       end if;
    end if;
@@ -244,11 +309,14 @@ square_y <= yPosSquare;
         )
         port map(
         	clk => vga_clk,
-        	positionX => HDATA_BEGIN,  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
-        	positionY => VDATA_BEGIN, -- text position.y (top left)
+        	-- Slow horizontal scroll (~33 px/s) driven by xPosStaticTextOffset.
+        	-- The static text walks from HDATA_BEGIN to the right edge of
+        	-- visible area minus the text width, then snaps back to start.
+        	positionX => HDATA_BEGIN + xPosStaticTextOffset,
+        	positionY => VDATA_BEGIN,
         	horzCoord => hpos,
         	vertCoord => vpos,
-        	pixel => should_draw_text_static -- result
+        	pixel => should_draw_text_static
         );
 
         textWithSize: entity work.Pixel_On_Text_WithSize
@@ -261,7 +329,7 @@ square_y <= yPosSquare;
         port map(
         	clk => vga_clk,
 		displayText => changingString2,
-        	position => (HDATA_BEGIN,VDATA_BEGIN + 40),  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
+        	position => (HDATA_BEGIN, VDATA_BEGIN + 40),
         	horzCoord => hpos,
         	vertCoord => vpos,
         	pixel => should_draw_text_changing
@@ -277,7 +345,7 @@ square_y <= yPosSquare;
         port map(
         	clk => vga_clk,
 		displayText => changingString,
-        	position => (HDATA_BEGIN + 60, VDATA_BEGIN + 80),  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
+        	position => (HDATA_BEGIN + 60, VDATA_BEGIN + 80),
         	horzCoord => hpos,
         	vertCoord => vpos,
         	pixel => should_draw_text_changing2
@@ -286,26 +354,22 @@ square_y <= yPosSquare;
         textElementMoving: entity work.Pixel_On_Text_WithSize
         generic map (
 	        textLength => 37,
-		fontScale => 2
---        	displayText => "<<<((([[[ * FPGA VGA TEST * ]]])))>>>" 
+		fontScale  => 2
         )
         port map(
         	clk => vga_clk,
-        	position => (xPosNael, yPosNael),  -- HDATA_BEGIN + HSYNC_END, -- text position.x (top left)
+        	position => (xPosText, yPosText),
 		displayText => "<<<((([[[ * FPGA VGA TEST * ]]])))>>>",
---        	positionY => yPosNael, -- text position.y (top left)
         	horzCoord => hpos,
         	vertCoord => vpos,
-        	pixel => should_draw_text_dynamic -- result
+        	pixel => should_draw_text_dynamic
         );
 
-   --- hitOnStaticText1 <= should_draw_text_static and (should_draw_text_dynamic or ('1' when should_draw_square else '0'));
    hitOnStaticText1 <= should_draw_text_static when should_draw_square else should_draw_text_static and should_draw_text_dynamic;
 
    process(hitOnStaticText1, should_draw_square, should_draw_text_dynamic)
    begin
       if rising_edge(hitOnStaticText1) then
-          -- text_static_rgb(2) <= not text_static_rgb(2);
 	  if  should_draw_text_dynamic = '1' then
             if not lastHitWasText then
 	       lastHitWasText <= true;
