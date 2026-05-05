@@ -301,6 +301,19 @@ Three focused testbenches: `tb_trigonometric` (integration sweep + rotate proper
 
 </details>
 
+<details>
+<summary><b><code>vga</code></b> — bouncing square + scrolling text demo, with debounced pause/reset/speed buttons and status LEDs</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `VgaController` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga/VgaController.svg" alt="vga VgaController netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga/VgaController_v.svg" alt="vga VgaController netlist (Verilog)" width="480"> |
+| `tb_vga_smoke` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga/tb_vga_smoke.png" alt="vga tb_vga_smoke (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga/tb_vga_smoke_v.png" alt="vga tb_vga_smoke (Verilog)" width="480"> |
+| `tb_vga_top` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga/tb_vga_top.png" alt="vga tb_vga_top (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-vga/tb_vga_top_v.png" alt="vga tb_vga_top (Verilog)" width="480"> |
+
+Both flows synth the same `VgaController` timing FSM (`vga_driver/VgaController.vhd` ↔ `vga_driver/vga_controller.v`, both ported from [fsmiamoto/EasyFPGA-VGA](https://github.com/fsmiamoto/EasyFPGA-VGA)); the full `top_level_vga_test` is GHDL-analysed but not in either diagram because its string-typed generics on `Pixel_On_Text*` aren't synthesisable by yosys+ghdl-plugin. Two testbenches: `tb_vga_smoke` covers the `Square` strict-less-than box test plus `Font_Rom` NUL-glyph + `'A'` row-7 reads. `tb_vga_top` exercises the `control_panel` building block — three debouncers + pause toggle + speed cycler + LED panel — that the top instantiates: it walks the pause flag 0 → 1 → 0, the speed selector medium → slow → fast → medium, the reset level high then low, and the heartbeat passthrough. Both testbenches ship VHDL + Verilog twins through `control_panel.{vhd,v}`.
+
+</details>
+
 ### Comm
 
 <details>
@@ -453,7 +466,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | [7segments/text](display/7segments/text/)       | ✅ | VHDL + Verilog | Scrolling ASCII text on a 4-digit display; button[0] pauses scroll. |
 | [7segments/clock](display/7segments/clock/)     | ✅ | VHDL + Verilog | Multiplexed clock with HHMM/MMSS view, blinking dot, alarm. |
 | [vga_sprites](display/vga_sprites/)             | ✅ | VHDL + Verilog | Rotating VGA sprites (trig LUT) + optional gravity. |
-| [vga](display/vga/)                             | ⏳ | VHDL           | Sources present, no Makefile yet. |
+| [vga](display/vga/)                             | ✅ | VHDL + Verilog | Bouncing square + scrolling text on a font ROM, with three pause/reset/speed buttons (debounced) and four status LEDs. |
 
 ### Comm
 
@@ -544,15 +557,16 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 ### Next up 🎯
 
-- Verilog mirrors for the remaining VHDL-only projects: `vga`,
-  `i2s_test_1`, `uda1380` — leaf modules first, top-levels after.
+- Verilog mirrors for the remaining VHDL-only projects: `i2s_test_1`,
+  `uda1380` — leaf modules first, top-levels after.
 - Wire the remaining "pending adoption" projects above into CI once
   their sources build cleanly.
 - Small game using the buttons + 7-segment display (snake / space
   invaders). On-FPGA RNG is now available via
   [`random_generator`](building_blocks/random_generator/).
-- VGA text driver, then adapt the 7-seg examples (clock, game, …) to
-  render on VGA.
+- Adapt the 7-seg examples (clock, game, …) to render on VGA, reusing
+  the glyph-ROM text renderer the [`vga`](display/vga/) example
+  already ships (`Pixel_On_Text` + `Font_Rom`).
 - I²S driver + an FFT implementation → spectral analyser (I²S → FFT →
   VGA). Eventually extend with IFFT / DSP kernels for a small FX
   module; later BLE / Bluetooth audio.

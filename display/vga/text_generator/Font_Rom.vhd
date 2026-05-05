@@ -33,7 +33,7 @@ entity Font_Rom is
 	port(
 		clk: in std_logic;
 		addr: in integer;
-		fontRow: out std_logic_vector(FONT_WIDTH-1 downto 0)
+		fontRow: out std_logic_vector(FONT_WIDTH-1 downto 0) := (others => '0')
 	);
 end Font_Rom;
 

@@ -82,8 +82,8 @@ set_global_assignment -name VHDL_FILE definitions.vhd
 set_global_assignment -name VHDL_FILE fixed_pkg/float_pkg_c.vhdl -hdl_version VHDL_2008 -library IEEE_PROPOSED
 set_global_assignment -name VHDL_FILE fixed_pkg/fixed_pkg_c.vhdl -hdl_version VHDL_2008 -library IEEE_PROPOSED
 set_global_assignment -name VHDL_FILE fixed_pkg/fixed_float_types_c.vhdl -hdl_version VHDL_2008 -library IEEE_PROPOSED
-set_global_assignment -name VHDL_FILE vga_driver/VgaUtils.vhd
-set_global_assignment -name VHDL_FILE vga_driver/VgaController.vhd
+set_global_assignment -name VHDL_FILE ../vga_driver/VgaUtils.vhd
+set_global_assignment -name VHDL_FILE ../vga_driver/VgaController.vhd
 set_global_assignment -name VHDL_FILE top_level_vga_test.vhd -hdl_version VHDL_2008
 set_global_assignment -name VHDL_FILE sprite.vhd -hdl_version VHDL_2008
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE AREA
