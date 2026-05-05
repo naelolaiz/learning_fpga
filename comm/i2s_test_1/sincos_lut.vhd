@@ -28,7 +28,10 @@ port (
 
   clk      : in  std_logic;
   addr     : in  std_logic_vector(13 downto 0);
-  sin_out  : out std_logic_vector(15 downto 0)
+  -- Init so the registered output is '0' from t=0 instead of 'U'
+  -- until the first rising edge of clk; otherwise the 'U' propagates
+  -- through nco_sine into the top-level data_l/data_r path.
+  sin_out  : out std_logic_vector(15 downto 0) := (others => '0')
   );
 
 end entity;

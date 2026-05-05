@@ -13,7 +13,10 @@ module sincos_lut #(
 ) (
     input  wire        clk,
     input  wire [13:0] addr,
-    output reg  [15:0] sin_out
+    // Init so sin_out is 16'd0 from t=0 instead of 'x' until the
+    // first posedge clk; otherwise the 'x' propagates through
+    // nco_sine into the top-level data_l/data_r path.
+    output reg  [15:0] sin_out = 16'd0
 );
 
     reg [15:0] rom [0:16383];
