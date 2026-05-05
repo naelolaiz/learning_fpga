@@ -89,6 +89,12 @@ begin
 		if reset = '1' then
 			data_l_i <= (others => '0');
 			data_r_i <= (others => '0');
+			-- Drive the I2S outputs explicitly under reset; without this
+			-- they stay 'U' until the first sclk falling edge, which
+			-- propagates into the LUT clock input on lrclk and shows up
+			-- as red bands across the early-sim FST.
+			lrclk    <= '0';
+			sdata    <= '0';
 			bit_cnt := 0;
 		elsif sclk_i'event and sclk_i = '0' then
 			case (state) is

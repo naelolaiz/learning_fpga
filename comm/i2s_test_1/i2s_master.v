@@ -14,9 +14,13 @@ module i2s_master #(
     input  wire                          reset,         // active-high
     input  wire                          clk,
     output wire                          mclk,
-    output reg                           lrclk,
+    // Init lrclk/sdata in the declaration: posedge reset doesn't fire
+    // for a reg-init "transition", so without this the outputs sit at
+    // 'x' until the first negedge sclk and that 'x' propagates through
+    // the LUT-clock path.
+    output reg                           lrclk = 1'b0,
     output wire                          sclk,
-    output reg                           sdata,
+    output reg                           sdata = 1'b0,
     input  wire [I2S_BIT_WIDTH-1:0]      data_l,
     input  wire [I2S_BIT_WIDTH-1:0]      data_r
 );
