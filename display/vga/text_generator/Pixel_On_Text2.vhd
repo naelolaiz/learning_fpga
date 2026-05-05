@@ -59,7 +59,15 @@ begin
     -- (horzCoord - position.x): x positionin the top left of the whole text
     charPosition <= (horzCoord - positionX)/FONT_WIDTH + 1;
     bitPosition <= (horzCoord - positionX) mod FONT_WIDTH;
-    charCode <= character'pos(displayText(charPosition));
+    -- Guard the indexed read: charPosition can fall outside displayText'range
+    -- when (horzCoord, positionX) is outside the text box. Synthesis doesn't
+    -- care because pixelOn gates on inXRange/inYRange before using charCode,
+    -- but GHDL is strict about bounds. Read NUL (=0) when out of range so
+    -- charCode stays well-defined for the rest of the concurrent network.
+    charCode <= character'pos(displayText(charPosition))
+                when charPosition >= displayText'low
+                 and charPosition <= displayText'high
+                else 0;
     -- charCode*16: first row of the char
     fontAddress <= charCode*16+(vertCoord - positionY);
 

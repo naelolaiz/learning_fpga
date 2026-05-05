@@ -61,7 +61,13 @@ begin
     -- (horzCoord - position.x): x positionin the top left of the whole text
     charPosition <= (horzCoord - position.x)/FONT_WIDTH + 1;
     bitPosition <= (horzCoord - position.x) mod FONT_WIDTH;
-    charCode <= character'pos(displayText(charPosition));
+    -- Same out-of-range guard as Pixel_On_Text2: pixelOn already masks the
+    -- output via inXRange/inYRange, but the concurrent character indexing
+    -- runs unconditionally so GHDL trips on bounds when the box is offscreen.
+    charCode <= character'pos(displayText(charPosition))
+                when charPosition >= displayText'low
+                 and charPosition <= displayText'high
+                else 0;
     -- charCode*16: first row of the char
     fontAddress <= charCode*16+(vertCoord - position.y);
 

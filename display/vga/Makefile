@@ -7,7 +7,7 @@ PROJECT_NAME := vga
 # yosys+ghdl-plugin doesn't handle, same reason vga_sprites synths
 # `sprite` rather than its own top_level_vga_test.
 TOP     := VgaController
-TB_TOPS := tb_vga_smoke
+TB_TOPS := tb_vga_smoke tb_vga_top
 
 SRC_FILES := ../vga_driver/VgaUtils.vhd \
              ../vga_driver/VgaController.vhd \
@@ -19,7 +19,7 @@ SRC_FILES := ../vga_driver/VgaUtils.vhd \
              text_generator/Pixel_On_Text2.vhd \
              text_generator/Pixel_On_Text_WithSize.vhd \
              top_level_vga_test.vhd
-TB_FILES  := test/tb_vga_smoke.vhd
+TB_FILES  := test/tb_vga_smoke.vhd test/tb_vga_top.vhd
 
 VHDL_STANDARD := 08
 
@@ -33,11 +33,11 @@ VHDL_STANDARD := 08
 # no concurrent equivalent of VHDL's Square procedure) and the
 # Font_Rom NUL + 'A' row 7 reads.
 V_TOP       := VgaController
-V_TB_TOPS   := tb_vga_smoke
+V_TB_TOPS   := tb_vga_smoke tb_vga_top
 V_SRC_FILES := ../vga_driver/vga_controller.v \
                ../../building_blocks/debounce/Debounce.v \
                control_panel.v \
                text_generator/font_rom.v
-V_TB_FILES  := test/tb_vga_smoke.v
+V_TB_FILES  := test/tb_vga_smoke.v test/tb_vga_top.v
 
 include ../../mk/common.mk
