@@ -474,7 +474,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | --- | :-: | --- | --- |
 | [uart_tx](comm/uart_tx/)       | ✅ | VHDL + Verilog | 8N1 UART transmitter. |
 | [i2s_test_1](comm/i2s_test_1/) | ✅ | VHDL + Verilog | Sine NCO over I2S to a PCM5102 DAC; mono + stereo top-levels share one `nco_sine` / `sincos_lut` chain. |
-| [uda1380](comm/uda1380/)       | ⏳ | VHDL           | Sources present, no Makefile yet. |
+| [uda1380](comm/uda1380/)       | ✅ | VHDL + Verilog | Boot-FSM walks the codec init sequence over I2C; integrated I2S master + tone source for end-to-end playback. Two tops: simulation (`inout`) + a `_core` diagram variant with split `(oe, i)` so netlistsvg renders. |
 
 ### Tools
 
@@ -557,9 +557,6 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 ### Next up 🎯
 
-- Verilog mirror for the remaining VHDL-only project: `uda1380`.
-- Wire the remaining "pending adoption" projects above into CI once
-  their sources build cleanly.
 - Small game using the buttons + 7-segment display (snake / space
   invaders). On-FPGA RNG is now available via
   [`random_generator`](building_blocks/random_generator/).

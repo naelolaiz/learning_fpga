@@ -28,12 +28,21 @@
 --     Corrected small SDA glitch introduced in version 2.1
 -- 
 --------------------------------------------------------------------------------
+-- Diagram-renderable variant of i2c_master:
+--   * sda / scl `inout` ports replaced by separate output-enables
+--     (sda_oe, scl_oe) and inputs (sda_i, scl_i).
+--   * yosys synthesises both flavours fine; the issue is netlistsvg,
+--     which only accepts `input` / `output` for port_directions in
+--     its JSON schema. The pair {oe, i} is functionally equivalent
+--     to an open-drain inout once the wrapper resolves them.
+-- The behavioural body below is otherwise identical to i2c_master.vhd.
+--------------------------------------------------------------------------------
 
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.std_logic_unsigned.all;
 
-ENTITY i2c_master IS
+ENTITY i2c_master_for_diagram IS
   GENERIC(
     input_clk : INTEGER := 50_000_000; --input clock speed from user logic in Hz
     bus_clk   : INTEGER := 400_000);   --speed the i2c bus (scl) will run at in Hz
@@ -47,19 +56,21 @@ ENTITY i2c_master IS
     busy      : OUT    STD_LOGIC;                    --indicates transaction in progress
     data_rd   : OUT    STD_LOGIC_VECTOR(7 DOWNTO 0); --data read from slave
     ack_error : BUFFER STD_LOGIC;                    --flag if improper acknowledge from slave
-    sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
-    scl       : INOUT  STD_LOGIC);                   --serial clock output of i2c bus
-END i2c_master;
+    -- Open-drain split: drive *_oe='1' to pull the line low; *_i is
+    -- the line state read back (line is high when no master/slave
+    -- is asserting it, thanks to the external pull-up).
+    sda_oe    : OUT    STD_LOGIC;
+    sda_i     : IN     STD_LOGIC;
+    scl_oe    : OUT    STD_LOGIC;
+    scl_i     : IN     STD_LOGIC);
+END i2c_master_for_diagram;
 
-ARCHITECTURE logic OF i2c_master IS
+ARCHITECTURE logic OF i2c_master_for_diagram IS
   CONSTANT divider  :  INTEGER := (input_clk/bus_clk)/4; --number of clocks in 1/4 cycle of scl
   TYPE machine IS(ready, start, command, slv_ack1, wr, rd, slv_ack2, mstr_ack, stop); --needed states
   SIGNAL state         : machine := ready;               --state machine
   -- Explicit initialisers across the board, matching what the
-  -- Verilog mirror (i2c_master.v) declares per-reg. Without them
-  -- these signals start as 'U' and the first few microseconds of
-  -- the FST waveform render as red bands until each reg is first
-  -- assigned.
+  -- Verilog mirror declares per-reg.
   SIGNAL data_clk      : STD_LOGIC := '0';               --data clock for sda
   SIGNAL data_clk_prev : STD_LOGIC := '0';               --data clock during previous system clock
   SIGNAL scl_clk       : STD_LOGIC := '0';               --constantly running internal scl
@@ -121,7 +132,7 @@ BEGIN
         data_clk <= '1';
       ELSIF count < divider*3 THEN            --third 1/4 cycle of clocking
         scl_clk <= '1';                       --release scl
-        IF(scl = '0') THEN                    --detect if slave is stretching clock
+        IF(scl_i = '0') THEN                  --detect if slave is stretching clock
           stretch <= '1';
         ELSE
           stretch <= '0';
@@ -246,13 +257,13 @@ BEGIN
               ack_error <= '0';                     --reset acknowledge error output
             END IF;
           WHEN slv_ack1 =>                          --receiving slave acknowledge (command)
-            IF(sda /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
+            IF(sda_i /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
               ack_error <= '1';                     --set error output if no-acknowledge
             END IF;
           WHEN rd =>                                --receiving slave data
-            data_rx(bit_cnt) <= sda;                --receive current slave data bit
+            data_rx(bit_cnt) <= sda_i;              --receive current slave data bit
           WHEN slv_ack2 =>                          --receiving slave acknowledge (write)
-            IF(sda /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
+            IF(sda_i /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
               ack_error <= '1';                     --set error output if no-acknowledge
             END IF;
           WHEN stop =>
@@ -270,8 +281,9 @@ BEGIN
                  NOT data_clk_prev WHEN stop,  --generate stop condition
                  sda_int WHEN OTHERS;          --set to internal sda signal    
       
-  --set scl and sda outputs
-  scl <= '0' WHEN (scl_ena = '1' AND scl_clk = '0') ELSE 'Z';
-  sda <= '0' WHEN sda_ena_n = '0' ELSE 'Z';
-  
+  --set scl and sda open-drain enables. The wrapper resolves these
+  --into a real bidirectional pin via the external pull-up.
+  scl_oe <= '1' WHEN (scl_ena = '1' AND scl_clk = '0') ELSE '0';
+  sda_oe <= '1' WHEN sda_ena_n = '0' ELSE '0';
+
 END logic;
