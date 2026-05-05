@@ -54,12 +54,13 @@ architecture rtl of i2s_master is
 	signal mclk_acc : unsigned(MCLK_ACC_WIDTH - 1 downto 0) := (others => '0');
 	
 	type states is (start_l,send_l,start_r,send_r);
-	signal state : states;
+	-- Explicit init for deterministic post-reset simulation start.
+	signal state : states := start_l;
 	signal mclk_i : STD_LOGIC;
 	signal sclk_i : STD_LOGIC;
-	
-	signal data_l_i : STD_LOGIC_VECTOR (23 downto 0);
-	signal data_r_i : STD_LOGIC_VECTOR (23 downto 0);
+
+	signal data_l_i : STD_LOGIC_VECTOR (23 downto 0) := (others => '0');
+	signal data_r_i : STD_LOGIC_VECTOR (23 downto 0) := (others => '0');
 begin
 	-- generates mclk as defined by MCLK_MHZ
 	mclk_gen : process(reset,clk)
@@ -88,6 +89,12 @@ begin
 		if reset = '1' then
 			data_l_i <= (others => '0');
 			data_r_i <= (others => '0');
+			-- Drive the I2S outputs explicitly under reset; without this
+			-- they stay 'U' until the first sclk falling edge, which
+			-- propagates into the LUT clock input on lrclk and shows up
+			-- as red bands across the early-sim FST.
+			lrclk    <= '0';
+			sdata    <= '0';
 			bit_cnt := 0;
 		elsif sclk_i'event and sclk_i = '0' then
 			case (state) is

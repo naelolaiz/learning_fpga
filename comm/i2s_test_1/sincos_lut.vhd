@@ -19,22 +19,25 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 
-entity sincos_lut_14addr_16 is
+entity sincos_lut is
 
 port (
 
   clk      : in  std_logic;
   addr     : in  std_logic_vector(13 downto 0);
-  sin_out  : out std_logic_vector(15 downto 0)
+  -- Init so the registered output is '0' from t=0 instead of 'U'
+  -- until the first rising edge of clk; otherwise the 'U' propagates
+  -- through nco_sine into the top-level data_l/data_r path.
+  sin_out  : out std_logic_vector(15 downto 0) := (others => '0')
   );
-  
+
 end entity;
 
 
-architecture rtl of sincos_lut_14addr_16 is
+architecture rtl of sincos_lut is
 
 
 type rom_type is array (0 to 16383) of std_logic_vector (15 downto 0);
@@ -2096,9 +2099,8 @@ begin
 
 rom_select: process (clk)
 begin
-  if clk'event and clk = '1' then
-    sin_out <= SIN_ROM(conv_integer(addr)) + 8192;
---    cos_out <= COS_ROM(conv_integer(addr)) + 2048;
+  if rising_edge(clk) then
+    sin_out <= SIN_ROM(to_integer(unsigned(addr)));
   end if;
 end process rom_select;
 

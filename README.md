@@ -473,7 +473,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
 | [uart_tx](comm/uart_tx/)       | ✅ | VHDL + Verilog | 8N1 UART transmitter. |
-| [i2s_test_1](comm/i2s_test_1/) | ⏳ | VHDL           | Sources present, no Makefile yet. |
+| [i2s_test_1](comm/i2s_test_1/) | ✅ | VHDL + Verilog | Sine NCO over I2S to a PCM5102 DAC; mono + stereo top-levels share one `nco_sine` / `sincos_lut` chain. |
 | [uda1380](comm/uda1380/)       | ⏳ | VHDL           | Sources present, no Makefile yet. |
 
 ### Tools
@@ -557,8 +557,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 ### Next up 🎯
 
-- Verilog mirrors for the remaining VHDL-only projects: `i2s_test_1`,
-  `uda1380` — leaf modules first, top-levels after.
+- Verilog mirror for the remaining VHDL-only project: `uda1380`.
 - Wire the remaining "pending adoption" projects above into CI once
   their sources build cleanly.
 - Small game using the buttons + 7-segment display (snake / space
