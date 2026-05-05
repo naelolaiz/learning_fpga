@@ -54,23 +54,28 @@ END i2c_master;
 ARCHITECTURE logic OF i2c_master IS
   CONSTANT divider  :  INTEGER := (input_clk/bus_clk)/4; --number of clocks in 1/4 cycle of scl
   TYPE machine IS(ready, start, command, slv_ack1, wr, rd, slv_ack2, mstr_ack, stop); --needed states
-  SIGNAL state         : machine;                        --state machine
-  SIGNAL data_clk      : STD_LOGIC;                      --data clock for sda
-  SIGNAL data_clk_prev : STD_LOGIC;                      --data clock during previous system clock
-  SIGNAL scl_clk       : STD_LOGIC;                      --constantly running internal scl
+  SIGNAL state         : machine := ready;               --state machine
+  -- Explicit initialisers across the board, matching what the
+  -- Verilog mirror (i2c_master.v) declares per-reg. Without them
+  -- these signals start as 'U' and the first few microseconds of
+  -- the FST waveform render as red bands until each reg is first
+  -- assigned.
+  SIGNAL data_clk      : STD_LOGIC := '0';               --data clock for sda
+  SIGNAL data_clk_prev : STD_LOGIC := '0';               --data clock during previous system clock
+  SIGNAL scl_clk       : STD_LOGIC := '0';               --constantly running internal scl
   SIGNAL scl_ena       : STD_LOGIC := '0';               --enables internal scl to output
   SIGNAL sda_int       : STD_LOGIC := '1';               --internal sda
-  SIGNAL sda_ena_n     : STD_LOGIC;                      --enables internal sda to output
-  SIGNAL addr_rw       : STD_LOGIC_VECTOR(7 DOWNTO 0);   --latched in address and read/write
-  SIGNAL data_tx       : STD_LOGIC_VECTOR(7 DOWNTO 0);   --latched in data to write to slave
-  SIGNAL data_rx       : STD_LOGIC_VECTOR(7 DOWNTO 0);   --data received from slave
+  SIGNAL sda_ena_n     : STD_LOGIC := '1';               --enables internal sda to output
+  SIGNAL addr_rw       : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');   --latched in address and read/write
+  SIGNAL data_tx       : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');   --latched in data to write to slave
+  SIGNAL data_rx       : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');   --data received from slave
   SIGNAL bit_cnt       : INTEGER RANGE 0 TO 7 := 7;      --tracks bit number in transaction
   SIGNAL stretch       : STD_LOGIC := '0';               --identifies if slave is stretching scl
 BEGIN
 
   --generate the timing for the bus clock (scl_clk) and the data clock (data_clk)
   PROCESS(clk, reset_n)
-    VARIABLE count  :  INTEGER RANGE 0 TO divider*4;  --timing for clock generation
+    VARIABLE count  :  INTEGER RANGE 0 TO divider*4 := 0;  --timing for clock generation
   BEGIN
     IF(reset_n = '0') THEN                --reset asserted
       stretch <= '0';

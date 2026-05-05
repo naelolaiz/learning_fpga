@@ -1,24 +1,19 @@
 -- tb_top_level_uda1380.vhd
 --
--- Integration testbench for top_level_uda1380. Generics are tightened
--- so the boot sequence finishes inside sim budget:
+-- Integration testbench. Drives top_level_uda1380_core directly (the
+-- (scl_oe, scl_i, sda_oe, sda_i) variant) instead of the inout
+-- wrapper, so the bus appears in the FST as plain strong '1' / '0'
+-- — there is no 'H' (weak high) anywhere, which is what waveview
+-- renders as a red band when an open-drain bus idles. The inout
+-- top (top_level_uda1380) is still in SRC_FILES so it gets
+-- elaboration-checked; only the runtime hierarchy is via the core.
 --
---   INIT_DELAY_CYCLES = 4         -- collapse the 100 ms power-up wait
---   TONE_HALF_CYCLES  = 4         -- audible tone period irrelevant in sim
---   I2C_BUS_FREQ      = 5_000_000 -- 5 MHz "I2C" so a 3-byte register
---                                    write costs ~6 us instead of ~600 us
---
--- No I2C slave is modelled — the bus pull-ups idle SDA high, so the
--- Digi-Key i2c_master sees every ACK as a NACK and raises ack_error.
--- The init FSM does not gate progress on ack_error, so the boot
--- sequence still completes; what we assert is the structural side:
---
---   * I2C SCL toggled at all (the master is talking).
---   * I2S MCLK / BCK / LRCLK toggled at all (the i2s_master is alive).
---   * init_done eventually rises.
---
--- Byte-level correctness lives in tb_uda1380_init_fsm; this one is
--- the smoke test that the wires are connected.
+-- Generics are tightened so the boot sequence finishes inside sim
+-- budget (INIT_DELAY_CYCLES=4, TONE_HALF_CYCLES=4,
+-- I2C_BUS_FREQ=5_000_000). No I2C slave is modelled — the
+-- "pull-ups" idle the lines high, the master sees every ACK as a
+-- NACK and raises ack_error, but the FSM doesn't gate on
+-- ack_error so the boot still completes.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -30,10 +25,17 @@ end entity;
 architecture testbench of tb_top_level_uda1380 is
   constant CLK_PERIOD : time := 20 ns;        -- 50 MHz
 
-  signal iClk               : std_logic := '0';
-  signal iNoReset           : std_logic := '0';        -- active-low; '0' = reset
-  signal i2cIOScl           : std_logic := 'H';
-  signal i2cIOSda           : std_logic := 'H';
+  signal iClk     : std_logic := '0';
+  signal iNoReset : std_logic := '0';        -- active-low; '0' = reset
+
+  -- Open-drain split: drive *_oe='1' to assert low; *_i is the
+  -- line state. The TB models the pull-up as strong '1' when
+  -- *_oe='0', strong '0' when *_oe='1' — both render green.
+  signal scl_oe : std_logic;
+  signal sda_oe : std_logic;
+  signal scl_i  : std_logic;
+  signal sda_i  : std_logic;
+
   signal oTxMasterClock     : std_logic;
   signal oTxWordSelectClock : std_logic;
   signal oTxBitClock        : std_logic;
@@ -48,7 +50,7 @@ architecture testbench of tb_top_level_uda1380 is
   signal lrclk_edges: integer := 0;
 begin
 
-  dut : entity work.top_level_uda1380
+  dut : entity work.top_level_uda1380_core
     generic map (
       SYS_CLK_FREQ      => 50_000_000,
       I2C_BUS_FREQ      => 5_000_000,
@@ -58,8 +60,10 @@ begin
     port map (
       iClk               => iClk,
       iNoReset           => iNoReset,
-      i2cIOScl           => i2cIOScl,
-      i2cIOSda           => i2cIOSda,
+      oI2cSclOe          => scl_oe,
+      iI2cSclIn          => scl_i,
+      oI2cSdaOe          => sda_oe,
+      iI2cSdaIn          => sda_i,
       oTxMasterClock     => oTxMasterClock,
       oTxWordSelectClock => oTxWordSelectClock,
       oTxBitClock        => oTxBitClock,
@@ -69,16 +73,16 @@ begin
 
   iClk <= not iClk after CLK_PERIOD/2 when sim_active;
 
-  -- The two open-drain lines need pull-ups to high for the bus to
-  -- idle correctly. 'H' is std_logic's weak-high; the master's 'Z'
-  -- resolves with it to 'H', and any '0' the master drives wins.
-  i2cIOScl <= 'H';
-  i2cIOSda <= 'H';
+  -- Pull-up model: strong '1' when nobody is asserting low, strong
+  -- '0' when the master pulls the line low. Both are clean
+  -- forcing-strength values, so waveview renders them green.
+  scl_i <= '0' when scl_oe = '1' else '1';
+  sda_i <= '0' when sda_oe = '1' else '1';
 
   -- Edge counters.
-  scl_edge_count : process (i2cIOScl)
+  scl_edge_count : process (scl_i)
   begin
-    if i2cIOScl'event then
+    if scl_i'event then
       scl_edges <= scl_edges + 1;
     end if;
   end process;
@@ -106,13 +110,10 @@ begin
 
   driver : process
   begin
-    iNoReset <= '0';                            -- assert reset (active-low)
+    iNoReset <= '0';
     wait for 10 * CLK_PERIOD;
-    iNoReset <= '1';                            -- release reset
+    iNoReset <= '1';
 
-    -- Wait for the FSM to finish all 15 register writes. At 5 MHz I2C,
-    -- one 3-byte register write takes ~10 us, so 15 of them ~150 us
-    -- plus per-register setup/teardown. 1 ms is generous.
     wait until oInitDone = '1' for 1 ms;
 
     assert oInitDone = '1'
