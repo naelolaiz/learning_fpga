@@ -46,15 +46,16 @@ begin
 
     GLOSSARY_INST : entity work.glossary(rtl)
         port map (
-            a    => a,
-            b    => b,
-            sel  => '0',
-            sel4 => "00",
-            av   => (others => '0'),
-            bv   => (others => '0'),
-            clk  => clk,
-            rst  => '1',
-            en   => '0',
+            a       => a,
+            b       => b,
+            sel     => '0',
+            sel4    => "00",
+            sel4_oh => "0000",
+            av      => (others => '0'),
+            bv      => (others => '0'),
+            clk     => clk,
+            rst     => '1',
+            en      => '0',
 
             o_and  => w_and,
             o_or   => w_or,
@@ -64,24 +65,44 @@ begin
             o_nor  => open,
             o_xnor => w_xnor,
 
-            o_reduce_or  => open,
-            o_reduce_and => open,
-            o_reduce_xor => open,
+            o_reduce_or   => open,
+            o_reduce_and  => open,
+            o_reduce_xor  => open,
+            o_reduce_bool => open,
+
+            o_logic_not => open,
+            o_logic_and => open,
+            o_logic_or  => open,
 
             o_mux2 => open,
             o_mux4 => open,
+            o_pmux => open,
 
             o_add => open,
             o_sub => open,
+            o_mul => open,
+            o_neg => open,
+            o_pos => open,
+
             o_eq  => open,
+            o_ne  => open,
             o_lt  => open,
-            o_shl => open,
-            o_shr => open,
+            o_gt  => open,
+            o_ge  => open,
+            o_le  => open,
+
+            o_shl   => open,
+            o_shr   => open,
+            o_sshr  => open,
+            o_shift => open,
 
             o_dff     => open,
             o_dffe    => open,
             o_dffr    => open,
-            o_counter => open
+            o_dlatch  => open,
+            o_counter => open,
+
+            o_mem => open
         );
 
     leds(0) <= w_and;

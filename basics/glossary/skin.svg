@@ -327,4 +327,51 @@ text {
     </g>
   </g>
 
+  <!-- Level-sensitive D-latch. Same outline as $dff but no clock-edge
+       notch — the box says "L" so the visual difference from a
+       proper register is obvious. Ports follow yosys $dlatch /
+       $adlatch convention. -->
+  <g s:type="dlatch" transform="translate(550,150)" s:width="30" s:height="40">
+    <s:alias val="$dlatch"/>
+    <s:alias val="$adlatch"/>
+
+    <rect width="30" height="40" x="0" y="0" class="$cell_id"/>
+    <text x="15" y="13" class="nodelabel" style="font-size:10px">L</text>
+    <text x="15" y="26" class="nodelabel" style="font-size:6px">latch</text>
+
+    <g s:x="30" s:y="10" s:pid="Q"/>
+    <g s:x="0" s:y="10" s:pid="D"/>
+    <g s:x="0" s:y="30" s:pid="EN"/>
+  </g>
+
+  <!-- Single/dual-port synchronous RAM ($mem_v2 from yosys's memory
+       inference). The port names are fixed by yosys: RD_ADDR /
+       RD_DATA / RD_CLK / RD_EN / RD_ARST / RD_SRST on the read
+       side, WR_ADDR / WR_DATA / WR_CLK / WR_EN on the write side.
+       For our single-port-RAM use case (ram_sync, regfile_rv32,
+       glossary's o_mem) the read-reset ports are unused; the
+       symbol still lists them so unused-port wiring doesn't
+       confuse netlistsvg's layout pass. -->
+  <g s:type="mem_v2" transform="translate(620,200)" s:width="60" s:height="80">
+    <s:alias val="$mem_v2"/>
+    <s:alias val="$mem"/>
+
+    <rect width="60" height="80" x="0" y="0" class="$cell_id"/>
+    <text x="30" y="44" class="nodelabel" style="font-size:14px">RAM</text>
+
+    <!-- write side, left -->
+    <g s:x="0" s:y="15" s:pid="WR_DATA"/>
+    <g s:x="0" s:y="30" s:pid="WR_ADDR"/>
+    <g s:x="0" s:y="45" s:pid="WR_EN"/>
+    <g s:x="0" s:y="60" s:pid="WR_CLK"/>
+
+    <!-- read side, right -->
+    <g s:x="60" s:y="15" s:pid="RD_DATA"/>
+    <g s:x="60" s:y="30" s:pid="RD_ADDR"/>
+    <g s:x="60" s:y="45" s:pid="RD_EN"/>
+    <g s:x="60" s:y="60" s:pid="RD_CLK"/>
+    <g s:x="60" s:y="70" s:pid="RD_ARST"/>
+    <g s:x="60" s:y="80" s:pid="RD_SRST"/>
+  </g>
+
 </svg>
