@@ -284,11 +284,10 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	$(if $(or $(strip $(SVG_LINKS)),$(strip $(SVG_RELABEL)),$(strip $(SVG_PREVIEW))), \
-	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
-	        $(addprefix --link ,$(SVG_LINKS)) \
-	        $(addprefix --relabel ,$(SVG_RELABEL)) \
-	        $(addprefix --preview ,$(SVG_PREVIEW)))
+	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
+	    $(addprefix --link ,$(SVG_LINKS)) \
+	    $(addprefix --relabel ,$(SVG_RELABEL)) \
+	    $(addprefix --preview ,$(SVG_PREVIEW))
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -356,11 +355,10 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	$(if $(or $(strip $(V_SVG_LINKS)),$(strip $(V_SVG_RELABEL)),$(strip $(V_SVG_PREVIEW))), \
-	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
-	        $(addprefix --link ,$(V_SVG_LINKS)) \
-	        $(addprefix --relabel ,$(V_SVG_RELABEL)) \
-	        $(addprefix --preview ,$(V_SVG_PREVIEW)))
+	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
+	    $(addprefix --link ,$(V_SVG_LINKS)) \
+	    $(addprefix --relabel ,$(V_SVG_RELABEL)) \
+	    $(addprefix --preview ,$(V_SVG_PREVIEW))
 endif
 
 else
