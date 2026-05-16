@@ -111,7 +111,7 @@ Or, the same container CI uses:
 
 ```bash
 podman run --rm -v "$PWD":/work:rw -w /work \
-    ghcr.io/naelolaiz/hdltools:release \
+    ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy \
     make all
 ```
 
@@ -126,7 +126,7 @@ the canonical formula:
 
 ```bash
 podman run --rm -v "$PWD":/work:rw -w /work \
-    ghcr.io/naelolaiz/hdltools:release \
+    ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy \
     python3 generate_sincos_lut.py
 ```
 

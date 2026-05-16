@@ -470,7 +470,7 @@ ghdl-plugin, iverilog, netlistsvg, waveview):
 
 ```bash
 podman run --rm -it -v "$PWD":/work -w /work \
-    ghcr.io/naelolaiz/hdltools:release \
+    ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy \
     make
 ```
 

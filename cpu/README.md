@@ -99,7 +99,7 @@ same 4 KB).
 2. Assemble it with the project's Python assembler:
    ```
    podman run --rm -v "$(pwd):/work:rw" -w /work \
-       ghcr.io/naelolaiz/hdltools:release \
+       ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy \
        python3 tools/rv32_asm/rv32_asm.py path/to/prog.S \
            -o path/to/prog.hex
    ```
@@ -109,7 +109,7 @@ same 4 KB).
    ```
    podman run --rm -v "$(pwd):/work:rw" \
        -w /work/cpu/riscv_singlecycle \
-       ghcr.io/naelolaiz/hdltools:release make simulate
+       ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy make simulate
    ```
 
 The testbench's halt detector fires when your `halt` instruction
