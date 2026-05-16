@@ -71,14 +71,16 @@ SVG_LINKS   := cpu=../cpu-riscv_singlecycle/riscv_singlecycle.svg \
                rx=../comm-uart_rx/uart_rx.svg \
                simd=../cpu-building_blocks-simd_alu/simd_alu.svg \
                fir=../cpu-building_blocks-fir4tap/fir4tap.svg \
-               dmem=../building_blocks-ram_sync/ram_sync.svg
+               dmem=../building_blocks-ram_sync/ram_sync.svg \
+               regs=../cpu-building_blocks-regfile_rv32/regfile_rv32.svg
 
 SVG_PREVIEW := cpu=../riscv_singlecycle/build/riscv_singlecycle.svg \
                tx=../../comm/uart_tx/build/uart_tx.svg \
                rx=../../comm/uart_rx/build/uart_rx.svg \
                simd=../building_blocks/simd_alu/build/simd_alu.svg \
                fir=../building_blocks/fir4tap/build/fir4tap.svg \
-               dmem=../../building_blocks/ram_sync/build/ram_sync.svg
+               dmem=../../building_blocks/ram_sync/build/ram_sync.svg \
+               regs=../building_blocks/regfile_rv32/build/regfile_rv32.svg
 
 # Same composite annotations on the Verilog side.
 V_SVG_RELABEL := cpu=riscv_singlecycle \
@@ -92,14 +94,16 @@ V_SVG_LINKS   := cpu=../cpu-riscv_singlecycle/riscv_singlecycle_v.svg \
                  rx=../comm-uart_rx/uart_rx_v.svg \
                  simd=../cpu-building_blocks-simd_alu/simd_alu_v.svg \
                  fir=../cpu-building_blocks-fir4tap/fir4tap_v.svg \
-                 dmem=../building_blocks-ram_sync/ram_sync_v.svg
+                 dmem=../building_blocks-ram_sync/ram_sync_v.svg \
+                 regs=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg
 
 V_SVG_PREVIEW := cpu=../riscv_singlecycle/build/riscv_singlecycle_v.svg \
                  tx=../../comm/uart_tx/build/uart_tx_v.svg \
                  rx=../../comm/uart_rx/build/uart_rx_v.svg \
                  simd=../building_blocks/simd_alu/build/simd_alu_v.svg \
                  fir=../building_blocks/fir4tap/build/fir4tap_v.svg \
-                 dmem=../../building_blocks/ram_sync/build/ram_sync_v.svg
+                 dmem=../../building_blocks/ram_sync/build/ram_sync_v.svg \
+                 regs=../building_blocks/regfile_rv32/build/regfile_rv32_v.svg
 
 # `make golden` re-assembles programs/prog_hello.S into prog_hello.hex
 # using the project's Python assembler. Review the diff before

@@ -70,7 +70,8 @@ SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32.svg \
                alu=../cpu-building_blocks-alu_rv32/alu_rv32.svg \
                fu=../cpu-building_blocks-forwarding_unit/forwarding_unit.svg \
                hd=../cpu-building_blocks-hazard_detector/hazard_detector.svg \
-               dmem=../building_blocks-ram_sync/ram_sync.svg
+               dmem=../building_blocks-ram_sync/ram_sync.svg \
+               regs=../cpu-building_blocks-regfile_rv32/regfile_rv32.svg
 
 SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32.svg \
                immgen=../building_blocks/immgen_rv32/build/immgen_rv32.svg \
@@ -78,7 +79,8 @@ SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32.svg \
                alu=../building_blocks/alu_rv32/build/alu_rv32.svg \
                fu=../building_blocks/forwarding_unit/build/forwarding_unit.svg \
                hd=../building_blocks/hazard_detector/build/hazard_detector.svg \
-               dmem=../../building_blocks/ram_sync/build/ram_sync.svg
+               dmem=../../building_blocks/ram_sync/build/ram_sync.svg \
+               regs=../building_blocks/regfile_rv32/build/regfile_rv32.svg
 
 # Same composite annotations on the Verilog side.
 V_SVG_RELABEL := decoder=decoder_rv32 \
@@ -94,7 +96,8 @@ V_SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32_v.svg 
                  alu=../cpu-building_blocks-alu_rv32/alu_rv32_v.svg \
                  fu=../cpu-building_blocks-forwarding_unit/forwarding_unit_v.svg \
                  hd=../cpu-building_blocks-hazard_detector/hazard_detector_v.svg \
-                 dmem=../building_blocks-ram_sync/ram_sync_v.svg
+                 dmem=../building_blocks-ram_sync/ram_sync_v.svg \
+                 regs=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg
 
 V_SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32_v.svg \
                  immgen=../building_blocks/immgen_rv32/build/immgen_rv32_v.svg \
@@ -102,7 +105,8 @@ V_SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32_v.sv
                  alu=../building_blocks/alu_rv32/build/alu_rv32_v.svg \
                  fu=../building_blocks/forwarding_unit/build/forwarding_unit_v.svg \
                  hd=../building_blocks/hazard_detector/build/hazard_detector_v.svg \
-                 dmem=../../building_blocks/ram_sync/build/ram_sync_v.svg
+                 dmem=../../building_blocks/ram_sync/build/ram_sync_v.svg \
+                 regs=../building_blocks/regfile_rv32/build/regfile_rv32_v.svg
 
 include ../../mk/common.mk
 
