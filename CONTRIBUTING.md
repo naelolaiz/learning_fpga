@@ -95,7 +95,7 @@ Or, the same container CI uses:
 
 ```bash
 docker run --rm -it -v "$PWD":/work -w /work \
-    ghcr.io/naelolaiz/hdltools:release \
+    ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy \
     make
 ```
 

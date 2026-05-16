@@ -57,7 +57,7 @@ jobs:
       matrix:
         project: ${{ fromJson(needs.discover.outputs.projects) }}
     container:
-      image: ghcr.io/naelolaiz/hdltools:release
+      image: ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
