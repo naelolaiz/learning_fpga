@@ -23,7 +23,18 @@ module tl_simulator_writer #(
     localparam integer cClocksForColumn             = 5;
     localparam integer cColumnSeparatorBetweenChars = 1;
 
-    reg [4:0]  sCurrentChar [0:4];
+    // Packed 2D array (SystemVerilog) rather than the unpacked
+    // `reg [4:0] sCurrentChar [0:4]` form: yosys's memory_collect
+    // treats unpacked arrays as memories, and for this 25-bit-total
+    // glyph buffer that triggers a "Replacing memory ... with list
+    // of registers" warning (the array is too small for BRAM, so
+    // yosys converts it to FFs anyway — the warning is informational
+    // but counts toward the project's zero-warning goal). A packed
+    // declaration expresses the same shape but as a single flat
+    // register, so yosys skips memory inference entirely. Access
+    // patterns (`sCurrentChar[row]`, `sCurrentChar[row][bit]`) are
+    // unchanged.
+    reg [4:0][4:0] sCurrentChar;
     reg [4:0]  sOutRow;
     reg        sCurrentBlank;
 
@@ -38,13 +49,11 @@ module tl_simulator_writer #(
     integer vCounterForClocksForColumn      = 0;
     integer vCharHorIndex                   = 0;
 
-    integer i;
-
     initial begin
         sOutRow       = 5'b00000;
         sCurrentBlank = 1'b0;
         done          = 1'b0;
-        for (i = 0; i < 5; i = i + 1) sCurrentChar[i] = 5'b00000;
+        sCurrentChar  = 25'b0;   // packed array: a single flat literal zeroes all 5 rows
     end
 
     always @(posedge inClock) begin
@@ -134,12 +143,22 @@ module tl_simulator_writer #(
             end
         endcase
 
-        for (i = 0; i < 5; i = i + 1) begin
-            if (sCurrentBlank)
-                sOutRow[i] <= 1'b0;
-            else
-                sOutRow[i] <= sCurrentChar[i][cCharHorLength - 1 - vCharHorIndex];
-        end
+        // Unrolled per-row update — iverilog rejects variable indexing
+        // into a packed 2D array (the `sCurrentChar[i]` form below
+        // needed a runtime `i`), so the loop is expanded to five
+        // explicit constant-indexed statements. The packed array is
+        // what dodges yosys's "Replacing memory ... with list of
+        // registers" warning; the unroll is the trade-off.
+        if (sCurrentBlank) sOutRow[0] <= 1'b0;
+        else               sOutRow[0] <= sCurrentChar[0][cCharHorLength - 1 - vCharHorIndex];
+        if (sCurrentBlank) sOutRow[1] <= 1'b0;
+        else               sOutRow[1] <= sCurrentChar[1][cCharHorLength - 1 - vCharHorIndex];
+        if (sCurrentBlank) sOutRow[2] <= 1'b0;
+        else               sOutRow[2] <= sCurrentChar[2][cCharHorLength - 1 - vCharHorIndex];
+        if (sCurrentBlank) sOutRow[3] <= 1'b0;
+        else               sOutRow[3] <= sCurrentChar[3][cCharHorLength - 1 - vCharHorIndex];
+        if (sCurrentBlank) sOutRow[4] <= 1'b0;
+        else               sOutRow[4] <= sCurrentChar[4][cCharHorLength - 1 - vCharHorIndex];
     end
 
     // Combinational gating: each output is the clock when its row is on.

@@ -18,11 +18,21 @@ V_TB_TOPS   := tb_glossary
 V_SRC_FILES := glossary.v top_glossary_board.v
 V_TB_FILES  := test/tb_glossary.v
 
-# Render the glossary netlist with our local skin: a copy of
-# netlistsvg's default with text labels (AND, OR, NOT, XOR, NAND,
-# NOR, XNOR) added inside each gate's IEEE distinctive shape so a
-# reader can map shape <-> name at a glance. The skin lives in this
-# directory so make -C glossary resolves the relative path.
-NETLISTSVG := netlistsvg --skin skin.svg
+# The skin (a superset of netlistsvg's default that adds shape labels
+# for each primitive — AND/OR/NOT/XOR/etc. — plus a $ne shape upstream
+# is missing) lives at mk/skin.svg and is the default for every project
+# via common.mk's NETLISTSVG_SKIN.
+#
+# Only the Node V8 stack bump is project-local: the glossary instances
+# every cell type at once, so the synthesised mux+wire tree is wider
+# than what netlistsvg's recursive `gather` handles on the default
+# stack. Override NETLISTSVG_BIN (not NETLISTSVG) so the default skin
+# is inherited.
+NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
+
+# Glossary intentionally infers a level-sensitive D-latch (the
+# `o_dlatch` output). ghdl-yosys-plugin defaults to erroring on
+# inferred latches; tell it to permit them so the diagram can render.
+GHDL_SYNTH_EXTRA := --latches
 
 include ../../mk/common.mk

@@ -7,7 +7,10 @@
 A personal, progressive **FPGA / VHDL (and now Verilog) tutorial** — a
 collection of small self-contained examples that build up from a blinking
 LED to richer designs (PWM, UART, FIFO, shift registers, 7-segment mux,
-mini-game, VGA & I²S sketches).
+mini-game, VGA & I²S sketches, plus a tutorial-grade **RV32I RISC-V
+computer**: single-cycle + pipelined CPUs, a small SoC with memory-mapped
+UART and SIMD/DSP accelerators, and a tiny Python assembler — see
+[cpu/README.md](cpu/README.md)).
 
 Every project simulates, renders its **netlist diagram** (`*.svg`), and
 renders a **waveform diagram** (`*.svg` + `*.png`) of a testbench
@@ -198,6 +201,18 @@ Two testbenches each side: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_f
 </details>
 
 <details>
+<summary><b><code>ram_sync</code></b> — generic single-port synchronous BRAM with optional hex-file init</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `ram_sync` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/ram_sync.svg" alt="ram_sync netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/ram_sync_v.svg" alt="ram_sync netlist (Verilog)" width="480"> |
+| `tb_ram_sync` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/tb_ram_sync.png" alt="ram_sync waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/tb_ram_sync_v.png" alt="ram_sync waveform (Verilog)" width="480"> |
+
+Parameterised width / depth; the address-width generic with `DEPTH = 2**ADDR_W` derived inside the architecture (avoids `ieee.math_real`/`$clog2` in the port list for cross-tool portability — same idiom as `fifo_sync`). The VHDL twin uses the `signal`-not-`constant` BRAM-inference quirk so Quartus actually maps it to a block RAM (see `ROM_LUT.vhd` for the original example). Used as IMEM and DMEM in the RV32I CPU + SoC.
+
+</details>
+
+<details>
 <summary><b><code>random_generator</code></b> — on-chip random number generator, viewed on a 4-digit 7-segment</summary>
 
 | | VHDL | Verilog |
@@ -323,6 +338,64 @@ Both flows synth the same `VgaController` timing FSM (`vga_driver/VgaController.
 | --- | :---: | :---: |
 | `uart_tx` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx.svg" alt="uart_tx netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx_v.svg" alt="uart_tx netlist (Verilog)" width="480"> |
 | `tb_uart_tx` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx.png" alt="uart_tx waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx_v.png" alt="uart_tx waveform (Verilog)" width="480"> |
+
+</details>
+
+<details>
+<summary><b><code>uart_rx</code></b> — 8N1 UART receiver, 3-tap majority sampler at mid-bit (pairs with <code>uart_tx</code>)</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `uart_rx` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/uart_rx.svg" alt="uart_rx netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/uart_rx_v.svg" alt="uart_rx netlist (Verilog)" width="480"> |
+| `tb_uart_rx` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/tb_uart_rx.png" alt="uart_rx waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/tb_uart_rx_v.png" alt="uart_rx waveform (Verilog)" width="480"> |
+
+Same `CLKS_PER_BIT` generic as `uart_tx` (default 5208 for 50 MHz / 9600 baud). The receiver oversamples each bit at the centre with a 3-tap majority vote, so a single-cycle glitch on the line doesn't corrupt the captured byte. Used by `cpu/riscv_soc`'s memory-mapped UART_RX peripheral.
+
+</details>
+
+### CPU
+
+> See [cpu/README.md](cpu/README.md) for the tutorial overview — recommended reading order, RV32I subset reference, SoC MMIO map, and how to write+assemble+run your own program.
+
+<details>
+<summary><b><code>riscv_singlecycle</code></b> — textbook single-cycle RV32I CPU; one instruction per clock, no pipeline registers</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `riscv_singlecycle` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/riscv_singlecycle.svg" alt="riscv_singlecycle netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/riscv_singlecycle_v.svg" alt="riscv_singlecycle netlist (Verilog)" width="480"> |
+| `tb_riscv_singlecycle_addi` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_addi.png" alt="addi waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_addi_v.png" alt="addi waveform (Verilog)" width="480"> |
+| `tb_riscv_singlecycle_loop` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_loop.png" alt="loop waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_loop_v.png" alt="loop waveform (Verilog)" width="480"> |
+| `tb_riscv_singlecycle_branches` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_branches.png" alt="branches waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_branches_v.png" alt="branches waveform (Verilog)" width="480"> |
+
+Composes structurally from the RV32 building blocks (`alu_rv32`, `regfile_rv32`, `immgen_rv32`, `decoder_rv32`, `ram_sync`). Internal IMEM (init from `IMEM_INIT` hex) + DMEM (sync write / async read). Three programs from [`tools/rv32_asm/programs/`](tools/rv32_asm/programs/) run end-to-end: `prog_addi` (basic R/I-type), `prog_loop` (counted decrement loop with back-edge branch), `prog_branches` (every branch flavour taken AND not-taken).
+
+</details>
+
+<details>
+<summary><b><code>riscv_pipelined</code></b> — 5-stage IF/ID/EX/MEM/WB pipeline; full forwarding, load-use stall, branch flush</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `riscv_pipelined` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/riscv_pipelined.svg" alt="riscv_pipelined netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/riscv_pipelined_v.svg" alt="riscv_pipelined netlist (Verilog)" width="480"> |
+| `tb_riscv_pipelined_addi` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_addi.png" alt="addi waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_addi_v.png" alt="addi waveform (Verilog)" width="480"> |
+| `tb_riscv_pipelined_loop` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_loop.png" alt="loop waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_loop_v.png" alt="loop waveform (Verilog)" width="480"> |
+| `tb_riscv_pipelined_branches` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_branches.png" alt="branches waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_branches_v.png" alt="branches waveform (Verilog)" width="480"> |
+| `tb_riscv_pipelined_load_use` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_load_use.png" alt="load-use waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_load_use_v.png" alt="load-use waveform (Verilog)" width="480"> |
+
+Same external port shape as `riscv_singlecycle`, same hex programs run unchanged — reading the two diagrams side by side shows exactly what pipelining adds: 4 pipeline-register stages, the [`forwarding_unit`](cpu/building_blocks/forwarding_unit/) muxes at the EX-stage ALU operands, and the [`hazard_detector`](cpu/building_blocks/hazard_detector/) driving stall + flush. Adds a fourth TB (`tb_riscv_pipelined_load_use`) that specifically validates the one-cycle bubble inserted on a load-use hazard.
+
+</details>
+
+<details>
+<summary><b><code>riscv_soc</code></b> — small SoC: single-cycle CPU + DMEM + UART + SIMD ALU + 4-tap FIR over MMIO</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `riscv_soc` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_soc/riscv_soc.svg" alt="riscv_soc netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_soc/riscv_soc_v.svg" alt="riscv_soc netlist (Verilog)" width="480"> |
+| `tb_riscv_soc` (Hello-RV32) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_soc/tb_riscv_soc.png" alt="riscv_soc Hello waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_soc/tb_riscv_soc_v.png" alt="riscv_soc Hello waveform (Verilog)" width="480"> |
+| `tb_riscv_soc_simd` (SIMD demo) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_soc/tb_riscv_soc_simd.png" alt="riscv_soc SIMD waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_soc/tb_riscv_soc_simd_v.png" alt="riscv_soc SIMD waveform (Verilog)" width="480"> |
+
+The first runnable computer in the repo. The single-cycle CPU drives an MMIO bus that fans out to UART (TX+RX), the [`simd_alu`](cpu/building_blocks/simd_alu/) packed SIMD ALU, the [`fir4tap`](cpu/building_blocks/fir4tap/) FIR filter, and a 4 KB DMEM. Two demo programs: `prog_hello` prints "Hello, RV32!\n" over UART; `prog_simd` loads SIMD operands via MMIO, reads the result, streams the 4 bytes over UART. The submodule cells in the diagram are clickable + show live nested previews of each child block. See [cpu/README.md](cpu/README.md) for the full MMIO address map.
 
 </details>
 
@@ -453,6 +526,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | --- | :-: | --- | --- |
 | [shift_register](building_blocks/shift_register/)         | ✅ | VHDL + Verilog | Parameterised shift register. |
 | [fifo_sync](building_blocks/fifo_sync/)                   | ✅ | VHDL + Verilog | Synchronous FIFO. |
+| [ram_sync](building_blocks/ram_sync/)                     | ✅ | VHDL + Verilog | Generic synchronous BRAM (single-port, parameterised width / depth). Used as IMEM and DMEM in the RV32I CPU + SoC. |
 | [random_generator](building_blocks/random_generator/)     | ✅ | VHDL + Verilog | On-chip RNG (neoTRNG VHDL, LFSR Verilog) shown on a 4-digit 7-segment; button[0] freezes value. |
 | [serial_to_parallel](building_blocks/serial_to_parallel/) | ✅ | VHDL + Verilog | SIPO shift + snapshot register; thin wrapper around `shift_register`. |
 | [debounce](building_blocks/debounce/)                     | ✅ | VHDL + Verilog | Switch / button debouncer (from nandland.com), with `DEBOUNCE_LIMIT` generic so testbenches can compress sim time. |
@@ -473,13 +547,40 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
 | [uart_tx](comm/uart_tx/)       | ✅ | VHDL + Verilog | 8N1 UART transmitter. |
+| [uart_rx](comm/uart_rx/)       | ✅ | VHDL + Verilog | 8N1 UART receiver, 3-tap majority sampler at mid-bit. Pairs with `uart_tx`; used by `cpu/riscv_soc`'s memory-mapped UART_RX peripheral. |
 | [i2s_test_1](comm/i2s_test_1/) | ✅ | VHDL + Verilog | Sine NCO over I2S to a PCM5102 DAC; mono + stereo top-levels share one `nco_sine` / `sincos_lut` chain. |
 | [uda1380](comm/uda1380/)       | ✅ | VHDL + Verilog | Boot-FSM walks the codec init sequence over I2C; integrated I2S master + tone source for end-to-end playback. Two tops: simulation (`inout`) + a `_core` diagram variant with split `(oe, i)` so netlistsvg renders. |
+
+### CPU
+
+A tutorial-grade 32-bit RISC-V (RV32I subset) computer built bottom-up from the building blocks above. See [cpu/README.md](cpu/README.md) for the recommended reading order, ISA reference, SoC MMIO map, and how to write+assemble+run your own program.
+
+| Project | CI | Languages | Notes |
+| --- | :-: | --- | --- |
+| [cpu/riscv_singlecycle](cpu/riscv_singlecycle/) | ✅ | VHDL + Verilog | Textbook single-cycle RV32I CPU: one instruction per clock, no pipeline. Three test programs (addi / loop / branches) run end-to-end. |
+| [cpu/riscv_soc](cpu/riscv_soc/)                 | ✅ | VHDL + Verilog | Small SoC around the single-cycle CPU: 4 KB DMEM + memory-mapped UART (TX/RX) + SIMD ALU + 4-tap FIR. `prog_hello` prints over UART; `prog_simd` drives the SIMD accelerator end-to-end. |
+| [cpu/riscv_pipelined](cpu/riscv_pipelined/)     | ✅ | VHDL + Verilog | 5-stage IF/ID/EX/MEM/WB pipeline with full forwarding + load-use stall + branch flush. Drop-in replacement for the single-cycle CPU. |
+
+#### CPU building blocks
+
+RV32-specific sub-entities that compose into the CPUs above. (Generic blocks like `ram_sync` live in top-level [building_blocks/](#building-blocks).)
+
+| Project | CI | Languages | Notes |
+| --- | :-: | --- | --- |
+| [cpu/building_blocks/regfile_rv32](cpu/building_blocks/regfile_rv32/)       | ✅ | VHDL + Verilog | 32 × 32 register file; x0 hardwired to 0; falling-edge writes so a same-cycle WB-then-ID read picks up the new value. |
+| [cpu/building_blocks/alu_rv32](cpu/building_blocks/alu_rv32/)               | ✅ | VHDL + Verilog | 10-op ALU (add/sub/and/or/xor/sll/srl/sra/slt/sltu) — covers every R-/I-type RV32I arithmetic case. |
+| [cpu/building_blocks/immgen_rv32](cpu/building_blocks/immgen_rv32/)         | ✅ | VHDL + Verilog | Immediate generator for the 5 RV32I encoding formats (I/S/B/U/J), sign-extended. |
+| [cpu/building_blocks/decoder_rv32](cpu/building_blocks/decoder_rv32/)       | ✅ | VHDL + Verilog | Combinational decoder driving every control signal: rs1/rs2/rd, alu_op, alu_src_a/b, reg_write, mem_read, mem_write, wb_src, is_branch, is_jal, is_jalr, illegal. |
+| [cpu/building_blocks/forwarding_unit](cpu/building_blocks/forwarding_unit/) | ✅ | VHDL + Verilog | Pipeline forwarding-mux decision unit (MEM→EX, WB→EX). Preserves the x0-stays-zero invariant. |
+| [cpu/building_blocks/hazard_detector](cpu/building_blocks/hazard_detector/) | ✅ | VHDL + Verilog | Pipeline stall (load-use) + flush (taken branch) decision unit. |
+| [cpu/building_blocks/simd_alu](cpu/building_blocks/simd_alu/)               | ✅ | VHDL + Verilog | Packed SIMD ALU (4×8 / 2×16 add/sub/min/max + saturation). Hangs off the SoC's MMIO map. |
+| [cpu/building_blocks/fir4tap](cpu/building_blocks/fir4tap/)                 | ✅ | VHDL + Verilog | 4-tap streaming FIR using the Cyclone IV hard 9×9 multipliers; Q1.8 coefficients. |
 
 ### Tools
 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
+| [tools/rv32_asm](tools/rv32_asm/)           | n/a | Python | Tiny RV32I assembler — converts a `.S` source (the subset the CPUs implement) to a `.hex` file the testbenches `$readmemh` / `textio`-load. |
 | [simulator_writer](tools/simulator_writer/) | ✅ | VHDL + Verilog | Waveform writer used to sanity-check the sim flow. |
 
 ---
@@ -505,6 +606,19 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
   behaviour — read the two languages side-by-side in [Gallery](#gallery).
 - New dual-language examples: `pwm_led`, `uart_tx`, `shift_register`,
   `fifo_sync`.
+
+### RISC-V tutorial — done ✅
+
+A bottom-up 32-bit RISC-V (RV32I subset) computer, composed from the project's building blocks. See [cpu/README.md](cpu/README.md) for the full tutorial overview.
+
+- **CPU building blocks**: regfile_rv32, alu_rv32, immgen_rv32, decoder_rv32, forwarding_unit, hazard_detector, simd_alu (packed SIMD), fir4tap (streaming FIR) — all paired VHDL + Verilog with assertion-driven testbenches.
+- **Tiny assembler** ([tools/rv32_asm](tools/rv32_asm/)): Python script converting `.S` (the subset implemented) into `.hex` for `$readmemh` / textio load.
+- **Single-cycle CPU** ([cpu/riscv_singlecycle](cpu/riscv_singlecycle/)): classic textbook flat datapath, one instruction per clock.
+- **Pipelined CPU** ([cpu/riscv_pipelined](cpu/riscv_pipelined/)): 5-stage IF/ID/EX/MEM/WB with full forwarding, load-use stall, branch flush — drop-in replacement for the single-cycle CPU.
+- **SoC** ([cpu/riscv_soc](cpu/riscv_soc/)): single-cycle CPU + 4 KB DMEM + memory-mapped UART (TX + RX) + simd_alu + fir4tap. A demo program (`prog_simd.S`) drives the SIMD ALU through the bus and streams the 4-byte result over UART, end-to-end.
+- **Documentation**: per-block READMEs, plus [cpu/README.md](cpu/README.md) with reading order, ISA reference card, SoC MMIO address map, and a "write+assemble+run your own program" walkthrough.
+
+Out of scope by design (deferrable): byte/halfword memory ops, CSRs, interrupts, M-extension, cache, branch prediction.
 
 ### Test coverage — done ✅
 
@@ -557,6 +671,12 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 
 ### Next up 🎯
 
+- Interrupt-service-routine (ISR) support for the RISC-V CPU: a
+  minimal CSR file (`mtvec`, `mepc`, `mcause`, `mstatus`), an
+  external-interrupt pin, and the `mret` instruction so a program
+  can install a handler and resume. The MMIO peripherals
+  ([UART_RX](comm/uart_rx/), buttons, ...) become real interrupt
+  sources rather than polled-only devices.
 - Small game using the buttons + 7-segment display (snake / space
   invaders). On-FPGA RNG is now available via
   [`random_generator`](building_blocks/random_generator/).

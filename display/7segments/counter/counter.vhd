@@ -28,7 +28,7 @@ architecture behavior of counter is
    signal currentDigitValue : std_logic_vector(BITS_PER_NIBBLE-1 downto 0) := (others => '0');
 
 begin
-   counter: process(clock)
+   tick: process(clock)
    begin
       if rising_edge(clock) then
 

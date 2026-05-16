@@ -32,10 +32,171 @@ gets a unique cell_<name> id.
 import argparse
 import re
 import sys
+from xml.sax.saxutils import escape as _xml_escape
 
 
 _G_OPEN  = re.compile(r"<g\b[^>]*?(/?)>", re.DOTALL)
 _G_CLOSE = re.compile(r"</g\s*>")
+
+
+# Yosys primitive cell types that netlistsvg's default skin has no
+# specialised symbol for, so they fall through to a literal `<text>`
+# of the type name. Map each to a short human-readable label so the
+# rendered diagram doesn't carry yosys's `$type` jargon to the
+# reader. This list is conservative — only types we've actually
+# observed leaking through to the rendered SVG. Add to it as new
+# leaks appear.
+PRIMITIVE_LABELS = {
+    # Memory
+    "$mem_v2":     "RAM",
+    # Arithmetic
+    "$mul":        "*",
+    "$div":        "/",
+    "$mod":        "%",
+    "$divfloor":   "/⌊",      # floor div (signed semantics)
+    "$modfloor":   "%⌊",      # floor mod (signed semantics)
+    "$pos":        "+",
+    "$neg":        "−",       # − (minus)
+    # Reductions
+    "$reduce_or":  "≥1",      # true if any input bit is 1
+    "$reduce_and": "all",
+    "$reduce_bool":"≠0",      # true if input is non-zero
+    "$reduce_xor": "XOR-r",
+    "$reduce_xnor":"XNOR-r",
+    # Shifts
+    "$shl":        "<<",
+    "$shr":        ">>",
+    "$sshr":       ">>>",     # arithmetic right shift
+    "$shift":      "shift",
+    "$shiftx":     "shift",
+    "$shrx":       "shift",
+    # Comparisons that fall through (most have netlistsvg symbols, $ne does not)
+    "$ne":         "≠",
+    "$eqx":        "===",     # X-aware ==
+    "$nex":        "!==",     # X-aware !=
+    # Logic
+    "$logic_not":  "!",
+    "$logic_and":  "&&",
+    "$logic_or":   "||",
+    # Misc
+    "$ternary":    "?:",
+    "$pmux":       "pmux",
+    "$bmux":       "bmux",
+    "$demux":      "demux",
+    "$tribuf":     "tri",
+    # Latches (shape provided by glossary's local skin; falls through
+    # to text in projects using the default skin)
+    "$dlatch":     "latch",
+    "$adlatch":    "latch",
+    "$dlatchsr":   "latch/SR",
+    "$sr":         "SR",
+    # Flip-flop variants. yosys's default-skin alias only covers
+    # `$dff`; everything below falls through to `<text>` and needs a
+    # friendly label. The label format is "DFF/<modifiers>" so the
+    # qualifier reads off the cell at a glance:
+    #   AR  = async reset    SR = sync reset    E = clock enable
+    "$adff":       "DFF/AR",
+    "$sdff":       "DFF/SR",
+    "$dffe":       "DFF/E",
+    "$adffe":      "DFF/AR+E",
+    "$sdffe":      "DFF/SR+E",
+    "$dffsr":      "DFF/SR2",     # set + reset
+    "$dffsre":     "DFF/SR2+E",
+}
+
+
+def beautify_primitives(svg: str) -> str:
+    """Rewrite `<text class="nodelabel ...">$type</text>` for any
+    yosys primitive cell type in PRIMITIVE_LABELS to a friendly
+    label. Only replaces complete-string nodelabels, so nested or
+    composite text isn't affected. Idempotent — running twice does
+    nothing the second time.
+
+    Labels are XML-escaped before substitution: `<<` / `>>` / `&&`
+    are tempting friendly forms, but emitted raw they break the
+    SVG's XML parser (`<text>...<<</text>` looks like a malformed
+    tag). `_xml_escape` converts to `&lt;&lt;` / `&gt;&gt;` /
+    `&amp;&amp;`, which the rendered text node displays exactly as
+    written.
+    """
+    nodelabel = re.compile(
+        r'(<text[^>]*\bclass="nodelabel[^"]*"[^>]*>)'
+        r'(\$[A-Za-z_0-9]+)'
+        r'(</text>)'
+    )
+
+    def repl(m: re.Match) -> str:
+        type_name = m.group(2)
+        pretty = PRIMITIVE_LABELS.get(type_name)
+        if pretty is None:
+            return m.group(0)
+        return m.group(1) + _xml_escape(pretty) + m.group(3)
+
+    return nodelabel.sub(repl, svg)
+
+
+def assert_no_dollar_nodelabels(svg: str, path: str) -> None:
+    """Fail the build if any visible nodelabel still starts with `$`.
+
+    A leftover `<text class="nodelabel ...">$xxx</text>` means the
+    yosys cell type didn't get a friendly label from
+    PRIMITIVE_LABELS. Add the missing entry to the table rather than
+    shipping the raw `$type` to the gallery.
+
+    Catching this at post-render means the next time a yosys version
+    bump introduces a new primitive cell type, the build fails on
+    the first SVG that surfaces it instead of silently degrading the
+    rendered diagrams.
+    """
+    leaks = re.findall(
+        r'<text[^>]*\bclass="nodelabel[^"]*"[^>]*>(\$[A-Za-z_0-9]+)</text>',
+        svg,
+    )
+    if not leaks:
+        return
+    from collections import Counter
+    summary = Counter(leaks).most_common()
+    msg = (
+        f"svg_add_links: {path}: {len(leaks)} nodelabel(s) still carry a "
+        f"raw $-prefixed cell type:"
+    )
+    for t, n in summary:
+        msg += f"\n    {n:4d}  {t!r}"
+    msg += (
+        "\n  Add an entry for each to PRIMITIVE_LABELS in "
+        "mk/svg_add_links.py."
+    )
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+
+def assert_well_formed_xml(svg: str, path: str) -> None:
+    """Parse the (possibly post-processed) SVG with the stdlib XML
+    parser and raise SystemExit on the first malformed-tag error.
+
+    Catching it at the python layer beats discovering it later when
+    the file is served from the gallery and a browser refuses to
+    render it. The cost is negligible — the parser handles even the
+    largest project diagrams in a few milliseconds.
+    """
+    from xml.etree import ElementTree as ET
+    try:
+        ET.fromstring(svg)
+    except ET.ParseError as e:
+        # Show the offending region so the cause is obvious — most
+        # XML errors are a few characters' worth of context.
+        line, col = e.position
+        lines = svg.splitlines()
+        bad = lines[line - 1] if 1 <= line <= len(lines) else ""
+        marker = " " * max(col - 1, 0) + "^"
+        msg = (
+            f"svg_add_links: {path}: produced invalid XML at "
+            f"line {line}, col {col}: {e}\n"
+            f"    {bad}\n"
+            f"    {marker}"
+        )
+        print(msg, file=sys.stderr)
+        sys.exit(1)
 
 
 def _find_cell_extent(svg: str, cell_id: str) -> tuple[int, int] | None:
@@ -230,12 +391,27 @@ def main() -> int:
                         help="inline the SVG at local_path as a nested <svg> "
                              "inside cell_<cell_id> (read at build time, no "
                              "live cross-document reference)")
+    parser.add_argument("--beautify-primitives", action="store_true",
+                        help="rewrite yosys primitive cell-type labels "
+                             "($mem_v2, $reduce_or, $shl, ...) in nodelabel "
+                             "<text> elements to short human-readable forms")
     args = parser.parse_args()
 
     with open(args.svg_path, encoding="utf-8") as f:
         svg = f.read()
 
     rc = 0
+
+    # Beautify yosys primitive labels first — it's a global, idempotent
+    # text substitution that doesn't depend on cell IDs, so no risk of
+    # interfering with the per-cell relabel/link/preview steps that
+    # follow.
+    if args.beautify_primitives:
+        before = svg
+        svg = beautify_primitives(svg)
+        if svg != before:
+            print(f"svg_add_links: {args.svg_path}: beautified yosys primitives")
+
     # Relabel first — wrapping the cell with an <a> doesn't disturb
     # the inner <text>, but rewriting after wrap would still work
     # either way.
@@ -282,6 +458,17 @@ def main() -> int:
 
     with open(args.svg_path, "w", encoding="utf-8") as f:
         f.write(svg)
+
+    # Always validate the post-processed result. Catches mistakes in
+    # the beautifier table (unescaped < / > / &), in --relabel
+    # arguments, and in the netlistsvg upstream that we'd otherwise
+    # discover only when a browser refuses to render the file.
+    assert_well_formed_xml(svg, args.svg_path)
+
+    # Also fail the build if any visible nodelabel still starts with
+    # `$` — that means PRIMITIVE_LABELS is missing an entry.
+    assert_no_dollar_nodelabels(svg, args.svg_path)
+
     return rc
 
 

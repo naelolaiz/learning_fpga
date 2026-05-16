@@ -6,6 +6,18 @@
 // the bus high. Continuous-mode operation (ena held high across
 // bytes) skips the stop bit between transfers.
 
+// Guarded with `ifndef YOSYS` (yosys-specific macro) rather than
+// the more generic `SYNTHESIS`. Quartus / Vivado also define
+// `SYNTHESIS` when compiling for the board, but we WANT them to see
+// this inout version — tri-state is the real I/O behaviour on the
+// chip. We only want to hide it from yosys, where tri-state has
+// "limited support" and emits a warning each time the file is read.
+// yosys auto-defines `YOSYS`; iverilog and the FPGA synth tools
+// don't, so simulation and board synthesis both pick up the module
+// normally. The yosys diagram flow uses the split-port
+// `i2c_master_for_diagram.v` instead.
+`ifndef YOSYS
+
 module i2c_master #(
     parameter integer input_clk = 50_000_000,
     parameter integer bus_clk   = 400_000
@@ -225,3 +237,5 @@ module i2c_master #(
     assign sda = (!sda_ena_n)          ? 1'b0 : 1'bz;
 
 endmodule
+
+`endif

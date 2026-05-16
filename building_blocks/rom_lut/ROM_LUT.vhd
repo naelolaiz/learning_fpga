@@ -29,8 +29,15 @@ ARCHITECTURE rtl OF single_clock_rom IS
    type HexMultiplicationTableType is array (0 to 15) of std_logic_vector(ELEMENTS_BITS_COUNT-1 downto 0);
    type TableOfTablesType is array (0 to ARRAY_SIZE-1) of HexMultiplicationTableType;
 
--- IMPORTANT!!!!!! In order to synthesize this as BRAM THIS NEEDS TO BE SIGNAL, NOT CONSTANT! Otherwise it will use logic elements instead of BRAM.
- signal rom : TableOfTablesType :=
+-- Read-only table backed by a constant. An older note here claimed
+-- "this needs to be SIGNAL to coax Quartus into emitting BRAM" —
+-- with Quartus Lite 21.1 (and modern yosys via ghdl-yosys-plugin)
+-- a constant array of this shape is recognised as a ROM directly,
+-- so the constant form is preferred. It also keeps GHDL happy:
+-- a `signal` initialised once and never assigned in any process
+-- trips `-Wnowrite` ("signal never assigned"), which the project
+-- as a whole is warning-free against.
+ constant rom : TableOfTablesType :=
 ((9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000", 9x"000"), -- sin(0) (redundant... TODO: remove) 
  (9x"000", 9x"002", 9x"003", 9x"005", 9x"006", 9x"008", 9x"009", 9x"00b", 9x"00c", 9x"00e", 9x"00f", 9x"011", 9x"012", 9x"014", 9x"015", 9x"017"),
  (9x"000", 9x"003", 9x"006", 9x"009", 9x"00c", 9x"00f", 9x"012", 9x"015", 9x"018", 9x"01b", 9x"01e", 9x"021", 9x"024", 9x"028", 9x"02b", 9x"02e"),

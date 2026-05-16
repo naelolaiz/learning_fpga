@@ -61,8 +61,31 @@
 
 # ---- Tool discovery (overridable from the environment) --------------------
 GHDL          ?= ghdl
+# yosys is invoked with `-q` everywhere in the diagram rules below.
+# `-q` suppresses yosys's normal info logging — most importantly the
+# per-signal "No latch inferred for signal X" notes that PROC_DLATCH
+# emits for every combinational signal it checks (one large design
+# can produce thousands of these, drowning out actual issues).
+# `Warning:` and `Error:` lines are NOT affected; verified on
+# random_generator (whose neoTRNG ring oscillators still surface
+# their intentional "found logic loop" warnings under -q).
 YOSYS         ?= yosys
-NETLISTSVG    ?= netlistsvg
+# Split NETLISTSVG into _BIN + _SKIN + composed default so projects
+# that need to override just one piece can do so without losing the
+# other. Common cases:
+#   * Big designs that need a bigger Node V8 stack just override
+#     NETLISTSVG_BIN (see cpu/riscv_singlecycle/Makefile).
+#   * Projects that want a different glyph style override
+#     NETLISTSVG_SKIN.
+#   * Projects that need both override NETLISTSVG directly.
+# The default skin (mk/skin.svg) is a superset of netlistsvg's
+# upstream default — same cell shapes plus $ne (the inequality
+# comparator yosys emits but upstream forgot to draw), so a yosys
+# graph with a `!=` operator renders consistently with the other
+# comparators instead of falling through to a text rectangle.
+NETLISTSVG_BIN  ?= netlistsvg
+NETLISTSVG_SKIN ?= $(COMMON_MK_DIR)skin.svg
+NETLISTSVG      ?= $(NETLISTSVG_BIN) --skin $(NETLISTSVG_SKIN)
 WAVEVIEW      ?= waveview
 IVERILOG      ?= iverilog
 VVP           ?= vvp
@@ -238,8 +261,14 @@ elaborate: $(foreach tb,$(TB_TOPS),elaborate-$(tb))
 define GHDL_SIM_RULE
 $$(call tb_wave,$(1)): elaborate-$(1) | $$(BUILD_DIR)
 	$$(GHDL) -r $$(GHDL_SIM_FLAGS) $(1) --assert-level=$$(ASSERT_LEVEL) \
+	    --ieee-asserts=disable-at-0 \
 	    --fst=$$@ $$(SIM_STOPTIME)
 endef
+# `--ieee-asserts=disable-at-0` suppresses the harmless metavalue
+# warnings IEEE numeric_std emits at t=0 (before signals propagate
+# through the first delta cycle). Real X-propagation bugs that
+# surface AFTER t=0 still print, so the noise floor drops without
+# masking actual failures.
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_SIM_RULE,$(tb))))
 
 simulate: $(WAVE_FILES)
@@ -277,18 +306,17 @@ else
 diagram: $(DIAGRAM_SVG)
 
 $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
-	$(YOSYS) -m ghdl -p \
+	$(YOSYS) -q -m ghdl -p \
 	    "ghdl $(GHDL_SYNTH_STD) -fsynopsys $(GHDL_SYNTH_EXTRA) $(SRC_FILES) -e $(TOP); \
 	     prep -top $(TOP); \
 	     write_json -compat-int $@"
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	$(if $(or $(strip $(SVG_LINKS)),$(strip $(SVG_RELABEL)),$(strip $(SVG_PREVIEW))), \
-	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
-	        $(addprefix --link ,$(SVG_LINKS)) \
-	        $(addprefix --relabel ,$(SVG_RELABEL)) \
-	        $(addprefix --preview ,$(SVG_PREVIEW)))
+	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
+	    $(addprefix --link ,$(SVG_LINKS)) \
+	    $(addprefix --relabel ,$(SVG_RELABEL)) \
+	    $(addprefix --preview ,$(SVG_PREVIEW))
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -349,18 +377,17 @@ else
 diagram_v: $(V_DIAGRAM_SVG)
 
 $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
-	$(YOSYS) -p \
+	$(YOSYS) -q -p \
 	    "read_verilog -sv $(addprefix -D,$(V_DEFINES)) $(addprefix -I,$(V_INCDIRS)) $(V_SRC_FILES); \
 	     prep -top $(V_TOP); \
 	     write_json -compat-int $@"
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	$(if $(or $(strip $(V_SVG_LINKS)),$(strip $(V_SVG_RELABEL)),$(strip $(V_SVG_PREVIEW))), \
-	    python3 $(COMMON_MK_DIR)svg_add_links.py $@ \
-	        $(addprefix --link ,$(V_SVG_LINKS)) \
-	        $(addprefix --relabel ,$(V_SVG_RELABEL)) \
-	        $(addprefix --preview ,$(V_SVG_PREVIEW)))
+	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
+	    $(addprefix --link ,$(V_SVG_LINKS)) \
+	    $(addprefix --relabel ,$(V_SVG_RELABEL)) \
+	    $(addprefix --preview ,$(V_SVG_PREVIEW))
 endif
 
 else
