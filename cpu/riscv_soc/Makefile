@@ -28,9 +28,21 @@ VHDL_STANDARD := 08
 # the shared skin from common.mk's NETLISTSVG_SKIN default.
 NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 
-# VHDL-only for the integrated SoC, per the plan: the building
-# blocks have their Verilog twins; the SoC top stays single-language
-# to keep the tutorial focused.
+# Verilog mirror — same composition, sourced from the .v twins of
+# each building block. The two flows are bit-equivalent on the
+# Hello-RV32 demo program.
+V_TOP       := riscv_soc
+V_TB_TOPS   := tb_riscv_soc
+V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
+               ../building_blocks/regfile_rv32/regfile_rv32.v \
+               ../building_blocks/alu_rv32/alu_rv32.v \
+               ../building_blocks/immgen_rv32/immgen_rv32.v \
+               ../building_blocks/decoder_rv32/decoder_rv32.v \
+               ../../comm/uart_tx/uart_tx.v \
+               ../../comm/uart_rx/uart_rx.v \
+               riscv_singlecycle.v \
+               riscv_soc.v
+V_TB_FILES  := test/tb_riscv_soc.v
 
 # Diagram tweaks — same composite pattern as
 # building_blocks/serial_to_parallel: each submodule instance in the
@@ -57,6 +69,21 @@ SVG_PREVIEW := cpu=../riscv_singlecycle/build/riscv_singlecycle.svg \
                rx=../../comm/uart_rx/build/uart_rx.svg \
                dmem=../../building_blocks/ram_sync/build/ram_sync.svg
 
+# Same composite annotations on the Verilog side.
+V_SVG_RELABEL := cpu=riscv_singlecycle \
+                 tx=uart_tx \
+                 rx=uart_rx
+
+V_SVG_LINKS   := cpu=../cpu-riscv_singlecycle/riscv_singlecycle_v.svg \
+                 tx=../comm-uart_tx/uart_tx_v.svg \
+                 rx=../comm-uart_rx/uart_rx_v.svg \
+                 dmem=../building_blocks-ram_sync/ram_sync_v.svg
+
+V_SVG_PREVIEW := cpu=../riscv_singlecycle/build/riscv_singlecycle_v.svg \
+                 tx=../../comm/uart_tx/build/uart_tx_v.svg \
+                 rx=../../comm/uart_rx/build/uart_rx_v.svg \
+                 dmem=../../building_blocks/ram_sync/build/ram_sync_v.svg
+
 # `make golden` re-assembles programs/prog_hello.S into prog_hello.hex
 # using the project's Python assembler. Review the diff before
 # committing the new .hex.
@@ -75,6 +102,11 @@ $(DIAGRAM_SVG): ../riscv_singlecycle/build/riscv_singlecycle.svg \
                 ../../comm/uart_rx/build/uart_rx.svg \
                 ../../building_blocks/ram_sync/build/ram_sync.svg
 
+$(V_DIAGRAM_SVG): ../riscv_singlecycle/build/riscv_singlecycle_v.svg \
+                  ../../comm/uart_tx/build/uart_tx_v.svg \
+                  ../../comm/uart_rx/build/uart_rx_v.svg \
+                  ../../building_blocks/ram_sync/build/ram_sync_v.svg
+
 ../riscv_singlecycle/build/riscv_singlecycle.svg:
 	$(MAKE) -C ../riscv_singlecycle diagram
 ../../comm/uart_tx/build/uart_tx.svg:
@@ -83,3 +115,12 @@ $(DIAGRAM_SVG): ../riscv_singlecycle/build/riscv_singlecycle.svg \
 	$(MAKE) -C ../../comm/uart_rx diagram
 ../../building_blocks/ram_sync/build/ram_sync.svg:
 	$(MAKE) -C ../../building_blocks/ram_sync diagram
+
+../riscv_singlecycle/build/riscv_singlecycle_v.svg:
+	$(MAKE) -C ../riscv_singlecycle diagram_v
+../../comm/uart_tx/build/uart_tx_v.svg:
+	$(MAKE) -C ../../comm/uart_tx diagram_v
+../../comm/uart_rx/build/uart_rx_v.svg:
+	$(MAKE) -C ../../comm/uart_rx diagram_v
+../../building_blocks/ram_sync/build/ram_sync_v.svg:
+	$(MAKE) -C ../../building_blocks/ram_sync diagram_v

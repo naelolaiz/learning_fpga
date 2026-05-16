@@ -29,9 +29,22 @@ VHDL_STANDARD := 08
 # inherits the shared skin from common.mk's NETLISTSVG_SKIN default.
 NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 
-# CPU + memories are VHDL-only by design (per the plan). No Verilog
-# mirror — the building blocks have their Verilog twins; the
-# integrated CPU stays single-language to keep the tutorial focused.
+# Verilog mirror — same composition as the VHDL side, but sourced
+# from the .v twins of each building block. The two flows produce
+# bit-equivalent behaviour on every hex program.
+V_TOP       := riscv_singlecycle
+V_TB_TOPS   := tb_riscv_singlecycle_addi \
+               tb_riscv_singlecycle_loop \
+               tb_riscv_singlecycle_branches
+V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
+               ../building_blocks/regfile_rv32/regfile_rv32.v \
+               ../building_blocks/alu_rv32/alu_rv32.v \
+               ../building_blocks/immgen_rv32/immgen_rv32.v \
+               ../building_blocks/decoder_rv32/decoder_rv32.v \
+               riscv_singlecycle.v
+V_TB_FILES  := test/tb_riscv_singlecycle_addi.v \
+               test/tb_riscv_singlecycle_loop.v \
+               test/tb_riscv_singlecycle_branches.v
 
 # Diagram tweaks — same composite pattern as
 # building_blocks/serial_to_parallel: each submodule instance in the
@@ -63,6 +76,27 @@ SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32.svg \
                alu=../building_blocks/alu_rv32/build/alu_rv32.svg \
                dmem=../../building_blocks/ram_sync/build/ram_sync.svg
 
+# Same composite annotations on the Verilog side. The cell IDs match
+# the instance names in riscv_singlecycle.v (which mirror the VHDL's
+# entity-instance labels). The gallery URL convention adds a `_v`
+# suffix to distinguish Verilog netlists from VHDL.
+V_SVG_RELABEL := decoder=decoder_rv32 \
+                 immgen=immgen_rv32 \
+                 regfile=regfile_rv32 \
+                 alu=alu_rv32
+
+V_SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32_v.svg \
+                 immgen=../cpu-building_blocks-immgen_rv32/immgen_rv32_v.svg \
+                 regfile=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg \
+                 alu=../cpu-building_blocks-alu_rv32/alu_rv32_v.svg \
+                 dmem=../building_blocks-ram_sync/ram_sync_v.svg
+
+V_SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32_v.svg \
+                 immgen=../building_blocks/immgen_rv32/build/immgen_rv32_v.svg \
+                 regfile=../building_blocks/regfile_rv32/build/regfile_rv32_v.svg \
+                 alu=../building_blocks/alu_rv32/build/alu_rv32_v.svg \
+                 dmem=../../building_blocks/ram_sync/build/ram_sync_v.svg
+
 include ../../mk/common.mk
 
 # Cross-project diagram prereqs: SVG_PREVIEW (above) reads each
@@ -75,6 +109,12 @@ $(DIAGRAM_SVG): ../building_blocks/decoder_rv32/build/decoder_rv32.svg \
                 ../building_blocks/alu_rv32/build/alu_rv32.svg \
                 ../../building_blocks/ram_sync/build/ram_sync.svg
 
+$(V_DIAGRAM_SVG): ../building_blocks/decoder_rv32/build/decoder_rv32_v.svg \
+                  ../building_blocks/immgen_rv32/build/immgen_rv32_v.svg \
+                  ../building_blocks/regfile_rv32/build/regfile_rv32_v.svg \
+                  ../building_blocks/alu_rv32/build/alu_rv32_v.svg \
+                  ../../building_blocks/ram_sync/build/ram_sync_v.svg
+
 ../building_blocks/decoder_rv32/build/decoder_rv32.svg:
 	$(MAKE) -C ../building_blocks/decoder_rv32 diagram
 ../building_blocks/immgen_rv32/build/immgen_rv32.svg:
@@ -85,3 +125,14 @@ $(DIAGRAM_SVG): ../building_blocks/decoder_rv32/build/decoder_rv32.svg \
 	$(MAKE) -C ../building_blocks/alu_rv32 diagram
 ../../building_blocks/ram_sync/build/ram_sync.svg:
 	$(MAKE) -C ../../building_blocks/ram_sync diagram
+
+../building_blocks/decoder_rv32/build/decoder_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/decoder_rv32 diagram_v
+../building_blocks/immgen_rv32/build/immgen_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/immgen_rv32 diagram_v
+../building_blocks/regfile_rv32/build/regfile_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/regfile_rv32 diagram_v
+../building_blocks/alu_rv32/build/alu_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/alu_rv32 diagram_v
+../../building_blocks/ram_sync/build/ram_sync_v.svg:
+	$(MAKE) -C ../../building_blocks/ram_sync diagram_v

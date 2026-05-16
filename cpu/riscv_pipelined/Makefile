@@ -33,11 +33,26 @@ VHDL_STANDARD := 08
 # single-cycle CPU; inherit the centralised skin from common.mk.
 NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 
-# CPU is VHDL-only by design (per the plan). The Phase A building
-# blocks (alu_rv32, regfile_rv32, etc.) and the new sub-entities
-# (forwarding_unit, hazard_detector) have their Verilog twins; the
-# integrated pipelined CPU stays single-language to keep the
-# tutorial focused.
+# Verilog mirror — same composition, sourced from the .v twins of
+# each building block including the new pipeline-specific helpers
+# (forwarding_unit, hazard_detector).
+V_TOP       := riscv_pipelined
+V_TB_TOPS   := tb_riscv_pipelined_addi \
+               tb_riscv_pipelined_loop \
+               tb_riscv_pipelined_branches \
+               tb_riscv_pipelined_load_use
+V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
+               ../building_blocks/regfile_rv32/regfile_rv32.v \
+               ../building_blocks/alu_rv32/alu_rv32.v \
+               ../building_blocks/immgen_rv32/immgen_rv32.v \
+               ../building_blocks/decoder_rv32/decoder_rv32.v \
+               ../building_blocks/forwarding_unit/forwarding_unit.v \
+               ../building_blocks/hazard_detector/hazard_detector.v \
+               riscv_pipelined.v
+V_TB_FILES  := test/tb_riscv_pipelined_addi.v \
+               test/tb_riscv_pipelined_loop.v \
+               test/tb_riscv_pipelined_branches.v \
+               test/tb_riscv_pipelined_load_use.v
 
 # Diagram tweaks — same composite pattern as C1. Cell IDs match the
 # entity instance labels in riscv_pipelined.vhd (decoder, immgen,
@@ -65,6 +80,30 @@ SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32.svg \
                hd=../building_blocks/hazard_detector/build/hazard_detector.svg \
                dmem=../../building_blocks/ram_sync/build/ram_sync.svg
 
+# Same composite annotations on the Verilog side.
+V_SVG_RELABEL := decoder=decoder_rv32 \
+                 immgen=immgen_rv32 \
+                 regfile=regfile_rv32 \
+                 alu=alu_rv32 \
+                 fu=forwarding_unit \
+                 hd=hazard_detector
+
+V_SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32_v.svg \
+                 immgen=../cpu-building_blocks-immgen_rv32/immgen_rv32_v.svg \
+                 regfile=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg \
+                 alu=../cpu-building_blocks-alu_rv32/alu_rv32_v.svg \
+                 fu=../cpu-building_blocks-forwarding_unit/forwarding_unit_v.svg \
+                 hd=../cpu-building_blocks-hazard_detector/hazard_detector_v.svg \
+                 dmem=../building_blocks-ram_sync/ram_sync_v.svg
+
+V_SVG_PREVIEW := decoder=../building_blocks/decoder_rv32/build/decoder_rv32_v.svg \
+                 immgen=../building_blocks/immgen_rv32/build/immgen_rv32_v.svg \
+                 regfile=../building_blocks/regfile_rv32/build/regfile_rv32_v.svg \
+                 alu=../building_blocks/alu_rv32/build/alu_rv32_v.svg \
+                 fu=../building_blocks/forwarding_unit/build/forwarding_unit_v.svg \
+                 hd=../building_blocks/hazard_detector/build/hazard_detector_v.svg \
+                 dmem=../../building_blocks/ram_sync/build/ram_sync_v.svg
+
 include ../../mk/common.mk
 
 # Cross-project diagram prereqs.
@@ -90,3 +129,26 @@ $(DIAGRAM_SVG): ../building_blocks/decoder_rv32/build/decoder_rv32.svg \
 	$(MAKE) -C ../building_blocks/hazard_detector diagram
 ../../building_blocks/ram_sync/build/ram_sync.svg:
 	$(MAKE) -C ../../building_blocks/ram_sync diagram
+
+$(V_DIAGRAM_SVG): ../building_blocks/decoder_rv32/build/decoder_rv32_v.svg \
+                  ../building_blocks/immgen_rv32/build/immgen_rv32_v.svg \
+                  ../building_blocks/regfile_rv32/build/regfile_rv32_v.svg \
+                  ../building_blocks/alu_rv32/build/alu_rv32_v.svg \
+                  ../building_blocks/forwarding_unit/build/forwarding_unit_v.svg \
+                  ../building_blocks/hazard_detector/build/hazard_detector_v.svg \
+                  ../../building_blocks/ram_sync/build/ram_sync_v.svg
+
+../building_blocks/decoder_rv32/build/decoder_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/decoder_rv32 diagram_v
+../building_blocks/immgen_rv32/build/immgen_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/immgen_rv32 diagram_v
+../building_blocks/regfile_rv32/build/regfile_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/regfile_rv32 diagram_v
+../building_blocks/alu_rv32/build/alu_rv32_v.svg:
+	$(MAKE) -C ../building_blocks/alu_rv32 diagram_v
+../building_blocks/forwarding_unit/build/forwarding_unit_v.svg:
+	$(MAKE) -C ../building_blocks/forwarding_unit diagram_v
+../building_blocks/hazard_detector/build/hazard_detector_v.svg:
+	$(MAKE) -C ../building_blocks/hazard_detector diagram_v
+../../building_blocks/ram_sync/build/ram_sync_v.svg:
+	$(MAKE) -C ../../building_blocks/ram_sync diagram_v
