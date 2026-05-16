@@ -238,8 +238,14 @@ elaborate: $(foreach tb,$(TB_TOPS),elaborate-$(tb))
 define GHDL_SIM_RULE
 $$(call tb_wave,$(1)): elaborate-$(1) | $$(BUILD_DIR)
 	$$(GHDL) -r $$(GHDL_SIM_FLAGS) $(1) --assert-level=$$(ASSERT_LEVEL) \
+	    --ieee-asserts=disable-at-0 \
 	    --fst=$$@ $$(SIM_STOPTIME)
 endef
+# `--ieee-asserts=disable-at-0` suppresses the harmless metavalue
+# warnings IEEE numeric_std emits at t=0 (before signals propagate
+# through the first delta cycle). Real X-propagation bugs that
+# surface AFTER t=0 still print, so the noise floor drops without
+# masking actual failures.
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_SIM_RULE,$(tb))))
 
 simulate: $(WAVE_FILES)
