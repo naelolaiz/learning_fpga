@@ -39,64 +39,41 @@ _G_OPEN  = re.compile(r"<g\b[^>]*?(/?)>", re.DOTALL)
 _G_CLOSE = re.compile(r"</g\s*>")
 
 
-# Yosys primitive cell types that netlistsvg's default skin has no
-# specialised symbol for, so they fall through to a literal `<text>`
-# of the type name. Map each to a short human-readable label so the
-# rendered diagram doesn't carry yosys's `$type` jargon to the
-# reader. This list is conservative — only types we've actually
-# observed leaking through to the rendered SVG. Add to it as new
-# leaks appear.
+# Yosys primitive cell types that netlistsvg's bundled default skin
+# has no specialised symbol for. Those cells fall through to the
+# generic rectangle whose visible `<text>` is the type name; map each
+# to a short human-readable label so the rendered diagram doesn't
+# carry yosys's `$type` jargon to the reader. Types the default skin
+# already renders as a symbol (add, sub, mul, div, mod, pos, neg, eq,
+# ne, lt, le, ge, gt, shl, shr, sshl, sshr, all reductions, all the
+# bitwise gates, mux, pmux, dff/adff/sdff, dlatch/adlatch, tribuf,
+# and their -bus variants for mux/dff/dffn/dlatch/dlatchn/tribuf) are
+# intentionally omitted — they never leak as text.
 PRIMITIVE_LABELS = {
-    # Memory
+    # Memory — the default skin has no $mem/$mem_v2 symbol.
     "$mem_v2":     "RAM",
-    # Arithmetic
-    "$mul":        "*",
-    "$div":        "/",
-    "$mod":        "%",
+    "$mem":        "RAM",
+    # Arithmetic variants the skin doesn't ship a symbol for.
     "$divfloor":   "/⌊",      # floor div (signed semantics)
     "$modfloor":   "%⌊",      # floor mod (signed semantics)
-    "$pos":        "+",
-    "$neg":        "−",       # − (minus)
-    # Reductions
-    "$reduce_or":  "≥1",      # true if any input bit is 1
-    "$reduce_and": "all",
-    "$reduce_bool":"≠0",      # true if input is non-zero
-    "$reduce_xor": "XOR-r",
-    "$reduce_xnor":"XNOR-r",
-    # Shifts
-    "$shl":        "<<",
-    "$shr":        ">>",
-    "$sshr":       ">>>",     # arithmetic right shift
+    # Variable-shift wrappers — only the constant-shift symbols ($shl /
+    # $shr / $sshl / $sshr) ship in the skin.
     "$shift":      "shift",
     "$shiftx":     "shift",
     "$shrx":       "shift",
-    # Comparisons that fall through (most have netlistsvg symbols, $ne does not)
-    "$ne":         "≠",
-    "$eqx":        "===",     # X-aware ==
-    "$nex":        "!==",     # X-aware !=
-    # Logic
-    "$logic_not":  "!",
-    "$logic_and":  "&&",
-    "$logic_or":   "||",
-    # Misc
-    "$ternary":    "?:",
-    "$pmux":       "pmux",
+    # Muxes the skin doesn't alias to its mux shape ($mux / $pmux do
+    # render symbolically).
     "$bmux":       "bmux",
     "$demux":      "demux",
-    "$tribuf":     "tri",
-    # Latches (shape provided by glossary's local skin; falls through
-    # to text in projects using the default skin)
-    "$dlatch":     "latch",
-    "$adlatch":    "latch",
+    # Misc
+    "$ternary":    "?:",
+    # Latches with set/reset — only $dlatch/$adlatch are aliased to
+    # the dlatch shape.
     "$dlatchsr":   "latch/SR",
     "$sr":         "SR",
-    # Flip-flop variants. yosys's default-skin alias only covers
-    # `$dff`; everything below falls through to `<text>` and needs a
-    # friendly label. The label format is "DFF/<modifiers>" so the
-    # qualifier reads off the cell at a glance:
+    # Flip-flop variants the skin doesn't alias. The label format is
+    # "DFF/<modifiers>" so the qualifier reads off the cell at a glance:
     #   AR  = async reset    SR = sync reset    E = clock enable
-    "$adff":       "DFF/AR",
-    "$sdff":       "DFF/SR",
     "$dffe":       "DFF/E",
     "$adffe":      "DFF/AR+E",
     "$sdffe":      "DFF/SR+E",
@@ -121,13 +98,15 @@ def beautify_primitives(svg: str) -> str:
     """
     nodelabel = re.compile(
         r'(<text[^>]*\bclass="nodelabel[^"]*"[^>]*>)'
-        r'(\$[A-Za-z_0-9]+)'
+        r'(\$[A-Za-z_0-9]+(?:-[A-Za-z_0-9]+)*)'
         r'(</text>)'
     )
 
     def repl(m: re.Match) -> str:
         type_name = m.group(2)
         pretty = PRIMITIVE_LABELS.get(type_name)
+        if pretty is None and type_name.endswith("-bus"):
+            pretty = PRIMITIVE_LABELS.get(type_name[:-4])
         if pretty is None:
             return m.group(0)
         return m.group(1) + _xml_escape(pretty) + m.group(3)
@@ -149,7 +128,9 @@ def assert_no_dollar_nodelabels(svg: str, path: str) -> None:
     rendered diagrams.
     """
     leaks = re.findall(
-        r'<text[^>]*\bclass="nodelabel[^"]*"[^>]*>(\$[A-Za-z_0-9]+)</text>',
+        r'<text[^>]*\bclass="nodelabel[^"]*"[^>]*>'
+        r'(\$[A-Za-z_0-9]+(?:-[A-Za-z_0-9]+)*)'
+        r'</text>',
         svg,
     )
     if not leaks:
@@ -259,88 +240,6 @@ def _make_cell_rect_clickable(svg: str, cell_id: str) -> str:
     return svg
 
 
-def _read_text(path: str) -> str | None:
-    try:
-        with open(path, encoding="utf-8") as f:
-            return f.read()
-    except OSError:
-        return None
-
-
-def _strip_xml_decl(svg: str) -> str:
-    return re.sub(r"^\s*<\?xml[^?]*\?>\s*", "", svg)
-
-
-def embed_preview_inline(svg: str, cell_id: str, source_path: str) -> tuple[str, int]:
-    """Inline the SVG at `source_path` as a nested `<svg>` inside the
-    cell's `<g>`, sized to the cell's body rect.
-
-    Used in preference to `<image href="…">` because GitHub's
-    raw.githubusercontent.com sets a `Content-Security-Policy:
-    default-src 'none'` on every served file, which blocks the
-    sub-resource fetch that an `<image>` would have to make. Inlining
-    sidesteps the policy entirely — the submodule's diagram is part of
-    the parent SVG document, no extra network access required.
-
-    The nested element is inserted as the first child of the cell's
-    `<g>` so it paints behind the cell's own label, body stroke, and
-    port markers. preserveAspectRatio keeps the inlined SVG legible
-    at the (small) cell-rect size.
-
-    Composes naturally: if `source_path`'s SVG was itself produced by
-    a project that inlined its own previews, those nested previews
-    ride along inside this preview.
-    """
-    sub = _read_text(source_path)
-    if sub is None:
-        print(f"svg_add_links: warning: preview source missing: {source_path}",
-              file=sys.stderr)
-        return svg, 0
-    sub = _strip_xml_decl(sub)
-
-    sub_open = re.search(r"<svg\b([^>]*)>", sub)
-    if sub_open is None:
-        return svg, 0
-    sub_attrs = sub_open.group(1)
-    sub_w = re.search(r'\bwidth="([0-9.]+)"', sub_attrs)
-    sub_h = re.search(r'\bheight="([0-9.]+)"', sub_attrs)
-    if not (sub_w and sub_h):
-        return svg, 0
-    orig_w, orig_h = sub_w.group(1), sub_h.group(1)
-
-    sub_inner = sub[sub_open.end():]
-    sub_inner = re.sub(r"</svg\s*>\s*$", "", sub_inner)
-
-    rect_match = re.search(
-        r'<rect\b([^/>]*)\bclass="cell_' + re.escape(cell_id) + r'"([^/>]*)/>',
-        svg,
-    )
-    if rect_match is None:
-        return svg, 0
-    cell_w_m = re.search(r'\bwidth="([0-9.]+)"', rect_match.group(0))
-    cell_h_m = re.search(r'\bheight="([0-9.]+)"', rect_match.group(0))
-    if not (cell_w_m and cell_h_m):
-        return svg, 0
-    cell_w, cell_h = cell_w_m.group(1), cell_h_m.group(1)
-
-    open_match = re.search(
-        r'<g\b[^>]*\bid="cell_' + re.escape(cell_id) + r'"[^>]*>',
-        svg,
-    )
-    if open_match is None:
-        return svg, 0
-
-    nested = (
-        f'<svg x="0" y="0" width="{cell_w}" height="{cell_h}" '
-        f'viewBox="0 0 {orig_w} {orig_h}" '
-        f'preserveAspectRatio="xMidYMid meet">'
-        + sub_inner
-        + '</svg>'
-    )
-    insert_at = open_match.end()
-    return svg[:insert_at] + nested + svg[insert_at:], 1
-
-
 def wrap_link(svg: str, cell_id: str, url: str) -> tuple[str, int]:
     extent = _find_cell_extent(svg, cell_id)
     if extent is None:
@@ -386,14 +285,9 @@ def main() -> int:
     parser.add_argument("--relabel", action="append", default=[],
                         metavar="cell_id=text",
                         help="rewrite cell_<cell_id>'s visible label")
-    parser.add_argument("--preview", action="append", default=[],
-                        metavar="cell_id=local_path",
-                        help="inline the SVG at local_path as a nested <svg> "
-                             "inside cell_<cell_id> (read at build time, no "
-                             "live cross-document reference)")
     parser.add_argument("--beautify-primitives", action="store_true",
                         help="rewrite yosys primitive cell-type labels "
-                             "($mem_v2, $reduce_or, $shl, ...) in nodelabel "
+                             "($mem_v2, $dffe, $ternary, ...) in nodelabel "
                              "<text> elements to short human-readable forms")
     args = parser.parse_args()
 
@@ -404,15 +298,14 @@ def main() -> int:
 
     # Beautify yosys primitive labels first — it's a global, idempotent
     # text substitution that doesn't depend on cell IDs, so no risk of
-    # interfering with the per-cell relabel/link/preview steps that
-    # follow.
+    # interfering with the per-cell relabel/link steps that follow.
     if args.beautify_primitives:
         before = svg
         svg = beautify_primitives(svg)
         if svg != before:
             print(f"svg_add_links: {args.svg_path}: beautified yosys primitives")
 
-    # Relabel first — wrapping the cell with an <a> doesn't disturb
+    # Relabel first because wrapping the cell with an <a> doesn't disturb
     # the inner <text>, but rewriting after wrap would still work
     # either way.
     for arg in args.relabel:
@@ -427,21 +320,6 @@ def main() -> int:
                   file=sys.stderr)
         else:
             print(f"svg_add_links: {args.svg_path}: relabel cell_{cell_id} -> {text}")
-
-    # Previews must run *before* link-wrapping: the wrap inserts an
-    # `<a>` between the cell's `<g>` and its parent, but the inline
-    # preview wants to be a child of that same `<g>`. Doing previews
-    # first keeps the regex-based child insertion unaffected by the
-    # later <a> wrapping.
-    for arg in args.preview:
-        try:
-            cell_id, source = parse_mapping(arg)
-        except ValueError as e:
-            print(f"svg_add_links: {e}", file=sys.stderr)
-            return 2
-        svg, count = embed_preview_inline(svg, cell_id, source)
-        if count > 0:
-            print(f"svg_add_links: {args.svg_path}: preview cell_{cell_id} <- {source}")
 
     for arg in args.link:
         try:

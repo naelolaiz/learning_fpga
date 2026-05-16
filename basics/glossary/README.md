@@ -26,13 +26,6 @@ consistent across this repo's projects, so once you've identified a
 symbol here you can spot it in `pwm_led`, `fifo_sync`, `vga_sprites` or
 any other diagram in the [Gallery](../../README.md#gallery).
 
-This project ships a small `skin.svg` (a copy of netlistsvg's default
-with text labels added inside each gate template) so the AND / OR /
-NOT / XOR / NAND / NOR / XNOR shapes carry their name written across
-them. `Makefile` points netlistsvg at it via
-`NETLISTSVG := netlistsvg --skin skin.svg`. Other projects in the repo
-keep using the bare default skin and are unaffected.
-
 ## On the board
 
 `top_glossary_board.{vhd,v}` is the Quartus synthesis top. The 4 LEDs
@@ -67,13 +60,13 @@ netlist with no fan-in/fan-out clutter from neighbouring logic.
 | --------------- | ---------------------------------------------------- | ------------------------------------------------------- |
 | Bitwise gates   | `o_and`, `o_or`, `o_not`, `o_xor`, `o_nand`, `o_nor`, `o_xnor` | IEEE distinctive shapes (D-shape AND, shield OR, inverter triangle, XOR with curve, bubble = invert). |
 | Reductions      | `o_reduce_or`, `o_reduce_and`, `o_reduce_xor`, `o_reduce_bool` | Same gate shape but the input is a 4-bit bus — netlistsvg flags a vector reduction. `o_reduce_bool` carries the label `≠0` and means "true if any input bit is 1" (same as `\|`-reduction but emitted by yosys for "value treated as a Boolean"). |
-| Multi-bit logic | `o_logic_not`, `o_logic_and`, `o_logic_or`           | Single-bit gates fed by bus operands — yosys collapses `!av` / `av && bv` / `av \|\| bv` to these. The beautifier renders the cell labels as `!`, `&&`, `\|\|`. |
+| Multi-bit logic | `o_logic_not`, `o_logic_and`, `o_logic_or`           | Single-bit gates fed by bus operands — yosys collapses `!av` / `av && bv` / `av \|\| bv` to these and aliases them onto the matching `$not` / `$and` / `$or` symbol. |
 | Multiplexers    | `o_mux2`, `o_mux4`, `o_pmux`                         | Trapezoid box with data inputs on the wide side and `S` (select) on the narrow side. `o_pmux` (parallel mux on a one-hot select) reuses the same trapezoid via netlistsvg's `$mux` alias. |
 | Arithmetic      | `o_add`, `o_sub`, `o_mul`, `o_neg`, `o_pos`          | Rectangular boxes labelled `+`, `-`, `*`, `−` (unary), `+` (unary identity, often optimised out by yosys). |
-| Comparators     | `o_eq`, `o_ne`, `o_lt`, `o_gt`, `o_ge`, `o_le`       | Circle marked with the comparison glyph (`==`, `≠`, `<`, `>`, `>=`, `<=`); two bus inputs, 1-bit output. The local `skin.svg` adds shapes for `lt`/`gt`/`ge`/`le`; `≠` (`$ne`) renders via the beautifier text label. |
+| Comparators     | `o_eq`, `o_ne`, `o_lt`, `o_gt`, `o_ge`, `o_le`       | Circle marked with the comparison glyph (`==`, `≠`, `<`, `>`, `>=`, `<=`); two bus inputs, 1-bit output. |
 | Shifters        | `o_shl`, `o_shr`, `o_sshr`, `o_shift`                | Boxes labelled `<<` / `>>` / `>>>` (arithmetic right) / `shift` (variable amount from `bv[1:0]`). |
-| Sequential      | `o_dff`, `o_dffe`, `o_dffr`, `o_dlatch`, `o_counter` | Edge-triggered register box with a clock notch (`▷`); the counter shows up as a register fed by an adder. **`o_dlatch`** is a level-sensitive D-latch — same outline as `dff` but no edge notch and labelled `L latch`. The Makefile sets `GHDL_SYNTH_EXTRA := --latches` so ghdl-yosys-plugin permits the deliberate inferred latch. |
-| Memory          | `o_mem`                                              | A wider box labelled `RAM` with separate WR/RD address/data/clock/enable ports. Synthesised from a small 8 × 1-bit single-port synchronous array (`mem_arr`), which yosys lifts to a `$mem_v2` cell rather than flattening to flip-flops. The local `skin.svg` provides the `RAM` symbol; in other projects a `$mem_v2` cell renders as a labelled box with the same `RAM` text via the project-wide [primitive beautifier](../../mk/svg_add_links.py). |
+| Sequential      | `o_dff`, `o_dffe`, `o_dffr`, `o_dlatch`, `o_counter` | Edge-triggered register box with a clock notch (`▷`); the counter shows up as a register fed by an adder. **`o_dlatch`** is a level-sensitive D-latch — same outline as `dff` but no edge notch. The Makefile sets `GHDL_SYNTH_EXTRA := --latches` so ghdl-yosys-plugin permits the deliberate inferred latch. |
+| Memory          | `o_mem`                                              | A labelled box reading `RAM` with separate WR/RD address/data/clock/enable ports. Synthesised from a small 8 × 1-bit single-port synchronous array (`mem_arr`), which yosys lifts to a `$mem_v2` cell rather than flattening to flip-flops. netlistsvg's default skin has no specialised memory symbol, so the cell renders as a generic box; the project-wide [primitive beautifier](../../mk/svg_add_links.py) rewrites the visible `$mem_v2` label to `RAM`. |
 
 ## Truth tables
 
