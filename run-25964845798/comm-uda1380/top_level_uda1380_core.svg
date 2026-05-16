@@ -1,0 +1,296 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:s="https://github.com/nturley/netlistsvg" width="693" height="589">
+  <style>svg {
+    stroke:#000;
+    fill:none;
+  }
+  text {
+    fill:#000;
+    stroke:none;
+    font-size:10px;
+    font-weight: bold;
+    font-family: "Courier New", monospace;
+  }
+  .nodelabel {
+    text-anchor: middle;
+  }
+  .inputPortLabel {
+    text-anchor: end;
+  }
+  .splitjoinBody {
+    fill:#000;
+  }</style>
+  <g s:type="not" transform="translate(95,402)" s:width="30" s:height="20" id="cell_:7">
+    <s:alias val="$_NOT_"/>
+    <s:alias val="$not"/>
+    <s:alias val="$logic_not"/>
+    <path d="M0,0 L0,20 L20,10 Z" class="cell_:7"/>
+    <circle cx="23" cy="10" r="3" class="cell_:7"/>
+    <text x="8" y="12" class="nodelabel" style="font-size:6px">NOT</text>
+    <g s:x="0" s:y="10" s:pid="A"/>
+    <g s:x="25" s:y="10" s:pid="Y"/>
+  </g>
+  <g s:type="generic" transform="translate(443,54)" s:width="30" s:height="40" id="cell_i2c_master_inst">
+    <text x="15" y="-4" class="nodelabel cell_i2c_master_inst" s:attribute="ref">i2c_master_for_diagram_Blogic_50000000_100000</text>
+    <rect width="30" height="160" s:generic="body" class="cell_i2c_master_inst"/>
+    <g transform="translate(0,10)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~addr">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">addr</text>
+    </g>
+    <g transform="translate(0,30)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~clk">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">clk</text>
+    </g>
+    <g transform="translate(0,50)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~data_wr">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">data_wr</text>
+    </g>
+    <g transform="translate(0,70)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~ena">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">ena</text>
+    </g>
+    <g transform="translate(0,90)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~reset_n">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">reset_n</text>
+    </g>
+    <g transform="translate(0,110)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~rw">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">rw</text>
+    </g>
+    <g transform="translate(0,130)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~scl_i">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">scl_i</text>
+    </g>
+    <g transform="translate(0,150)" s:x="0" s:y="10" s:pid="in0" id="port_i2c_master_inst~sda_i">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2c_master_inst">sda_i</text>
+    </g>
+    <g transform="translate(30,10)" s:x="30" s:y="10" s:pid="out0" id="port_i2c_master_inst~ack_error">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2c_master_inst">ack_error</text>
+    </g>
+    <g transform="translate(30,30)" s:x="30" s:y="10" s:pid="out0" id="port_i2c_master_inst~busy">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2c_master_inst">busy</text>
+    </g>
+    <g transform="translate(30,50)" s:x="30" s:y="10" s:pid="out0" id="port_i2c_master_inst~data_rd">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2c_master_inst">data_rd</text>
+    </g>
+    <g transform="translate(30,70)" s:x="30" s:y="10" s:pid="out0" id="port_i2c_master_inst~scl_oe">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2c_master_inst">scl_oe</text>
+    </g>
+    <g transform="translate(30,90)" s:x="30" s:y="10" s:pid="out0" id="port_i2c_master_inst~sda_oe">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2c_master_inst">sda_oe</text>
+    </g>
+  </g>
+  <g s:type="generic" transform="translate(443,361.5)" s:width="30" s:height="40" id="cell_i2s_master_inst">
+    <text x="15" y="-4" class="nodelabel cell_i2s_master_inst" s:attribute="ref">i2s_master_Brtl_50000000</text>
+    <rect width="30" height="80" s:generic="body" class="cell_i2s_master_inst"/>
+    <g transform="translate(0,10)" s:x="0" s:y="10" s:pid="in0" id="port_i2s_master_inst~clk">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2s_master_inst">clk</text>
+    </g>
+    <g transform="translate(0,30)" s:x="0" s:y="10" s:pid="in0" id="port_i2s_master_inst~data_l">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2s_master_inst">data_l</text>
+    </g>
+    <g transform="translate(0,50)" s:x="0" s:y="10" s:pid="in0" id="port_i2s_master_inst~data_r">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2s_master_inst">data_r</text>
+    </g>
+    <g transform="translate(0,70)" s:x="0" s:y="10" s:pid="in0" id="port_i2s_master_inst~reset">
+      <text x="-3" y="-4" class="inputPortLabel cell_i2s_master_inst">reset</text>
+    </g>
+    <g transform="translate(30,10)" s:x="30" s:y="10" s:pid="out0" id="port_i2s_master_inst~lrclk">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2s_master_inst">lrclk</text>
+    </g>
+    <g transform="translate(30,30)" s:x="30" s:y="10" s:pid="out0" id="port_i2s_master_inst~mclk">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2s_master_inst">mclk</text>
+    </g>
+    <g transform="translate(30,50)" s:x="30" s:y="10" s:pid="out0" id="port_i2s_master_inst~sclk">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2s_master_inst">sclk</text>
+    </g>
+    <g transform="translate(30,70)" s:x="30" s:y="10" s:pid="out0" id="port_i2s_master_inst~sdata">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_i2s_master_inst">sdata</text>
+    </g>
+  </g>
+  <g s:type="generic" transform="translate(232,54)" s:width="30" s:height="40" id="cell_init_fsm">
+    <text x="15" y="-4" class="nodelabel cell_init_fsm" s:attribute="ref">uda1380_init_fsm_Brtl_5000000</text>
+    <rect width="30" height="100" s:generic="body" class="cell_init_fsm"/>
+    <g transform="translate(0,10)" s:x="0" s:y="10" s:pid="in0" id="port_init_fsm~clk">
+      <text x="-3" y="-4" class="inputPortLabel cell_init_fsm">clk</text>
+    </g>
+    <g transform="translate(0,30)" s:x="0" s:y="10" s:pid="in0" id="port_init_fsm~i2c_ack_err">
+      <text x="-3" y="-4" class="inputPortLabel cell_init_fsm">i2c_ack_err</text>
+    </g>
+    <g transform="translate(0,50)" s:x="0" s:y="10" s:pid="in0" id="port_init_fsm~i2c_busy">
+      <text x="-3" y="-4" class="inputPortLabel cell_init_fsm">i2c_busy</text>
+    </g>
+    <g transform="translate(0,70)" s:x="0" s:y="10" s:pid="in0" id="port_init_fsm~reset">
+      <text x="-3" y="-4" class="inputPortLabel cell_init_fsm">reset</text>
+    </g>
+    <g transform="translate(30,10)" s:x="30" s:y="10" s:pid="out0" id="port_init_fsm~i2c_addr">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_init_fsm">i2c_addr</text>
+    </g>
+    <g transform="translate(30,30)" s:x="30" s:y="10" s:pid="out0" id="port_init_fsm~i2c_data_wr">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_init_fsm">i2c_data_wr</text>
+    </g>
+    <g transform="translate(30,50)" s:x="30" s:y="10" s:pid="out0" id="port_init_fsm~i2c_ena">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_init_fsm">i2c_ena</text>
+    </g>
+    <g transform="translate(30,70)" s:x="30" s:y="10" s:pid="out0" id="port_init_fsm~i2c_rw">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_init_fsm">i2c_rw</text>
+    </g>
+    <g transform="translate(30,90)" s:x="30" s:y="10" s:pid="out0" id="port_init_fsm~init_done">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_init_fsm">init_done</text>
+    </g>
+  </g>
+  <g s:type="generic" transform="translate(232.33333333333334,381.5)" s:width="30" s:height="40" id="cell_tone">
+    <text x="15" y="-4" class="nodelabel cell_tone" s:attribute="ref">tone_gen_Brtl_96</text>
+    <rect width="30" height="40" s:generic="body" class="cell_tone"/>
+    <g transform="translate(0,10)" s:x="0" s:y="10" s:pid="in0" id="port_tone~clk">
+      <text x="-3" y="-4" class="inputPortLabel cell_tone">clk</text>
+    </g>
+    <g transform="translate(0,30)" s:x="0" s:y="10" s:pid="in0" id="port_tone~reset">
+      <text x="-3" y="-4" class="inputPortLabel cell_tone">reset</text>
+    </g>
+    <g transform="translate(30,10)" s:x="30" s:y="10" s:pid="out0" id="port_tone~sample">
+      <text x="5" y="-4" style="fill:#000; stroke:none" class="cell_tone">sample</text>
+    </g>
+  </g>
+  <g s:type="inputExt" transform="translate(95,54.5)" s:width="30" s:height="20" id="cell_iClk">
+    <text x="15" y="-4" class="nodelabel cell_iClk" s:attribute="ref">iClk</text>
+    <s:alias val="$_inputExt_"/>
+    <path d="M0,0 L0,20 L15,20 L30,10 L15,0 Z" class="cell_iClk"/>
+    <g s:x="28" s:y="10" s:pid="Y"/>
+  </g>
+  <g s:type="inputExt" transform="translate(12,23)" s:width="30" s:height="20" id="cell_iNoReset">
+    <text x="15" y="-4" class="nodelabel cell_iNoReset" s:attribute="ref">iNoReset</text>
+    <s:alias val="$_inputExt_"/>
+    <path d="M0,0 L0,20 L15,20 L30,10 L15,0 Z" class="cell_iNoReset"/>
+    <g s:x="28" s:y="10" s:pid="Y"/>
+  </g>
+  <g s:type="inputExt" transform="translate(232,202)" s:width="30" s:height="20" id="cell_iI2cSclIn">
+    <text x="15" y="-4" class="nodelabel cell_iI2cSclIn" s:attribute="ref">iI2cSclIn</text>
+    <s:alias val="$_inputExt_"/>
+    <path d="M0,0 L0,20 L15,20 L30,10 L15,0 Z" class="cell_iI2cSclIn"/>
+    <g s:x="28" s:y="10" s:pid="Y"/>
+  </g>
+  <g s:type="inputExt" transform="translate(232,267)" s:width="30" s:height="20" id="cell_iI2cSdaIn">
+    <text x="15" y="-4" class="nodelabel cell_iI2cSdaIn" s:attribute="ref">iI2cSdaIn</text>
+    <s:alias val="$_inputExt_"/>
+    <path d="M0,0 L0,20 L15,20 L30,10 L15,0 Z" class="cell_iI2cSdaIn"/>
+    <g s:x="28" s:y="10" s:pid="Y"/>
+  </g>
+  <g s:type="outputExt" transform="translate(573,114.5)" s:width="30" s:height="20" id="cell_oI2cSclOe">
+    <text x="15" y="-4" class="nodelabel cell_oI2cSclOe" s:attribute="ref">oI2cSclOe</text>
+    <s:alias val="$_outputExt_"/>
+    <path d="M30,0 L30,20 L15,20 L0,10 L15,0 Z" class="cell_oI2cSclOe"/>
+    <g s:x="0" s:y="10" s:pid="A"/>
+  </g>
+  <g s:type="outputExt" transform="translate(573,179.5)" s:width="30" s:height="20" id="cell_oI2cSdaOe">
+    <text x="15" y="-4" class="nodelabel cell_oI2cSdaOe" s:attribute="ref">oI2cSdaOe</text>
+    <s:alias val="$_outputExt_"/>
+    <path d="M30,0 L30,20 L15,20 L0,10 L15,0 Z" class="cell_oI2cSdaOe"/>
+    <g s:x="0" s:y="10" s:pid="A"/>
+  </g>
+  <g s:type="outputExt" transform="translate(573,427)" s:width="30" s:height="20" id="cell_oTxMasterClock">
+    <text x="15" y="-4" class="nodelabel cell_oTxMasterClock" s:attribute="ref">oTxMasterClock</text>
+    <s:alias val="$_outputExt_"/>
+    <path d="M30,0 L30,20 L15,20 L0,10 L15,0 Z" class="cell_oTxMasterClock"/>
+    <g s:x="0" s:y="10" s:pid="A"/>
+  </g>
+  <g s:type="outputExt" transform="translate(573,362)" s:width="30" s:height="20" id="cell_oTxWordSelectClock">
+    <text x="15" y="-4" class="nodelabel cell_oTxWordSelectClock" s:attribute="ref">oTxWordSelectClock</text>
+    <s:alias val="$_outputExt_"/>
+    <path d="M30,0 L30,20 L15,20 L0,10 L15,0 Z" class="cell_oTxWordSelectClock"/>
+    <g s:x="0" s:y="10" s:pid="A"/>
+  </g>
+  <g s:type="outputExt" transform="translate(573,492)" s:width="30" s:height="20" id="cell_oTxBitClock">
+    <text x="15" y="-4" class="nodelabel cell_oTxBitClock" s:attribute="ref">oTxBitClock</text>
+    <s:alias val="$_outputExt_"/>
+    <path d="M30,0 L30,20 L15,20 L0,10 L15,0 Z" class="cell_oTxBitClock"/>
+    <g s:x="0" s:y="10" s:pid="A"/>
+  </g>
+  <g s:type="outputExt" transform="translate(573,557)" s:width="30" s:height="20" id="cell_oTxSerialData">
+    <text x="15" y="-4" class="nodelabel cell_oTxSerialData" s:attribute="ref">oTxSerialData</text>
+    <s:alias val="$_outputExt_"/>
+    <path d="M30,0 L30,20 L15,20 L0,10 L15,0 Z" class="cell_oTxSerialData"/>
+    <g s:x="0" s:y="10" s:pid="A"/>
+  </g>
+  <g s:type="outputExt" transform="translate(573,297)" s:width="30" s:height="20" id="cell_oInitDone">
+    <text x="15" y="-4" class="nodelabel cell_oInitDone" s:attribute="ref">oInitDone</text>
+    <s:alias val="$_outputExt_"/>
+    <path d="M30,0 L30,20 L15,20 L0,10 L15,0 Z" class="cell_oInitDone"/>
+    <g s:x="0" s:y="10" s:pid="A"/>
+  </g>
+  <line x1="40" x2="70" y1="33" y2="33" class="net_3"/>
+  <line x1="70" x2="70" y1="33" y2="412" class="net_3"/>
+  <circle cx="70" cy="33" r="2" style="fill:#000" class="net_3"/>
+  <line x1="70" x2="95" y1="412" y2="412" class="net_3"/>
+  <line x1="40" x2="380" y1="33" y2="33" class="net_3"/>
+  <line x1="380" x2="380" y1="33" y2="144.5" class="net_3"/>
+  <line x1="380" x2="443" y1="144.5" y2="144.5" class="net_3"/>
+  <line x1="263" x2="443" y1="64.5" y2="64.5" class="net_15,16,17,18,19,20,21"/>
+  <line x1="123" x2="135" y1="64.5" y2="64.5" class="net_2"/>
+  <line x1="135" x2="135" y1="64.5" y2="22" class="net_2"/>
+  <line x1="135" x2="390" y1="22" y2="22" class="net_2"/>
+  <line x1="390" x2="390" y1="22" y2="84.5" class="net_2"/>
+  <circle cx="135" cy="64.5" r="2" style="fill:#000" class="net_2"/>
+  <line x1="390" x2="443" y1="84.5" y2="84.5" class="net_2"/>
+  <line x1="123" x2="135" y1="64.5" y2="64.5" class="net_2"/>
+  <line x1="135" x2="135" y1="64.5" y2="328" class="net_2"/>
+  <line x1="135" x2="340" y1="328" y2="328" class="net_2"/>
+  <line x1="340" x2="340" y1="328" y2="372" class="net_2"/>
+  <line x1="340" x2="443" y1="372" y2="372" class="net_2"/>
+  <line x1="123" x2="232" y1="64.5" y2="64.5" class="net_2"/>
+  <line x1="263" x2="370" y1="84.5" y2="84.5" class="net_31,32,33,34,35,36,37,38"/>
+  <line x1="370" x2="370" y1="84.5" y2="104.5" class="net_31,32,33,34,35,36,37,38"/>
+  <line x1="370" x2="443" y1="104.5" y2="104.5" class="net_31,32,33,34,35,36,37,38"/>
+  <line x1="263" x2="360" y1="104.5" y2="104.5" class="net_39"/>
+  <line x1="360" x2="360" y1="104.5" y2="124.5" class="net_39"/>
+  <line x1="360" x2="443" y1="124.5" y2="124.5" class="net_39"/>
+  <line x1="263" x2="350" y1="124.5" y2="124.5" class="net_40"/>
+  <line x1="350" x2="350" y1="124.5" y2="164.5" class="net_40"/>
+  <line x1="350" x2="443" y1="164.5" y2="164.5" class="net_40"/>
+  <line x1="260" x2="350" y1="212" y2="212" class="net_4"/>
+  <line x1="350" x2="350" y1="212" y2="184.5" class="net_4"/>
+  <line x1="350" x2="443" y1="184.5" y2="184.5" class="net_4"/>
+  <line x1="260" x2="360" y1="277" y2="277" class="net_5"/>
+  <line x1="360" x2="360" y1="277" y2="204.5" class="net_5"/>
+  <line x1="360" x2="443" y1="204.5" y2="204.5" class="net_5"/>
+  <line x1="263.33333333333337" x2="443" y1="392" y2="392" class="net_41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64"/>
+  <line x1="263.33333333333337" x2="340" y1="392" y2="392" class="net_41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64"/>
+  <line x1="340" x2="340" y1="392" y2="412" class="net_41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64"/>
+  <circle cx="340" cy="392" r="2" style="fill:#000" class="net_41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64"/>
+  <line x1="340" x2="443" y1="412" y2="412" class="net_41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64"/>
+  <line x1="120" x2="145" y1="412" y2="412" class="net_13"/>
+  <line x1="145" x2="145" y1="412" y2="434.5" class="net_13"/>
+  <line x1="145" x2="340" y1="434.5" y2="434.5" class="net_13"/>
+  <line x1="340" x2="340" y1="434.5" y2="432" class="net_13"/>
+  <circle cx="145" cy="412" r="2" style="fill:#000" class="net_13"/>
+  <line x1="340" x2="443" y1="432" y2="432" class="net_13"/>
+  <line x1="120" x2="145" y1="412" y2="412" class="net_13"/>
+  <line x1="145" x2="145" y1="412" y2="124.5" class="net_13"/>
+  <line x1="145" x2="232" y1="124.5" y2="124.5" class="net_13"/>
+  <line x1="120" x2="232.33333333333334" y1="412" y2="412" class="net_13"/>
+  <line x1="474" x2="543" y1="64.5" y2="64.5" class="net_14"/>
+  <line x1="543" x2="543" y1="64.5" y2="12" class="net_14"/>
+  <line x1="543" x2="155" y1="12" y2="12" class="net_14"/>
+  <line x1="155" x2="155" y1="12" y2="84.5" class="net_14"/>
+  <line x1="155" x2="232" y1="84.5" y2="84.5" class="net_14"/>
+  <line x1="474" x2="543" y1="84.5" y2="84.5" class="net_22"/>
+  <line x1="543" x2="543" y1="84.5" y2="297" class="net_22"/>
+  <line x1="543" x2="155" y1="297" y2="297" class="net_22"/>
+  <line x1="155" x2="155" y1="297" y2="104.5" class="net_22"/>
+  <line x1="155" x2="232" y1="104.5" y2="104.5" class="net_22"/>
+  <line x1="474" x2="543" y1="372" y2="372" class="net_9"/>
+  <line x1="543" x2="543" y1="372" y2="318" class="net_9"/>
+  <line x1="543" x2="155" y1="318" y2="318" class="net_9"/>
+  <line x1="155" x2="155" y1="318" y2="392" class="net_9"/>
+  <circle cx="543" cy="372" r="2" style="fill:#000" class="net_9"/>
+  <line x1="155" x2="232.33333333333334" y1="392" y2="392" class="net_9"/>
+  <line x1="474" x2="573" y1="372" y2="372" class="net_9"/>
+  <line x1="474" x2="573" y1="124.5" y2="124.5" class="net_6"/>
+  <line x1="474" x2="553" y1="144.5" y2="144.5" class="net_7"/>
+  <line x1="553" x2="553" y1="144.5" y2="189.5" class="net_7"/>
+  <line x1="553" x2="573" y1="189.5" y2="189.5" class="net_7"/>
+  <line x1="474" x2="563" y1="392" y2="392" class="net_8"/>
+  <line x1="563" x2="563" y1="392" y2="437" class="net_8"/>
+  <line x1="563" x2="573" y1="437" y2="437" class="net_8"/>
+  <line x1="474" x2="553" y1="412" y2="412" class="net_10"/>
+  <line x1="553" x2="553" y1="412" y2="502" class="net_10"/>
+  <line x1="553" x2="573" y1="502" y2="502" class="net_10"/>
+  <line x1="474" x2="543" y1="432" y2="432" class="net_11"/>
+  <line x1="543" x2="543" y1="432" y2="567" class="net_11"/>
+  <line x1="543" x2="573" y1="567" y2="567" class="net_11"/>
+  <line x1="263" x2="340" y1="144.5" y2="144.5" class="net_12"/>
+  <line x1="340" x2="340" y1="144.5" y2="307" class="net_12"/>
+  <line x1="340" x2="573" y1="307" y2="307" class="net_12"/>
+</svg>
