@@ -24,8 +24,9 @@ VHDL_STANDARD := 08
 
 # Bump Node V8 stack for netlistsvg — the SoC synthesises to a wide
 # mux+wire tree that trips netlistsvg's recursive `gather` on the
-# default ~1 MB JS stack.
-NETLISTSVG := node --stack-size=8000 $$(command -v netlistsvg)
+# default ~1 MB JS stack. Override _BIN only so the project inherits
+# the shared skin from common.mk's NETLISTSVG_SKIN default.
+NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 
 # VHDL-only for the integrated SoC, per the plan: the building
 # blocks have their Verilog twins; the SoC top stays single-language
@@ -35,19 +36,26 @@ NETLISTSVG := node --stack-size=8000 $$(command -v netlistsvg)
 # building_blocks/serial_to_parallel: each submodule instance in the
 # rendered top-level SVG is relabelled, linked to its standalone SVG
 # in the gallery, and shows a live thumbnail of that SVG embedded
-# in-place. Cell IDs match the entity instance labels in riscv_soc.vhd
-# (cpu, tx, rx).
+# in-place. Cell IDs:
+#   * Entity instances in riscv_soc.vhd: cpu, tx, rx.
+#   * yosys's memory_collect pass turns the SoC's `signal dmem` array
+#     into a $mem_v2 cell named cell_dmem; link/preview it against
+#     ram_sync, the reference sync R/W BRAM block this implements.
+#     No relabel — the skin's $mem_v2 symbol uses a static "RAM"
+#     label; "RAM" is the right label anyway.
 SVG_RELABEL := cpu=riscv_singlecycle \
                tx=uart_tx \
                rx=uart_rx
 
 SVG_LINKS   := cpu=../cpu-riscv_singlecycle/riscv_singlecycle.svg \
                tx=../comm-uart_tx/uart_tx.svg \
-               rx=../comm-uart_rx/uart_rx.svg
+               rx=../comm-uart_rx/uart_rx.svg \
+               dmem=../building_blocks-ram_sync/ram_sync.svg
 
 SVG_PREVIEW := cpu=../riscv_singlecycle/build/riscv_singlecycle.svg \
                tx=../../comm/uart_tx/build/uart_tx.svg \
-               rx=../../comm/uart_rx/build/uart_rx.svg
+               rx=../../comm/uart_rx/build/uart_rx.svg \
+               dmem=../../building_blocks/ram_sync/build/ram_sync.svg
 
 # `make golden` re-assembles programs/prog_hello.S into prog_hello.hex
 # using the project's Python assembler. Review the diff before
@@ -64,7 +72,8 @@ include ../../mk/common.mk
 # sibling project's SVG at link time. Build them first if missing.
 $(DIAGRAM_SVG): ../riscv_singlecycle/build/riscv_singlecycle.svg \
                 ../../comm/uart_tx/build/uart_tx.svg \
-                ../../comm/uart_rx/build/uart_rx.svg
+                ../../comm/uart_rx/build/uart_rx.svg \
+                ../../building_blocks/ram_sync/build/ram_sync.svg
 
 ../riscv_singlecycle/build/riscv_singlecycle.svg:
 	$(MAKE) -C ../riscv_singlecycle diagram
@@ -72,3 +81,5 @@ $(DIAGRAM_SVG): ../riscv_singlecycle/build/riscv_singlecycle.svg \
 	$(MAKE) -C ../../comm/uart_tx diagram
 ../../comm/uart_rx/build/uart_rx.svg:
 	$(MAKE) -C ../../comm/uart_rx diagram
+../../building_blocks/ram_sync/build/ram_sync.svg:
+	$(MAKE) -C ../../building_blocks/ram_sync diagram

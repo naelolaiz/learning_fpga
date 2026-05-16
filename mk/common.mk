@@ -62,7 +62,22 @@
 # ---- Tool discovery (overridable from the environment) --------------------
 GHDL          ?= ghdl
 YOSYS         ?= yosys
-NETLISTSVG    ?= netlistsvg
+# Split NETLISTSVG into _BIN + _SKIN + composed default so projects
+# that need to override just one piece can do so without losing the
+# other. Common cases:
+#   * Big designs that need a bigger Node V8 stack just override
+#     NETLISTSVG_BIN (see cpu/riscv_singlecycle/Makefile).
+#   * Projects that want a different glyph style override
+#     NETLISTSVG_SKIN.
+#   * Projects that need both override NETLISTSVG directly.
+# The default skin (mk/skin.svg) is a superset of netlistsvg's
+# upstream default — same cell shapes plus $ne (the inequality
+# comparator yosys emits but upstream forgot to draw), so a yosys
+# graph with a `!=` operator renders consistently with the other
+# comparators instead of falling through to a text rectangle.
+NETLISTSVG_BIN  ?= netlistsvg
+NETLISTSVG_SKIN ?= $(COMMON_MK_DIR)skin.svg
+NETLISTSVG      ?= $(NETLISTSVG_BIN) --skin $(NETLISTSVG_SKIN)
 WAVEVIEW      ?= waveview
 IVERILOG      ?= iverilog
 VVP           ?= vvp
