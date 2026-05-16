@@ -61,6 +61,14 @@
 
 # ---- Tool discovery (overridable from the environment) --------------------
 GHDL          ?= ghdl
+# yosys is invoked with `-q` everywhere in the diagram rules below.
+# `-q` suppresses yosys's normal info logging — most importantly the
+# per-signal "No latch inferred for signal X" notes that PROC_DLATCH
+# emits for every combinational signal it checks (one large design
+# can produce thousands of these, drowning out actual issues).
+# `Warning:` and `Error:` lines are NOT affected; verified on
+# random_generator (whose neoTRNG ring oscillators still surface
+# their intentional "found logic loop" warnings under -q).
 YOSYS         ?= yosys
 # Split NETLISTSVG into _BIN + _SKIN + composed default so projects
 # that need to override just one piece can do so without losing the
@@ -298,7 +306,7 @@ else
 diagram: $(DIAGRAM_SVG)
 
 $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
-	$(YOSYS) -m ghdl -p \
+	$(YOSYS) -q -m ghdl -p \
 	    "ghdl $(GHDL_SYNTH_STD) -fsynopsys $(GHDL_SYNTH_EXTRA) $(SRC_FILES) -e $(TOP); \
 	     prep -top $(TOP); \
 	     write_json -compat-int $@"
@@ -369,7 +377,7 @@ else
 diagram_v: $(V_DIAGRAM_SVG)
 
 $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
-	$(YOSYS) -p \
+	$(YOSYS) -q -p \
 	    "read_verilog -sv $(addprefix -D,$(V_DEFINES)) $(addprefix -I,$(V_INCDIRS)) $(V_SRC_FILES); \
 	     prep -top $(V_TOP); \
 	     write_json -compat-int $@"
