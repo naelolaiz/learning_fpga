@@ -1,0 +1,74 @@
+PROJECT_NAME := riscv_soc
+
+TOP     := riscv_soc
+TB_TOPS := tb_riscv_soc
+
+# Building blocks the SoC composes. Generic blocks live under the
+# top-level building_blocks/; RV32-specific blocks live under
+# cpu/building_blocks/; comm peripherals stay in comm/. Sourced via
+# relative paths so there's a single source of truth — no duplicate
+# copies in this directory.
+SRC_FILES := ../../building_blocks/ram_sync/ram_sync.vhd \
+             ../building_blocks/regfile_rv32/regfile_rv32.vhd \
+             ../building_blocks/alu_rv32/alu_rv32.vhd \
+             ../building_blocks/immgen_rv32/immgen_rv32.vhd \
+             ../building_blocks/decoder_rv32/decoder_rv32.vhd \
+             ../../comm/uart_tx/uart_tx.vhd \
+             ../../comm/uart_rx/uart_rx.vhd \
+             riscv_singlecycle.vhd \
+             riscv_soc.vhd
+
+TB_FILES  := test/tb_riscv_soc.vhd
+
+VHDL_STANDARD := 08
+
+# Bump Node V8 stack for netlistsvg — the SoC synthesises to a wide
+# mux+wire tree that trips netlistsvg's recursive `gather` on the
+# default ~1 MB JS stack.
+NETLISTSVG := node --stack-size=8000 $$(command -v netlistsvg)
+
+# VHDL-only for the integrated SoC, per the plan: the building
+# blocks have their Verilog twins; the SoC top stays single-language
+# to keep the tutorial focused.
+
+# Diagram tweaks — same composite pattern as
+# building_blocks/serial_to_parallel: each submodule instance in the
+# rendered top-level SVG is relabelled, linked to its standalone SVG
+# in the gallery, and shows a live thumbnail of that SVG embedded
+# in-place. Cell IDs match the entity instance labels in riscv_soc.vhd
+# (cpu, tx, rx).
+SVG_RELABEL := cpu=riscv_singlecycle \
+               tx=uart_tx \
+               rx=uart_rx
+
+SVG_LINKS   := cpu=../cpu-riscv_singlecycle/riscv_singlecycle.svg \
+               tx=../comm-uart_tx/uart_tx.svg \
+               rx=../comm-uart_rx/uart_rx.svg
+
+SVG_PREVIEW := cpu=../riscv_singlecycle/build/riscv_singlecycle.svg \
+               tx=../../comm/uart_tx/build/uart_tx.svg \
+               rx=../../comm/uart_rx/build/uart_rx.svg
+
+# `make golden` re-assembles programs/prog_hello.S into prog_hello.hex
+# using the project's Python assembler. Review the diff before
+# committing the new .hex.
+.PHONY: golden
+golden:
+	python3 ../../tools/rv32_asm/rv32_asm.py programs/prog_hello.S \
+	    -o programs/prog_hello.hex
+	@echo "regenerated programs/prog_hello.hex"
+
+include ../../mk/common.mk
+
+# Cross-project diagram prereqs: SVG_PREVIEW (above) reads each
+# sibling project's SVG at link time. Build them first if missing.
+$(DIAGRAM_SVG): ../riscv_singlecycle/build/riscv_singlecycle.svg \
+                ../../comm/uart_tx/build/uart_tx.svg \
+                ../../comm/uart_rx/build/uart_rx.svg
+
+../riscv_singlecycle/build/riscv_singlecycle.svg:
+	$(MAKE) -C ../riscv_singlecycle diagram
+../../comm/uart_tx/build/uart_tx.svg:
+	$(MAKE) -C ../../comm/uart_tx diagram
+../../comm/uart_rx/build/uart_rx.svg:
+	$(MAKE) -C ../../comm/uart_rx diagram
