@@ -63,7 +63,12 @@ entity riscv_pipelined is
   generic (
     IMEM_ADDR_W : integer := 10;          -- 2**10 = 1024 instr ≈ 4 KB
     DMEM_ADDR_W : integer := 10;          -- 2**10 = 1024 words ≈ 4 KB
-    IMEM_INIT   : string  := ""           -- hex file for IMEM
+    IMEM_INIT   : string  := "";          -- hex file for IMEM
+    -- Sim-only: when true, `report` a per-cycle trace of PC + the
+    -- instruction word at each of the four pipeline stages. A TB
+    -- enables it via `generic map (DEBUG_TRACE => true, ...)`;
+    -- ignored by synthesis.
+    DEBUG_TRACE : boolean := false
   );
   port (
     clk : in std_logic;
@@ -540,5 +545,63 @@ begin
   dbg_reg_we    <= mem_wb.reg_write;
   dbg_reg_waddr <= mem_wb.rd;
   dbg_reg_wdata <= wb_data;
+
+  -- ==================================================================
+  -- Optional per-cycle trace (sim-only, gated by DEBUG_TRACE generic).
+  -- Multi-line per cycle: PC + the four pipeline-stage instructions,
+  -- hazard outcomes, forwarding selects, WB commit, MEM access.
+  -- Same fields as the Verilog twin so the two flows produce
+  -- comparable traces.
+  -- ==================================================================
+  -- Plain textio (write(output,...)) instead of `report ... severity
+  -- note` so the trace lands on stdout without GHDL's noisy
+  -- "<file>:<line>:<col>:@<time>:(report note):" prefix on every line.
+  -- Output matches the Verilog twin's $display lines byte-for-byte,
+  -- which is what the CI workflow extracts into the run summary.
+  --
+  -- Wrapped in `if DEBUG_TRACE generate` so the textio call (which is
+  -- *not* synthesisable) is elaborated *out* when DEBUG_TRACE=false —
+  -- the synthesis-bound instantiations (SoC top, `make diagram`) thus
+  -- never see it. Mirrors the `\`ifndef YOSYS` guard around the
+  -- equivalent `$display` block in riscv_pipelined.v.
+  trace_gen : if DEBUG_TRACE generate
+  trace_p : process (clk) is
+    variable cyc : integer := 0;
+    variable l   : line;
+  begin
+    if rising_edge(clk) and rst = '0' then
+      write(l, string'("[riscv_pipelined] c"));
+      write(l, cyc);
+      write(l, string'("  pc=")); hwrite(l, pc);
+      writeline(output, l);
+
+      write(l, string'("    stages : IF/ID="));  hwrite(l, if_id.instr);
+      write(l, string'("  ID/EX="));             hwrite(l, id_ex.instr);
+      write(l, string'("  EX/MEM="));            hwrite(l, ex_mem.instr);
+      write(l, string'("  MEM/WB="));            hwrite(l, mem_wb.instr);
+      writeline(output, l);
+
+      write(l, string'("    hazard : stall="));    write(l, stall);
+      write(l, string'(" flush="));                write(l, flush);
+      write(l, string'(" take_branch="));          write(l, ex_take_branch);
+      write(l, string'(" take_jump="));            write(l, ex_take_jump);
+      write(l, string'(" fwd_a="));                write(l, fwd_a);
+      write(l, string'(" fwd_b="));                write(l, fwd_b);
+      writeline(output, l);
+
+      write(l, string'("    WB     : we="));       write(l, mem_wb.reg_write);
+      write(l, string'(" rd=x"));                  write(l, to_integer(unsigned(mem_wb.rd)));
+      write(l, string'(" wdata="));                hwrite(l, wb_data);
+      writeline(output, l);
+
+      write(l, string'("    MEM    : rd="));       write(l, ex_mem.mem_read);
+      write(l, string'(" wr="));                   write(l, ex_mem.mem_write);
+      write(l, string'(" addr="));                 hwrite(l, ex_mem.alu_result);
+      writeline(output, l);
+
+      cyc := cyc + 1;
+    end if;
+  end process;
+  end generate trace_gen;
 
 end architecture rtl;

@@ -81,9 +81,17 @@ jobs:
           python3 --version
           echo "::endgroup::"
 
+      # `tee` to build/sim.log so the "Build summary" step below can
+      # extract any CPU debug-trace lines (DEBUG_TRACE=true on the DUT)
+      # and surface them in the run summary. The default GH-Actions
+      # shell is `bash -eo pipefail` so a failing `make` still fails
+      # the step. `mkdir -p build` guarantees the log directory exists
+      # even on the first run (before make has created build/).
       - name: Simulate
         working-directory: ${{ matrix.project }}
-        run: make simulate
+        run: |
+          mkdir -p build
+          make simulate 2>&1 | tee build/sim.log
 
       - name: Generate netlist diagram
         working-directory: ${{ matrix.project }}
@@ -98,7 +106,9 @@ jobs:
       # them unconditionally across the matrix.
       - name: Simulate (Verilog)
         working-directory: ${{ matrix.project }}
-        run: make simulate_v
+        run: |
+          mkdir -p build
+          make simulate_v 2>&1 | tee build/sim_v.log
 
       - name: Generate netlist diagram (Verilog)
         working-directory: ${{ matrix.project }}
@@ -202,6 +212,43 @@ jobs:
           else
             echo "_No artifacts produced for this project._" >> "$summary"
           fi
+
+          # Per-CPU debug trace, when a TB enabled DEBUG_TRACE on the
+          # DUT. Both flows (GHDL + iverilog) emit the same line format:
+          #
+          #   [<cpu_id>] c<N>  pc=<hex>
+          #       <field> : key=value  key=value ...
+          #       ...
+          #
+          # Extract those blocks from the simulate logs and surface
+          # them in a collapsible block under the gallery. This is what
+          # makes "what did the pipeline actually do?" visible at a
+          # glance from the run summary page, without forcing a viewer
+          # to download the FST and open waveview.
+          for log in build/sim.log build/sim_v.log; do
+            [ -f "$log" ] || continue
+            case "$log" in
+              *_v.log) label="Verilog" ;;
+              *)       label="VHDL"    ;;
+            esac
+            trace=$(awk '
+              /^\[[a-zA-Z0-9_\/]+\] c[0-9]+ / { in_trace=1; print; next }
+              in_trace && /^    /             { print; next }
+              { in_trace=0 }
+            ' "$log")
+            if [ -n "$trace" ]; then
+              {
+                echo ""
+                echo "<details><summary>CPU debug trace — ${label}</summary>"
+                echo ""
+                echo '```'
+                echo "$trace"
+                echo '```'
+                echo ""
+                echo "</details>"
+              } >> "$summary"
+            fi
+          done
 
   # ------------------------------------------------------------------
   # gallery - collects every build's .svg / .png into the `ci-gallery`

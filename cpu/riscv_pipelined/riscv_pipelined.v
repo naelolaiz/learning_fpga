@@ -18,7 +18,12 @@
 module riscv_pipelined #(
     parameter integer IMEM_ADDR_W = 10,
     parameter integer DMEM_ADDR_W = 10,
-    parameter         IMEM_INIT   = ""
+    parameter         IMEM_INIT   = "",
+    // Sim-only: when non-zero, $display a per-cycle trace of the
+    // four pipeline-stage instruction values. Default off; a TB
+    // turns it on via `riscv_pipelined #(.DEBUG_TRACE(1)) ...`.
+    // Synthesises away (constant propagation) when 0.
+    parameter integer DEBUG_TRACE = 0
 ) (
     input  wire        clk,
     input  wire        rst,
@@ -66,6 +71,23 @@ module riscv_pipelined #(
     // ---------------------------------------------------------------
     // IF stage
     // ---------------------------------------------------------------
+    // All pipeline regs initialise to NOP-equivalent values at t=0
+    // via the explicit `initial begin ... end` block further down,
+    // so the FST waveform shows defined values from t=0 — same
+    // intent as the VHDL twin's `signal ... := IF_ID_NOP`. The
+    // reset path in the always block still drives them on every
+    // posedge with rst=1; the initial block is just for the brief
+    // sim window before the first reset edge.
+    //
+    // Why explicit initial vs declaration-level `reg X = INIT;`:
+    // iverilog's scheduler order at t=0 between the implicit
+    // initial blocks (created from declaration init) and the
+    // continuous-assign re-evaluations of the _n wires let
+    // X-transients on `id_ex_make_nop` taint the very first
+    // captured value of `if_id_instr` despite all regs being
+    // defined. Explicit initial blocks sidestep the issue. The
+    // hardware behaviour is unaffected — Quartus drives synthesis
+    // off the reset path, not the simulation initial.
     reg  [31:0] pc;
     wire [31:0] pc_plus_4 = pc + 32'd4;
     wire [31:0] pc_next;
@@ -336,6 +358,66 @@ module riscv_pipelined #(
     );
 
     // ===============================================================
+    // Power-up initial values — matches the reset block below, so
+    // the FST shows defined values from t=0 and the design behaves
+    // identically pre- and post- the first reset edge. Done as an
+    // explicit `initial begin` rather than `reg X = INIT;` because
+    // iverilog's scheduling of the implicit initial blocks created
+    // by declaration init lets X-transients on the _n wires taint
+    // the first captured value of if_id_instr.
+    // ===============================================================
+    initial begin
+        pc                = 32'b0;
+        // IF/ID
+        if_id_pc          = 32'b0;
+        if_id_pc_plus_4   = 32'b0;
+        if_id_instr       = NOP_INSTR;
+        // ID/EX
+        id_ex_pc          = 32'b0;
+        id_ex_pc_plus_4   = 32'b0;
+        id_ex_instr       = NOP_INSTR;
+        id_ex_rs1_val     = 32'b0;
+        id_ex_rs2_val     = 32'b0;
+        id_ex_imm         = 32'b0;
+        id_ex_rs1_idx     = 5'b0;
+        id_ex_rs2_idx     = 5'b0;
+        id_ex_rd          = 5'b0;
+        id_ex_alu_op      = 4'b0;
+        id_ex_funct3      = 3'b0;
+        id_ex_alu_src_a   = 1'b0;
+        id_ex_alu_src_b   = 1'b0;
+        id_ex_reg_write   = 1'b0;
+        id_ex_mem_read    = 1'b0;
+        id_ex_mem_write   = 1'b0;
+        id_ex_wb_src      = 2'b0;
+        id_ex_is_branch   = 1'b0;
+        id_ex_is_jal      = 1'b0;
+        id_ex_is_jalr     = 1'b0;
+        // EX/MEM
+        ex_mem_pc_plus_4  = 32'b0;
+        ex_mem_instr      = NOP_INSTR;
+        ex_mem_alu_result = 32'b0;
+        ex_mem_store_data = 32'b0;
+        ex_mem_rd         = 5'b0;
+        ex_mem_reg_write  = 1'b0;
+        ex_mem_mem_read   = 1'b0;
+        ex_mem_mem_write  = 1'b0;
+        ex_mem_wb_src     = 2'b0;
+        // MEM/WB
+        mem_wb_pc_plus_4  = 32'b0;
+        mem_wb_instr      = NOP_INSTR;
+        mem_wb_alu_result = 32'b0;
+        mem_wb_mem_data   = 32'b0;
+        mem_wb_rd         = 5'b0;
+        mem_wb_reg_write  = 1'b0;
+        mem_wb_wb_src     = 2'b0;
+        // Combinational regs (set in always @(*) blocks; init for
+        // pre-eval display).
+        ex_branch_cmp     = 1'b0;
+        wb_data           = 32'b0;
+    end
+
+    // ===============================================================
     // Pipeline-register update — one always block per boundary on
     // each clock edge. Reset clears every register to NOP.
     // ===============================================================
@@ -407,6 +489,38 @@ module riscv_pipelined #(
     // ===============================================================
     assign dbg_pc        = mem_wb_pc_plus_4 - 32'd4;
     assign dbg_instr     = mem_wb_instr;
+
+    // ===============================================================
+    // Optional per-cycle trace (sim-only, gated by DEBUG_TRACE).
+    // Multi-line per cycle so each section is easy to read:
+    //   pc + the four pipeline-stage instructions
+    //   hazard outcomes (stall / flush / take_branch / take_jump)
+    //   forwarding-mux selects (fwd_a / fwd_b)
+    //   WB-stage commit (we / rd / wdata)
+    //   MEM-stage access (rd / wr / addr)
+    //
+    // `ifndef YOSYS` so synthesis (which auto-defines YOSYS) skips
+    // the $display entirely — otherwise yosys creates a $print
+    // cell that taints the rendered netlist diagram.
+    // ===============================================================
+`ifndef YOSYS
+    integer dbg_cyc;
+    initial dbg_cyc = 0;
+    always @(posedge clk) begin
+        if (DEBUG_TRACE != 0 && !rst) begin
+            dbg_cyc <= dbg_cyc + 1;
+            $display("[riscv_pipelined] c%0d  pc=%h", dbg_cyc, pc);
+            $display("    stages : IF/ID=%h  ID/EX=%h  EX/MEM=%h  MEM/WB=%h",
+                     if_id_instr, id_ex_instr, ex_mem_instr, mem_wb_instr);
+            $display("    hazard : stall=%b  flush=%b  take_branch=%b  take_jump=%b  fwd_a=%b  fwd_b=%b",
+                     stall, flush, ex_take_branch, ex_take_jump, fwd_a, fwd_b);
+            $display("    WB     : we=%b  rd=x%0d  wdata=%h",
+                     mem_wb_reg_write, mem_wb_rd, wb_data);
+            $display("    MEM    : rd=%b  wr=%b  addr=%h",
+                     ex_mem_mem_read, ex_mem_mem_write, ex_mem_alu_result);
+        end
+    end
+`endif
     assign dbg_reg_we    = mem_wb_reg_write;
     assign dbg_reg_waddr = mem_wb_rd;
     assign dbg_reg_wdata = wb_data;

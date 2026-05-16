@@ -1,6 +1,10 @@
 // tb_riscv_singlecycle_addi.v - Verilog mirror of
 // tb_riscv_singlecycle_addi.vhd. Same prog_addi.hex, same shadow-
 // regfile snooping, same final-state assertion (t0 = 3).
+//
+// Doubles as the DEBUG_TRACE demo (see the VHDL twin's header for
+// the full rationale). DEBUG_TRACE = 1 below switches on the per-
+// cycle trace inside riscv_singlecycle.v.
 
 `timescale 1ns/1ps
 `default_nettype none
@@ -20,7 +24,7 @@ module tb_riscv_singlecycle_addi;
     wire [4:0]  dbg_reg_waddr;
 
     reg [31:0] shadow_regs [0:31];
-    integer i;
+    integer i = 0;
     initial for (i = 0; i < 32; i = i + 1) shadow_regs[i] = 32'b0;
 
     reg halted = 1'b0;
@@ -28,7 +32,8 @@ module tb_riscv_singlecycle_addi;
     riscv_singlecycle #(
         .IMEM_ADDR_W(8),
         .DMEM_ADDR_W(8),
-        .IMEM_INIT  ("../../../tools/rv32_asm/programs/prog_addi.hex")
+        .IMEM_INIT  ("../../../tools/rv32_asm/programs/prog_addi.hex"),
+        .DEBUG_TRACE(1)
     ) dut (
         .clk(clk), .rst(rst),
         .dbg_pc(dbg_pc), .dbg_instr(dbg_instr),

@@ -32,7 +32,10 @@ use std.textio.all;
 entity riscv_singlecycle is
   generic (
     IMEM_ADDR_W : integer := 10;
-    IMEM_INIT   : string  := ""
+    IMEM_INIT   : string  := "";
+    -- Sim-only per-cycle trace; see the standalone CPU twin
+    -- (cpu/riscv_singlecycle/riscv_singlecycle.vhd) for the format.
+    DEBUG_TRACE : boolean := false
   );
   port (
     clk : in std_logic;
@@ -216,5 +219,40 @@ begin
   dbg_reg_we    <= d_reg_write;
   dbg_reg_waddr <= d_rd;
   dbg_reg_wdata <= wb_data;
+
+  -- Optional per-cycle trace — see standalone CPU twin for the
+  -- write(output,...)+generate rationale (textio is sim-only, the
+  -- generate wrapper drops it for synthesis).
+  trace_gen : if DEBUG_TRACE generate
+  trace_p : process (clk) is
+    variable cyc : integer := 0;
+    variable l   : line;
+  begin
+    if rising_edge(clk) and rst = '0' then
+      write(l, string'("[riscv_singlecycle/soc] c"));
+      write(l, cyc);
+      write(l, string'("  pc="));    hwrite(l, pc);
+      write(l, string'("  instr=")); hwrite(l, instr);
+      writeline(output, l);
+
+      write(l, string'("    ctrl : take_branch=")); write(l, take_branch);
+      write(l, string'(" is_jal="));                write(l, d_is_jal);
+      write(l, string'(" is_jalr="));               write(l, d_is_jalr);
+      writeline(output, l);
+
+      write(l, string'("    WB   : we=")); write(l, d_reg_write);
+      write(l, string'(" rd=x"));          write(l, to_integer(unsigned(d_rd)));
+      write(l, string'(" wdata="));        hwrite(l, wb_data);
+      writeline(output, l);
+
+      write(l, string'("    MEM  : rd=")); write(l, d_mem_read);
+      write(l, string'(" wr="));           write(l, d_mem_write);
+      write(l, string'(" addr="));         hwrite(l, alu_result);
+      writeline(output, l);
+
+      cyc := cyc + 1;
+    end if;
+  end process;
+  end generate trace_gen;
 
 end architecture rtl;

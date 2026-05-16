@@ -20,7 +20,11 @@
 module riscv_singlecycle #(
     parameter integer IMEM_ADDR_W = 10,
     parameter integer DMEM_ADDR_W = 10,
-    parameter         IMEM_INIT   = ""
+    parameter         IMEM_INIT   = "",
+    // Sim-only: when non-zero, $display a per-cycle trace of PC +
+    // the fetched instruction. Default off; TB enables via
+    // `riscv_singlecycle #(.DEBUG_TRACE(1)) ...`. Synthesises away.
+    parameter integer DEBUG_TRACE = 0
 ) (
     input  wire        clk,
     input  wire        rst,
@@ -42,7 +46,7 @@ module riscv_singlecycle #(
     integer    init_fh;
     integer    init_lines;
     integer    init_rc;
-    reg [31:0] init_word;
+    reg [31:0] init_word = 32'b0;
     integer    i;
     initial begin
         for (i = 0; i < IMEM_DEPTH; i = i + 1) imem[i] = NOP_INSTR;
@@ -76,7 +80,7 @@ module riscv_singlecycle #(
     // ---------------------------------------------------------------
     // Datapath
     // ---------------------------------------------------------------
-    reg  [31:0] pc;
+    reg  [31:0] pc = 32'b0;
     wire [31:0] pc_plus_4   = pc + 32'd4;
     wire [31:0] pc_plus_imm;
     wire [31:0] next_pc;
@@ -102,9 +106,9 @@ module riscv_singlecycle #(
     wire        alu_zero;
 
     wire [31:0] dmem_rdata;
-    reg  [31:0] wb_data;
+    reg  [31:0] wb_data = 32'b0;
 
-    reg         branch_taken;
+    reg         branch_taken = 1'b0;
     wire        take_branch = d_is_branch & branch_taken;
 
     // ---------------------------------------------------------------
@@ -209,6 +213,27 @@ module riscv_singlecycle #(
     assign dbg_reg_we    = d_reg_write;
     assign dbg_reg_waddr = d_rd;
     assign dbg_reg_wdata = wb_data;
+
+    // Optional per-cycle trace (sim-only, gated by DEBUG_TRACE).
+    // `ifndef YOSYS` so synthesis skips $display and doesn't emit
+    // a $print cell into the rendered netlist diagram.
+`ifndef YOSYS
+    integer dbg_cyc;
+    initial dbg_cyc = 0;
+    always @(posedge clk) begin
+        if (DEBUG_TRACE != 0 && !rst) begin
+            dbg_cyc <= dbg_cyc + 1;
+            $display("[riscv_singlecycle] c%0d  pc=%h  instr=%h",
+                     dbg_cyc, pc, instr);
+            $display("    ctrl : take_branch=%b is_jal=%b is_jalr=%b",
+                     take_branch, d_is_jal, d_is_jalr);
+            $display("    WB   : we=%b  rd=x%0d  wdata=%h",
+                     d_reg_write, d_rd, wb_data);
+            $display("    MEM  : rd=%b  wr=%b  addr=%h  rdata=%h",
+                     d_mem_read, d_mem_write, alu_result, dmem_rdata);
+        end
+    end
+`endif
 
 endmodule
 

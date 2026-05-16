@@ -13,6 +13,14 @@
 --     halt
 --
 --   Expected: t0 (x5) = 0x00000003.
+--
+-- This TB also doubles as the DEBUG_TRACE demo: we instantiate the CPU
+-- with DEBUG_TRACE => true so each simulated cycle prints PC, all four
+-- pipeline-stage instructions, hazard outcomes (stall/flush/branch/
+-- forward) and WB/MEM observations. The program is tiny but exercises
+-- the most common pipeline event (a back-to-back RAW resolved by MEM→EX
+-- forwarding), so the trace is a good first read for understanding
+-- what the pipeline does cycle-by-cycle.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -46,7 +54,8 @@ begin
     generic map (
       IMEM_ADDR_W => 8,
       DMEM_ADDR_W => 8,
-      IMEM_INIT   => "../../tools/rv32_asm/programs/prog_addi.hex"
+      IMEM_INIT   => "../../tools/rv32_asm/programs/prog_addi.hex",
+      DEBUG_TRACE => true
     )
     port map (
       clk           => sClk,

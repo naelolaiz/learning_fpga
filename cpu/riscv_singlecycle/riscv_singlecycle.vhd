@@ -58,7 +58,11 @@ entity riscv_singlecycle is
   generic (
     IMEM_ADDR_W : integer := 10;          -- 2**10 = 1024 instr ≈ 4 KB
     DMEM_ADDR_W : integer := 10;          -- 2**10 = 1024 words ≈ 4 KB
-    IMEM_INIT   : string  := ""           -- hex file for IMEM
+    IMEM_INIT   : string  := "";          -- hex file for IMEM
+    -- Sim-only: when true, `report` a per-cycle trace of PC + the
+    -- fetched instruction. A TB enables it via
+    -- `generic map (DEBUG_TRACE => true, ...)`; ignored by synthesis.
+    DEBUG_TRACE : boolean := false
   );
   port (
     clk : in std_logic;
@@ -307,5 +311,46 @@ begin
   dbg_reg_we    <= d_reg_write;
   dbg_reg_waddr <= d_rd;
   dbg_reg_wdata <= wb_data;
+
+  -- ------------------------------------------------------------------
+  -- Optional per-cycle trace (sim-only, gated by DEBUG_TRACE generic).
+  -- Same fields as the Verilog twin: PC + instruction, control flags,
+  -- WB commit, MEM access.
+  -- ------------------------------------------------------------------
+  -- See riscv_pipelined.vhd's trace_p for the rationale: textio (not
+  -- synthesisable) inside `if DEBUG_TRACE generate` (elaborated out
+  -- when DEBUG_TRACE=false), so the synthesis flow never sees it.
+  trace_gen : if DEBUG_TRACE generate
+  trace_p : process (clk) is
+    variable cyc : integer := 0;
+    variable l   : line;
+  begin
+    if rising_edge(clk) and rst = '0' then
+      write(l, string'("[riscv_singlecycle] c"));
+      write(l, cyc);
+      write(l, string'("  pc="));    hwrite(l, pc);
+      write(l, string'("  instr=")); hwrite(l, instr);
+      writeline(output, l);
+
+      write(l, string'("    ctrl : take_branch=")); write(l, take_branch);
+      write(l, string'(" is_jal="));                write(l, d_is_jal);
+      write(l, string'(" is_jalr="));               write(l, d_is_jalr);
+      writeline(output, l);
+
+      write(l, string'("    WB   : we=")); write(l, d_reg_write);
+      write(l, string'(" rd=x"));          write(l, to_integer(unsigned(d_rd)));
+      write(l, string'(" wdata="));        hwrite(l, wb_data);
+      writeline(output, l);
+
+      write(l, string'("    MEM  : rd=")); write(l, d_mem_read);
+      write(l, string'(" wr="));           write(l, d_mem_write);
+      write(l, string'(" addr="));         hwrite(l, alu_result);
+      write(l, string'(" rdata="));        hwrite(l, dmem_rdata);
+      writeline(output, l);
+
+      cyc := cyc + 1;
+    end if;
+  end process;
+  end generate trace_gen;
 
 end architecture rtl;

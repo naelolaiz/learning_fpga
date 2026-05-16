@@ -18,6 +18,11 @@
 -- hierarchical references into dut.regfile.regs and works the same
 -- way for the upcoming pipelined CPU — both DUTs expose the same
 -- debug bus, so the testbench is portable across them.
+--
+-- This TB also doubles as the DEBUG_TRACE demo: the DUT is
+-- instantiated with DEBUG_TRACE => true so each simulated cycle
+-- prints PC + instr + control-flag + WB + MEM observation. CI
+-- scrapes those lines into the run-summary trace block.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -53,7 +58,8 @@ begin
     generic map (
       IMEM_ADDR_W => 8,                                              -- 256 instr is plenty
       DMEM_ADDR_W => 8,
-      IMEM_INIT   => "../../tools/rv32_asm/programs/prog_addi.hex"
+      IMEM_INIT   => "../../tools/rv32_asm/programs/prog_addi.hex",
+      DEBUG_TRACE => true
     )
     port map (
       clk           => sClk,
