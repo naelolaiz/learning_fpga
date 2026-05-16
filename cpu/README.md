@@ -44,7 +44,7 @@ program drives the SIMD ALU end-to-end through the bus.
     streaming 4-tap FIR filter using the Cyclone IV hard 9×9
     multipliers.
 
-### ISA reference card (the subset implemented)
+### Instruction Set Architecture (RV32I) reference card (implemented subset)
 
 | Type | Instructions |
 |---|---|
@@ -135,10 +135,13 @@ average).
 
 ### What's still out of scope
 
-Per the original plan, the following are explicitly deferred:
+The following are intentionally deferred:
 
 - Byte / halfword memory ops (`lb`, `lh`, `sb`, `sh`).
-- CSRs, privilege levels, `mtime`, interrupts.
+- Interrupts / CSRs / privilege levels / `mtime` / `mtvec` / `mret`
+  — the "Next up" item in the top-level [README.md](../README.md);
+  needed to turn the polled UART_RX peripheral into a real
+  interrupt-driven device.
 - M-extension (multiply / divide).
 - Cache, branch prediction.
 - Full RVV vector extension (the SIMD ALU + FIR accelerators cover

@@ -4,8 +4,8 @@ Combinational. Takes the 32-bit fetched instruction and produces
 every control signal the CPU top-level needs to wire its datapath:
 register addresses, immediate-format selector, ALU op, source muxes,
 memory & writeback gating, and branch/jump flags. The largest of the
-"Phase A" building blocks, but still pure combinational — its body
-is one big case-on-opcode with default-then-override.
+RV32 building blocks, but still pure combinational — its body is one
+big case-on-opcode with default-then-override.
 
 | File | Purpose |
 | ---- | ------- |

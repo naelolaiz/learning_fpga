@@ -11,8 +11,8 @@ TX line and verifies the bytes match.
 | ---- | ------- |
 | [`riscv_soc.vhd`](riscv_soc.vhd) | SoC top: CPU + DMEM + address decoder + UART peripherals |
 | [`riscv_singlecycle.vhd`](riscv_singlecycle.vhd) | CPU variant with the DMEM bus **exposed externally** (so the SoC can route loads/stores to either DMEM or peripherals) |
-| [`ram_sync.vhd`](ram_sync.vhd), [`regfile_rv32.vhd`](regfile_rv32.vhd), [`alu_rv32.vhd`](alu_rv32.vhd), [`immgen_rv32.vhd`](immgen_rv32.vhd), [`decoder_rv32.vhd`](decoder_rv32.vhd) | Phase A building blocks (local copies) |
-| [`uart_tx.vhd`](uart_tx.vhd), [`uart_rx.vhd`](uart_rx.vhd) | UART pair (local copies of [`comm/uart_tx`](../../comm/uart_tx/) and [`comm/uart_rx`](../../comm/uart_rx/)) |
+| [`../building_blocks/regfile_rv32`](../building_blocks/regfile_rv32/), [`alu_rv32`](../building_blocks/alu_rv32/), [`immgen_rv32`](../building_blocks/immgen_rv32/), [`decoder_rv32`](../building_blocks/decoder_rv32/), [`simd_alu`](../building_blocks/simd_alu/), [`fir4tap`](../building_blocks/fir4tap/), [`../../building_blocks/ram_sync`](../../building_blocks/ram_sync/) | RV32 building blocks + accelerators pulled in via the Makefile's `SRC_FILES` (no local copies) |
+| [`../../comm/uart_tx`](../../comm/uart_tx/), [`../../comm/uart_rx`](../../comm/uart_rx/) | UART pair pulled in via the Makefile's `SRC_FILES` |
 | [`programs/prog_hello.S`](programs/prog_hello.S), [`programs/prog_hello.hex`](programs/prog_hello.hex) | Demo program (assembly source + golden hex) |
 | [`test/tb_riscv_soc.vhd`](test/tb_riscv_soc.vhd) | Boot the SoC, sample UART_TX, verify the greeting |
 

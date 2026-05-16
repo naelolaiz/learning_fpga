@@ -1,7 +1,7 @@
 -- riscv_pipelined.vhd
 --
 -- Classic 5-stage RV32I pipeline (IF/ID/EX/MEM/WB), composed from the
--- same Phase A building blocks the single-cycle CPU uses
+-- same RV32 building blocks the single-cycle CPU uses
 -- (decoder_rv32, immgen_rv32, alu_rv32, regfile_rv32, ram_sync) plus
 -- the two pipeline-specific sub-entities forwarding_unit and
 -- hazard_detector.

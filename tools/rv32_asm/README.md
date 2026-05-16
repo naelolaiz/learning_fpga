@@ -52,7 +52,7 @@ mnemonic the assembler accepts, the CPU executes, and vice versa.
 
 | Class | Mnemonics | Why omitted |
 | ----- | --------- | ----------- |
-| Byte/half loads/stores | `LB`, `LH`, `LBU`, `LHU`, `SB`, `SH`           | The tutorial CPU's memory path is word-only. Adding these to the assembler without the matching CPU+memory work would let users write programs that don't run. They re-enter scope as a Phase D follow-on. |
+| Byte/half loads/stores | `LB`, `LH`, `LBU`, `LHU`, `SB`, `SH`           | The tutorial CPU's memory path is word-only. Adding these to the assembler without the matching CPU+memory work would let users write programs that don't run. They re-enter scope when the CPU+memory grows byte-addressable load/store support. |
 | Memory-ordering hints  | `FENCE`, `FENCE.I`                              | No reordering memory subsystem to fence. |
 | Environment / debug    | `ECALL`, `EBREAK`                               | No exception handler in the tutorial CPU. |
 | Control/status regs    | `CSRRW`, `CSRRS`, `CSRRC`, `CSRRWI`, `CSRRSI`, `CSRRCI` | No CSR file in the tutorial CPU; CSRs land alongside interrupts in a future phase. |
@@ -116,6 +116,29 @@ The same file is accepted by both:
   `reg [31:0] imem [0:DEPTH-1]`.
 - VHDL: `ram_sync` (sibling building block) loads this format via
   its `INIT_FILE` generic using `std.textio` `hread`.
+
+## Example programs
+
+[`programs/`](programs/) ships five `.S` sources, each committed
+alongside its golden `.hex` output. The first four feed the CPU
+testbenches in `cpu/riscv_singlecycle/` and `cpu/riscv_pipelined/`;
+`prog_memcpy.S` exercises every immediate-format encoder in the
+assembler but has no matching CPU TB (the assembler regression test
+covers its `.hex` match instead).
+
+| Program | What it exercises | Used by |
+|---------|-------------------|---------|
+| [`prog_addi.S`](programs/prog_addi.S) | `addi` + back-to-back RAW + halt sentinel | `tb_riscv_{singlecycle,pipelined}_addi` |
+| [`prog_loop.S`](programs/prog_loop.S) | counted decrement loop with `bne` + `j` | `tb_riscv_{singlecycle,pipelined}_loop` |
+| [`prog_branches.S`](programs/prog_branches.S) | every conditional branch flavour, taken AND not-taken | `tb_riscv_{singlecycle,pipelined}_branches` |
+| [`prog_load_use.S`](programs/prog_load_use.S) | `lw`-followed-by-use pair — exercises the pipelined CPU's load-use stall (the single-cycle CPU runs it unchanged with no stalls) | `tb_riscv_pipelined_load_use` |
+| [`prog_memcpy.S`](programs/prog_memcpy.S) | `lw` / `sw` sweep — assembler-only test | `test/test_rv32_asm.py` (golden) |
+
+The SoC's [`prog_hello.S`](../../cpu/riscv_soc/programs/prog_hello.S)
+and [`prog_simd.S`](../../cpu/riscv_soc/programs/prog_simd.S) live
+under [`cpu/riscv_soc/programs/`](../../cpu/riscv_soc/programs/) (they
+target the SoC's MMIO map, not the bare CPU), but the assembler
+treats them identically.
 
 ## Test strategy
 

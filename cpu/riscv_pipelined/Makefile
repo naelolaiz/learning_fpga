@@ -54,9 +54,10 @@ V_TB_FILES  := test/tb_riscv_pipelined_addi.v \
                test/tb_riscv_pipelined_branches.v \
                test/tb_riscv_pipelined_load_use.v
 
-# Diagram tweaks — same composite pattern as C1. Cell IDs match the
-# entity instance labels in riscv_pipelined.vhd (decoder, immgen,
-# regfile, alu, fu, hd). dmem links to ram_sync as in C1.
+# Diagram tweaks — same composite pattern as cpu/riscv_singlecycle's
+# Makefile. Cell IDs match the entity instance labels in
+# riscv_pipelined.vhd (decoder, immgen, regfile, alu, fu, hd). dmem
+# links to ram_sync the same way the single-cycle CPU's diagram does.
 SVG_RELABEL := decoder=decoder_rv32 \
                immgen=immgen_rv32 \
                regfile=regfile_rv32 \

@@ -1,7 +1,7 @@
 -- riscv_singlecycle.vhd
 --
 -- Single-cycle RV32I CPU — the textbook flat-datapath organisation
--- from Patterson & Hennessy, composed structurally from the Phase A
+-- from Patterson & Hennessy, composed structurally from the RV32
 -- building blocks (alu_rv32, regfile_rv32, immgen_rv32, decoder_rv32,
 -- ram_sync). One instruction completes every clock; no FSM, no
 -- pipeline registers.
@@ -35,7 +35,7 @@
 --
 -- DMEM is also internal — sync write, async read — so loads land in
 -- the same cycle as the address compute. For real BRAM-friendly
--- behaviour the SoC top (Phase D) replaces the internal DMEM with
+-- behaviour the SoC top variant (cpu/riscv_soc/) replaces the internal DMEM with
 -- an external memory bus.
 --
 -- Both memories are sized via ADDR_W generics; depth = 2**ADDR_W

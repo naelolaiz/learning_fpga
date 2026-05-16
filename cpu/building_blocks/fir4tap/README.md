@@ -1,7 +1,7 @@
 4-tap streaming FIR filter — the DSP-flavoured counterpart to
 [`simd_alu`](../simd_alu/). Each new sample produces a new filtered
-output two cycles later. The SoC integration in F1c hangs this
-behind a small MMIO interface so the CPU streams audio samples via
+output two cycles later. The SoC integration hangs this behind a
+small MMIO interface so the CPU streams audio samples via
 plain `sw` writes.
 
 ### Data widths

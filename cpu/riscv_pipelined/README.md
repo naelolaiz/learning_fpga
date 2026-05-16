@@ -71,16 +71,23 @@ the single-cycle CPU runs:
 
 - `tb_riscv_pipelined_addi` — basic R-type + I-type with back-to-back
   RAW (`addi t0,x0,1 ; addi t0,t0,2`) — exercises MEM→EX forwarding.
+  Also enables `DEBUG_TRACE` on the DUT so the simulator emits the
+  per-cycle pipeline trace (CI surfaces it in the run summary).
 - `tb_riscv_pipelined_loop` — counted decrement loop with back-edge
   branch — every iteration is a taken-branch flush.
 - `tb_riscv_pipelined_branches` — every conditional branch flavour
   (BEQ/BNE/BLT/BGE/BLTU/BGEU) with taken AND not-taken paths.
+- `tb_riscv_pipelined_load_use` — back-to-back `lw`-then-use pairs
+  that the `hazard_detector` resolves with a one-cycle stall before
+  forwarding fills in the loaded value. The same source program runs
+  unchanged on the single-cycle CPU (where no stall is needed) and
+  reaches the same final architectural state.
 
-All three pass the same final-state assertions the single-cycle TBs
-do. The shadow-regfile scheme (snoop the debug bus, mirror commits,
-check at halt) is identical because both CPUs expose the same
-debug bus — the testbenches port across CPU implementations with
-just a `riscv_singlecycle` → `riscv_pipelined` rename.
+All four pass the same final-state assertion style the single-cycle
+TBs use. The shadow-regfile scheme (snoop the debug bus, mirror
+commits, check at halt) is identical because both CPUs expose the
+same debug bus — the testbenches port across CPU implementations
+with just a `riscv_singlecycle` → `riscv_pipelined` rename.
 
 ### Debug bus
 

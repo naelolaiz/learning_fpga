@@ -367,7 +367,7 @@ Same `CLKS_PER_BIT` generic as `uart_tx` (default 5208 for 50 MHz / 9600 baud). 
 | `tb_riscv_singlecycle_loop` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_loop.png" alt="loop waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_loop_v.png" alt="loop waveform (Verilog)" width="480"> |
 | `tb_riscv_singlecycle_branches` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_branches.png" alt="branches waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_branches_v.png" alt="branches waveform (Verilog)" width="480"> |
 
-Composes structurally from the Phase A building blocks (`alu_rv32`, `regfile_rv32`, `immgen_rv32`, `decoder_rv32`, `ram_sync`). Internal IMEM (init from `IMEM_INIT` hex) + DMEM (sync write / async read). Three programs from [`tools/rv32_asm/programs/`](tools/rv32_asm/programs/) run end-to-end: `prog_addi` (basic R/I-type), `prog_loop` (counted decrement loop with back-edge branch), `prog_branches` (every branch flavour taken AND not-taken).
+Composes structurally from the RV32 building blocks (`alu_rv32`, `regfile_rv32`, `immgen_rv32`, `decoder_rv32`, `ram_sync`). Internal IMEM (init from `IMEM_INIT` hex) + DMEM (sync write / async read). Three programs from [`tools/rv32_asm/programs/`](tools/rv32_asm/programs/) run end-to-end: `prog_addi` (basic R/I-type), `prog_loop` (counted decrement loop with back-edge branch), `prog_branches` (every branch flavour taken AND not-taken).
 
 </details>
 
@@ -378,6 +378,8 @@ Composes structurally from the Phase A building blocks (`alu_rv32`, `regfile_rv3
 | --- | :---: | :---: |
 | `riscv_pipelined` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/riscv_pipelined.svg" alt="riscv_pipelined netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/riscv_pipelined_v.svg" alt="riscv_pipelined netlist (Verilog)" width="480"> |
 | `tb_riscv_pipelined_addi` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_addi.png" alt="addi waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_addi_v.png" alt="addi waveform (Verilog)" width="480"> |
+| `tb_riscv_pipelined_loop` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_loop.png" alt="loop waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_loop_v.png" alt="loop waveform (Verilog)" width="480"> |
+| `tb_riscv_pipelined_branches` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_branches.png" alt="branches waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_branches_v.png" alt="branches waveform (Verilog)" width="480"> |
 | `tb_riscv_pipelined_load_use` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_load_use.png" alt="load-use waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_load_use_v.png" alt="load-use waveform (Verilog)" width="480"> |
 
 Same external port shape as `riscv_singlecycle`, same hex programs run unchanged — reading the two diagrams side by side shows exactly what pipelining adds: 4 pipeline-register stages, the [`forwarding_unit`](cpu/building_blocks/forwarding_unit/) muxes at the EX-stage ALU operands, and the [`hazard_detector`](cpu/building_blocks/hazard_detector/) driving stall + flush. Adds a fourth TB (`tb_riscv_pipelined_load_use`) that specifically validates the one-cycle bubble inserted on a load-use hazard.
@@ -669,6 +671,12 @@ Out of scope by design (deferrable): byte/halfword memory ops, CSRs, interrupts,
 
 ### Next up 🎯
 
+- Interrupt-service-routine (ISR) support for the RISC-V CPU: a
+  minimal CSR file (`mtvec`, `mepc`, `mcause`, `mstatus`), an
+  external-interrupt pin, and the `mret` instruction so a program
+  can install a handler and resume. The MMIO peripherals
+  ([UART_RX](comm/uart_rx/), buttons, ...) become real interrupt
+  sources rather than polled-only devices.
 - Small game using the buttons + 7-segment display (snake / space
   invaders). On-FPGA RNG is now available via
   [`random_generator`](building_blocks/random_generator/).

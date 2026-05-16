@@ -1,17 +1,15 @@
 # riscv_singlecycle — single-cycle RV32I CPU
 
 The textbook flat-datapath organisation from Patterson & Hennessy,
-composed structurally from the Phase A building blocks. One
+composed structurally from the RV32 building blocks. One
 instruction completes every clock; no FSM, no pipeline registers.
-The first integrated example in the
-[plan](../../../.claude/plans/can-you-check-what-fuzzy-avalanche.md) — runs the
-RV32I subset the assembler in [`tools/rv32_asm`](../../tools/rv32_asm/)
-emits.
+Runs the RV32I subset the assembler in
+[`tools/rv32_asm`](../../tools/rv32_asm/) emits.
 
 | File | Purpose |
 | ---- | ------- |
 | [`riscv_singlecycle.vhd`](riscv_singlecycle.vhd) | Top-level CPU |
-| [`ram_sync.vhd`](ram_sync.vhd), [`regfile_rv32.vhd`](regfile_rv32.vhd), [`alu_rv32.vhd`](alu_rv32.vhd), [`immgen_rv32.vhd`](immgen_rv32.vhd), [`decoder_rv32.vhd`](decoder_rv32.vhd) | Local copies of the Phase A building blocks (one copy per project, matching `comm/uda1380`'s convention) |
+| [`../building_blocks/regfile_rv32`](../building_blocks/regfile_rv32/), [`alu_rv32`](../building_blocks/alu_rv32/), [`immgen_rv32`](../building_blocks/immgen_rv32/), [`decoder_rv32`](../building_blocks/decoder_rv32/), [`../../building_blocks/ram_sync`](../../building_blocks/ram_sync/) | RV32 building blocks pulled in via the Makefile's `SRC_FILES` (no local copies — single source of truth) |
 | [`test/tb_riscv_singlecycle_addi.vhd`](test/tb_riscv_singlecycle_addi.vhd) | Minimal ADDI sanity test |
 | [`test/tb_riscv_singlecycle_loop.vhd`](test/tb_riscv_singlecycle_loop.vhd) | Counted decrement loop |
 | [`test/tb_riscv_singlecycle_branches.vhd`](test/tb_riscv_singlecycle_branches.vhd) | Every conditional branch flavour |
@@ -35,20 +33,20 @@ emits.
            : PC + 4
 ```
 
-The five Phase A blocks compose like this in the source:
+The five RV32 building blocks compose like this in the source:
 
 | Block | Role |
 | ----- | ---- |
-| `ram_sync` | (Phase A1) — used as the IMEM template; the CPU has its own internal IMEM/DMEM |
-| `regfile_rv32` | (Phase A2) — 32 × 32 register file, x0=0, falling-edge writes |
-| `alu_rv32` | (Phase A3) — 32-bit ALU |
-| `immgen_rv32` | (Phase A4) — sign-extends one of five RISC-V immediate formats |
-| `decoder_rv32` | (Phase A5) — produces every control signal the muxes need |
+| `ram_sync` | used as the IMEM template; the CPU has its own internal IMEM/DMEM |
+| `regfile_rv32` | 32 × 32 register file, x0=0, falling-edge writes |
+| `alu_rv32` | 32-bit ALU |
+| `immgen_rv32` | sign-extends one of five RISC-V immediate formats |
+| `decoder_rv32` | produces every control signal the muxes need |
 
-Two pieces are **not** Phase A blocks because they're CPU-specific: the
-**branch comparator** (six-way `funct3` → taken/not-taken; kept
-separate from the ALU so the ALU is free to compute branch targets
-or JALR sums) and the **next-PC selector**.
+Two pieces are **not** generic building blocks because they're
+CPU-specific: the **branch comparator** (six-way `funct3` →
+taken/not-taken; kept separate from the ALU so the ALU is free to
+compute branch targets or JALR sums) and the **next-PC selector**.
 
 ## Why the memories are internal and async
 
@@ -60,8 +58,9 @@ the design into something closer to a 2-stage pipeline.
 
 For tutorial-sized programs (a few hundred instructions, a few hundred
 words of data), the LE cost of async memories is negligible on the
-Cyclone IV. The SoC build (Phase D) replaces the internal DMEM with
-a memory bus so MMIO peripherals can sit in the data address space.
+Cyclone IV. The [SoC variant](../riscv_soc/) replaces the internal
+DMEM with a memory bus so MMIO peripherals can sit in the data
+address space.
 
 `IMEM_ADDR_W` and `DMEM_ADDR_W` size the internal arrays
 (depth = 2^addr_w). `IMEM_INIT` is a hex file path consumed at
@@ -118,17 +117,17 @@ that locks PC at 0 fails fast instead of running forever).
 
 ## Out of scope (intentional)
 
-This single-cycle CPU is the v1 — it implements the Phase A subset
-of RV32I exactly:
+This single-cycle CPU is the v1 — it implements the RV32I subset
+exactly:
 
 - LW / SW only (byte/half loads + stores deferred — no
   byte-addressable memory path yet)
 - No exceptions, no CSRs, no interrupts (the decoder reports
   `illegal=1` but the CPU just ignores it)
 - No M-extension (multiply/divide)
-- Async, internal memories (the SoC build in Phase D moves DMEM
-  external for MMIO)
+- Async, internal memories (the [SoC variant](../riscv_soc/) moves
+  DMEM external for MMIO)
 
-The pipelined version in Phase E swaps the same datapath into a
-5-stage IF/ID/EX/MEM/WB organisation with a forwarding unit and
-load-use hazard detection.
+The [pipelined CPU](../riscv_pipelined/) swaps the same datapath
+into a 5-stage IF/ID/EX/MEM/WB organisation with a forwarding unit
+and load-use hazard detection.

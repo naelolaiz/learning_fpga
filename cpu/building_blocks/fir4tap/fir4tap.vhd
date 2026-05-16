@@ -3,7 +3,7 @@
 -- 4-tap streaming FIR filter — the DSP-flavoured counterpart to
 -- simd_alu. Pure structural composition: a 4-stage sample shift
 -- register, four signed multipliers, an adder tree, and a result
--- register. The SoC integration in F1c hangs this behind a small
+-- register. The SoC integration hangs this behind a small
 -- MMIO interface so the CPU streams audio samples via SW writes and
 -- reads filter output via LW reads.
 --
