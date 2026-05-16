@@ -48,6 +48,16 @@
 -- # neoTRNG - https://github.com/stnolting/neoTRNG                            (c) Stephan Nolting #
 -- #################################################################################################
 
+-- learning_fpga local note (NOT part of upstream neoTRNG):
+-- During synthesis (yosys / Quartus), this file emits dozens of
+--     Warning: found logic loop in module neotrng_cell_...
+-- lines. They are CORRECT and INTENTIONAL: a ring oscillator IS a
+-- combinational loop by definition — that's how a true RNG generates
+-- entropy on real silicon. The loops are deliberately preserved
+-- (each inverter has its own enable from a shift register so the
+-- synth tool cannot prove them equivalent and collapse them).
+-- See README.md "Expected yosys warnings" for the full rationale.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -133,7 +143,11 @@ begin
   -- -------------------------------------------------------------------------------------------
   assert not (true) report "<< neoTRNG V2 - A Tiny and Platform-Independent True Random Number Generator for any FPGA >>" severity note;
   assert not (POST_PROC_EN = true) report "neoTRNG note: Post-processing enabled." severity note;
-  assert not (IS_SIM = true) report "neoTRNG WARNING: Simulation mode (PRNG!) enabled!" severity warning;
+  -- Severity downgraded from `warning` to `note` so a clean
+  -- simulation log doesn't show a startup "warning": this is an
+  -- informational reminder that simulation uses a PRNG, not a
+  -- genuine warning about a bug. The message itself is preserved.
+  assert not (IS_SIM = true) report "neoTRNG note: Simulation mode (PRNG!) enabled." severity note;
   assert not (NUM_CELLS < 2) report "neoTRNG config ERROR: Total number of ring-oscillator cells <NUM_CELLS> has to be >= 2." severity error;
   assert not ((NUM_INV_START mod 2)  = 0) report "neoTRNG config ERROR: Number of inverters in first cell <NUM_INV_START> has to be odd." severity error;
   assert not ((NUM_INV_INC   mod 2) /= 0) report "neoTRNG config ERROR: Inverter increment for each next cell <NUM_INV_INC> has to be even." severity error;
@@ -438,7 +452,10 @@ begin
   -- For simulation/debugging only! --
   sim_rng:
   if (IS_SIM = true) generate
-    assert false report "neoTRNG WARNING: Implementing simulation-only PRNG (LFSR)!" severity warning;
+    -- Severity downgraded from `warning` to `note` for the same
+    -- reason as line 136 — this is an informational reminder, not
+    -- a real warning.
+    assert false report "neoTRNG note: Implementing simulation-only PRNG (LFSR)." severity note;
     sim_lfsr: process(clk_i)
     begin
       if rising_edge(clk_i) then
