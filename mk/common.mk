@@ -75,17 +75,13 @@ YOSYS         ?= yosys
 # other. Common cases:
 #   * Big designs that need a bigger Node V8 stack just override
 #     NETLISTSVG_BIN (see cpu/riscv_singlecycle/Makefile).
-#   * Projects that want a different glyph style override
-#     NETLISTSVG_SKIN.
-#   * Projects that need both override NETLISTSVG directly.
-# The default skin (mk/skin.svg) is a superset of netlistsvg's
-# upstream default — same cell shapes plus $ne (the inequality
-# comparator yosys emits but upstream forgot to draw), so a yosys
-# graph with a `!=` operator renders consistently with the other
-# comparators instead of falling through to a text rectangle.
+#   * Projects that need a custom glyph set can pass --skin via NETLISTSVG.
+# No --skin is passed by default — netlistsvg's bundled default skin
+# already covers every primitive yosys emits for our designs
+# (including $ne and the -bus variants used by hierarchical rendering).
 NETLISTSVG_BIN  ?= netlistsvg
-NETLISTSVG_SKIN ?= $(COMMON_MK_DIR)skin.svg
-NETLISTSVG      ?= $(NETLISTSVG_BIN) --skin $(NETLISTSVG_SKIN)
+NETLISTSVG_CONFIG ?= $(COMMON_MK_DIR)netlistsvg-hierarchy.json
+NETLISTSVG      ?= $(NETLISTSVG_BIN) --config $(NETLISTSVG_CONFIG)
 WAVEVIEW      ?= waveview
 IVERILOG      ?= iverilog
 VVP           ?= vvp
@@ -141,22 +137,10 @@ V_NO_WAVEFORM_TBS ?=
 # stamped on the box: post-rewrite the label back to the bare
 # submodule name. yosys's own `rename` won't propagate to cell-type
 # references, so post-processing the SVG is the practical fix.
-#
-# SVG_PREVIEW inlines the SVG at `local_path` as a nested `<svg>`
-# inside cell_<cell_id>. Format: `cell_id=local_path`. We can't use
-# `<image href="other.svg">` because GitHub's raw.githubusercontent.com
-# serves SVGs with `Content-Security-Policy: default-src 'none'`,
-# which blocks the cross-document fetch that an `<image>` needs;
-# inlining bypasses that. Project Makefiles using SVG_PREVIEW need
-# to add the sibling's SVG as a prereq on the diagram step so it
-# exists at preview-inline time (CI builds projects in parallel
-# matrix jobs that don't share artifacts otherwise).
 SVG_LINKS     ?=
 V_SVG_LINKS   ?=
 SVG_RELABEL   ?=
 V_SVG_RELABEL ?=
-SVG_PREVIEW   ?=
-V_SVG_PREVIEW ?=
 
 # Used to locate svg_add_links.py — common.mk lives next to it.
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -315,8 +299,7 @@ $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
 	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
 	    $(addprefix --link ,$(SVG_LINKS)) \
-	    $(addprefix --relabel ,$(SVG_RELABEL)) \
-	    $(addprefix --preview ,$(SVG_PREVIEW))
+	    $(addprefix --relabel ,$(SVG_RELABEL))
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -386,8 +369,7 @@ $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
 	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
 	    $(addprefix --link ,$(V_SVG_LINKS)) \
-	    $(addprefix --relabel ,$(V_SVG_RELABEL)) \
-	    $(addprefix --preview ,$(V_SVG_PREVIEW))
+	    $(addprefix --relabel ,$(V_SVG_RELABEL))
 endif
 
 else
