@@ -201,6 +201,18 @@ Two testbenches each side: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_f
 </details>
 
 <details>
+<summary><b><code>ram_sync</code></b> — generic single-port synchronous BRAM with optional hex-file init</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `ram_sync` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/ram_sync.svg" alt="ram_sync netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/ram_sync_v.svg" alt="ram_sync netlist (Verilog)" width="480"> |
+| `tb_ram_sync` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/tb_ram_sync.png" alt="ram_sync waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/tb_ram_sync_v.png" alt="ram_sync waveform (Verilog)" width="480"> |
+
+Parameterised width / depth; the address-width generic with `DEPTH = 2**ADDR_W` derived inside the architecture (avoids `ieee.math_real`/`$clog2` in the port list for cross-tool portability — same idiom as `fifo_sync`). The VHDL twin uses the `signal`-not-`constant` BRAM-inference quirk so Quartus actually maps it to a block RAM (see `ROM_LUT.vhd` for the original example). Used as IMEM and DMEM in the RV32I CPU + SoC.
+
+</details>
+
+<details>
 <summary><b><code>random_generator</code></b> — on-chip random number generator, viewed on a 4-digit 7-segment</summary>
 
 | | VHDL | Verilog |
@@ -326,6 +338,18 @@ Both flows synth the same `VgaController` timing FSM (`vga_driver/VgaController.
 | --- | :---: | :---: |
 | `uart_tx` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx.svg" alt="uart_tx netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/uart_tx_v.svg" alt="uart_tx netlist (Verilog)" width="480"> |
 | `tb_uart_tx` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx.png" alt="uart_tx waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_tx/tb_uart_tx_v.png" alt="uart_tx waveform (Verilog)" width="480"> |
+
+</details>
+
+<details>
+<summary><b><code>uart_rx</code></b> — 8N1 UART receiver, 3-tap majority sampler at mid-bit (pairs with <code>uart_tx</code>)</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `uart_rx` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/uart_rx.svg" alt="uart_rx netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/uart_rx_v.svg" alt="uart_rx netlist (Verilog)" width="480"> |
+| `tb_uart_rx` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/tb_uart_rx.png" alt="uart_rx waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-uart_rx/tb_uart_rx_v.png" alt="uart_rx waveform (Verilog)" width="480"> |
+
+Same `CLKS_PER_BIT` generic as `uart_tx` (default 5208 for 50 MHz / 9600 baud). The receiver oversamples each bit at the centre with a 3-tap majority vote, so a single-cycle glitch on the line doesn't corrupt the captured byte. Used by `cpu/riscv_soc`'s memory-mapped UART_RX peripheral.
 
 </details>
 
@@ -521,6 +545,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
 | [uart_tx](comm/uart_tx/)       | ✅ | VHDL + Verilog | 8N1 UART transmitter. |
+| [uart_rx](comm/uart_rx/)       | ✅ | VHDL + Verilog | 8N1 UART receiver, 3-tap majority sampler at mid-bit. Pairs with `uart_tx`; used by `cpu/riscv_soc`'s memory-mapped UART_RX peripheral. |
 | [i2s_test_1](comm/i2s_test_1/) | ✅ | VHDL + Verilog | Sine NCO over I2S to a PCM5102 DAC; mono + stereo top-levels share one `nco_sine` / `sincos_lut` chain. |
 | [uda1380](comm/uda1380/)       | ✅ | VHDL + Verilog | Boot-FSM walks the codec init sequence over I2C; integrated I2S master + tone source for end-to-end playback. Two tops: simulation (`inout`) + a `_core` diagram variant with split `(oe, i)` so netlistsvg renders. |
 
