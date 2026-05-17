@@ -144,6 +144,7 @@ V_NETLISTSVG_DECORATION = $(addprefix --link ,$(V_SVG_LINKS)) $(addprefix --rela
 
 # Used to locate helper scripts/config — common.mk lives next to them.
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+NETLISTSVG_CHECK ?= python3 $(COMMON_MK_DIR)check_netlistsvg_labels.py
 
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
@@ -300,6 +301,7 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@ $(NETLISTSVG_DECORATION)
+	$(NETLISTSVG_CHECK) $@
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -370,6 +372,7 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@ $(V_NETLISTSVG_DECORATION)
+	$(NETLISTSVG_CHECK) $@
 endif
 
 else
