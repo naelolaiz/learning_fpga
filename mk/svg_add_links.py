@@ -39,21 +39,32 @@ _G_OPEN  = re.compile(r"<g\b[^>]*?(/?)>", re.DOTALL)
 _G_CLOSE = re.compile(r"</g\s*>")
 
 
-# Yosys primitive cell types that netlistsvg's bundled default skin
-# has no specialised symbol for. Those cells fall through to the
-# generic rectangle whose visible `<text>` is the type name; map each
-# to a short human-readable label so the rendered diagram doesn't
-# carry yosys's `$type` jargon to the reader. Types the default skin
-# already renders as a symbol (add, sub, mul, div, mod, pos, neg, eq,
-# ne, lt, le, ge, gt, shl, shr, sshl, sshr, all reductions, all the
-# bitwise gates, mux, pmux, dff/adff/sdff, dlatch/adlatch, tribuf,
-# and their -bus variants for mux/dff/dffn/dlatch/dlatchn/tribuf) are
-# intentionally omitted — they never leak as text.
+# Friendly labels for yosys primitive cell types that the bundled
+# default skin doesn't render symbolically.
+#
+# Two cases feed this table:
+#
+#   1. Types the skin has no symbol for at all (e.g. $mem_v2, $ternary,
+#      $bmux, $dffe, $shift). They render as a generic rectangle whose
+#      visible text is the type name — the entry below is what the
+#      reader actually sees instead of "$mem_v2".
+#
+#   2. Types the skin renders as a symbol for the flat case but whose
+#      `-bus`-suffixed variants from hierarchy mode fall through. The
+#      hierarchy renderer in our fork appends *one `-bus` per nesting
+#      level*, so cells inside a submodule come out as `$mux-bus`, then
+#      `$mux-bus-bus`, `$mux-bus-bus-bus`, ... The bundled skin only
+#      aliases the single-level form (`$mux-bus`); deeper variants
+#      reach `beautify_primitives` as `$mux-bus-bus...` text. The
+#      beautifier (below) strips trailing `-bus` segments and looks up
+#      the bare type here, so e.g. `$mux-bus-bus-bus-bus` → "mux".
+#      Pending naelolaiz/netlistsvg#3 — once merged and the container
+#      bumped, the symbol-type entries here become belt-and-suspenders.
 PRIMITIVE_LABELS = {
-    # Memory — the default skin has no $mem/$mem_v2 symbol.
+    # Memory — no symbol in the bundled skin.
     "$mem_v2":     "RAM",
     "$mem":        "RAM",
-    # Arithmetic variants the skin doesn't ship a symbol for.
+    # Arithmetic variants without a symbol.
     "$divfloor":   "/⌊",      # floor div (signed semantics)
     "$modfloor":   "%⌊",      # floor mod (signed semantics)
     # Variable-shift wrappers — only the constant-shift symbols ($shl /
@@ -61,14 +72,12 @@ PRIMITIVE_LABELS = {
     "$shift":      "shift",
     "$shiftx":     "shift",
     "$shrx":       "shift",
-    # Muxes the skin doesn't alias to its mux shape ($mux / $pmux do
-    # render symbolically).
+    # Misc with no symbol.
     "$bmux":       "bmux",
     "$demux":      "demux",
-    # Misc
     "$ternary":    "?:",
     # Latches with set/reset — only $dlatch/$adlatch are aliased to
-    # the dlatch shape.
+    # the dlatch shape; the rest fall through.
     "$dlatchsr":   "latch/SR",
     "$sr":         "SR",
     # Flip-flop variants the skin doesn't alias. The label format is
@@ -79,7 +88,26 @@ PRIMITIVE_LABELS = {
     "$sdffe":      "DFF/SR+E",
     "$dffsr":      "DFF/SR2",     # set + reset
     "$dffsre":     "DFF/SR2+E",
+    # Symbol-bearing types — flat instances render via the bundled
+    # skin and never reach this table, but deep-bus variants from
+    # hierarchy mode (case 2 above) end up here after the suffix
+    # stripping.
+    "$mux":        "mux",
+    "$pmux":       "pmux",
+    "$dff":        "DFF",
+    "$adff":       "DFF/AR",
+    "$sdff":       "DFF/SR",
+    "$dffn":       "DFFN",
+    "$dlatch":     "latch",
+    "$adlatch":    "latch",
+    "$dlatchn":    "latch-n",
+    "$tribuf":     "tri",
 }
+
+# Strip trailing `-bus` segments from a yosys type name. The fork's
+# hierarchy renderer appends one `-bus` per nesting depth; for label
+# lookup we only care about the bare type.
+_BUS_SUFFIX = re.compile(r'(?:-bus)+$')
 
 
 def beautify_primitives(svg: str) -> str:
@@ -105,8 +133,10 @@ def beautify_primitives(svg: str) -> str:
     def repl(m: re.Match) -> str:
         type_name = m.group(2)
         pretty = PRIMITIVE_LABELS.get(type_name)
-        if pretty is None and type_name.endswith("-bus"):
-            pretty = PRIMITIVE_LABELS.get(type_name[:-4])
+        if pretty is None:
+            bare = _BUS_SUFFIX.sub("", type_name)
+            if bare != type_name:
+                pretty = PRIMITIVE_LABELS.get(bare)
         if pretty is None:
             return m.group(0)
         return m.group(1) + _xml_escape(pretty) + m.group(3)
