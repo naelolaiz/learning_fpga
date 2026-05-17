@@ -20,7 +20,9 @@ module tb_variable_timer;
     wire tick;
 
     integer tick_count = 0;
-    integer i;
+    integer i = 0;          // initialised so waveview doesn't paint
+                            // an X-band from t=0 until the first
+                            // for-loop assignment
     reg [63:0] new_limit_bits = 64'd9;
 
     VariableTimer #(.MAX_NUMBER(100), .TRIGGER_DURATION(1)) DUT (
