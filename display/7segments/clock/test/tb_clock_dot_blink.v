@@ -24,10 +24,10 @@ module tb_clock_dot_blink;
     reg     sCountingHHMM = 1'b0;
     reg     sLastDot      = 1'b0;
 
-    DotBlinker dut (
-        .oneSecondPeriodSquare (sSquare),
-        .isHHMMMode            (sIsHHMMMode),
-        .dotOut                (sDotOut)
+    mode_blink dut (
+        .signalIn   (sSquare),
+        .toggleMode (sIsHHMMMode),
+        .signalOut  (sDotOut)
     );
 
     initial begin
