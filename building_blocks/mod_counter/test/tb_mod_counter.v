@@ -15,7 +15,9 @@ module tb_mod_counter;
     wire [3:0]  currentNumber;
     wire        carryBit;
 
-    integer expected;
+    integer expected = 0;   // initialised so waveview doesn't paint
+                            // an X-band from t=0 until the first
+                            // for-loop assignment
 
     mod_counter #(.MAX_NUMBER(MAX)) DUT (
         .clock         (clk),
