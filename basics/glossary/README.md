@@ -66,7 +66,7 @@ netlist with no fan-in/fan-out clutter from neighbouring logic.
 | Comparators     | `o_eq`, `o_ne`, `o_lt`, `o_gt`, `o_ge`, `o_le`       | Circle marked with the comparison glyph (`==`, `≠`, `<`, `>`, `>=`, `<=`); two bus inputs, 1-bit output. |
 | Shifters        | `o_shl`, `o_shr`, `o_sshr`, `o_shift`                | Boxes labelled `<<` / `>>` / `>>>` (arithmetic right) / `shift` (variable amount from `bv[1:0]`). |
 | Sequential      | `o_dff`, `o_dffe`, `o_dffr`, `o_dlatch`, `o_counter` | Edge-triggered register box with a clock notch (`▷`); the counter shows up as a register fed by an adder. **`o_dlatch`** is a level-sensitive D-latch — same outline as `dff` but no edge notch. The Makefile sets `GHDL_SYNTH_EXTRA := --latches` so ghdl-yosys-plugin permits the deliberate inferred latch. |
-| Memory          | `o_mem`                                              | A labelled box reading `RAM` with separate WR/RD address/data/clock/enable ports. Synthesised from a small 8 × 1-bit single-port synchronous array (`mem_arr`), which yosys lifts to a `$mem_v2` cell rather than flattening to flip-flops. netlistsvg's default skin has no specialised memory symbol, so the cell renders as a generic box; the project-wide [primitive beautifier](../../mk/svg_add_links.py) rewrites the visible `$mem_v2` label to `RAM`. |
+| Memory          | `o_mem`                                              | A labelled box reading `RAM` with separate WR/RD address/data/clock/enable ports. Synthesised from a small 8 × 1-bit single-port synchronous array (`mem_arr`), which yosys lifts to a `$mem_v2` cell rather than flattening to flip-flops. netlistsvg's default skin has no specialised memory symbol, so the cell renders as a generic box; netlistsvg's built-in label beautifier rewrites the visible `$mem_v2` label to `RAM`. |
 
 ## Truth tables
 
@@ -200,8 +200,8 @@ A small inline memory whose array `mem_arr` yosys lifts to a
 3-bit `{sel, sel4}` concatenation, data-in is `a`, write-enable is
 `en`; the output `o_mem` is the registered read of `mem_arr[addr]`.
 The diagram shows it as the `RAM` box from the local skin (in other
-projects it renders as a `RAM`-labelled generic box via the
-project-wide [primitive beautifier](../../mk/svg_add_links.py)).
+projects it renders as a `RAM`-labelled generic box via netlistsvg's
+built-in label beautifier).
 
 ## Testbench
 
