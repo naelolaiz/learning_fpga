@@ -4,7 +4,7 @@
 The label/link edits happen in netlistsvg itself. This helper is only
 a guardrail: after rendering, make sure the SVG is parseable XML, no
 visible cell nodelabel still exposes a raw yosys `$...` type, and all
-hierarchical submodule cells are wrapped in links.
+hierarchical submodule cells are wrapped in SVG/fragment links.
 """
 import argparse
 from collections import Counter
@@ -57,22 +57,46 @@ def _nodelabel(elem: ET.Element) -> str:
 
 def _unlinked_submodules(root: ET.Element) -> list[tuple[str, str]]:
     missing: list[tuple[str, str]] = []
+    parent_map = {child: parent for parent in root.iter() for child in parent}
 
-    def walk(elem: ET.Element, in_link: bool = False) -> None:
-        now_in_link = in_link or _local_name(elem.tag) == "a"
+    for elem in root.iter():
         cell_type = _attr_by_local_name(elem, "type")
         cell_id = elem.get("id", "")
         if (
             cell_type.startswith("sub_")
             and cell_id.startswith("cell_")
-            and not now_in_link
+            and _local_name(parent_map.get(elem, ET.Element("")).tag) != "a"
         ):
             missing.append((cell_id.removeprefix("cell_"), _nodelabel(elem)))
-        for child in elem:
-            walk(child, now_in_link)
 
-    walk(root)
     return missing
+
+
+def _href(elem: ET.Element) -> str:
+    for key, value in elem.attrib.items():
+        if _local_name(key) == "href":
+            return value
+    return ""
+
+
+def _non_svg_submodule_links(root: ET.Element) -> list[tuple[str, str, str]]:
+    bad: list[tuple[str, str, str]] = []
+    parent_map = {child: parent for parent in root.iter() for child in parent}
+
+    for elem in root.iter():
+        cell_type = _attr_by_local_name(elem, "type")
+        cell_id = elem.get("id", "")
+        if not (cell_type.startswith("sub_") and cell_id.startswith("cell_")):
+            continue
+        parent = parent_map.get(elem)
+        if parent is None or _local_name(parent.tag) != "a":
+            continue
+        href = _href(parent)
+        if href.startswith("#") or ".svg" in href.lower():
+            continue
+        bad.append((cell_id.removeprefix("cell_"), _nodelabel(elem), href))
+
+    return bad
 
 
 def validate(path: Path) -> bool:
@@ -124,6 +148,24 @@ def validate(path: Path) -> bool:
         print(
             "  Fix automatic netlistsvg decoration or add an explicit "
             "SVG_LINKS/V_SVG_LINKS entry.",
+            file=sys.stderr,
+        )
+
+    bad_links = _non_svg_submodule_links(root)
+    if bad_links:
+        ok = False
+        print(
+            f"check_netlistsvg_labels: {path}: {len(bad_links)} "
+            "hierarchical submodule link(s) do not target an SVG or "
+            "same-file SVG fragment:",
+            file=sys.stderr,
+        )
+        for cell_id, label, href in bad_links:
+            suffix = f" ({label})" if label else ""
+            print(f"    cell_{cell_id}{suffix}: {href}", file=sys.stderr)
+        print(
+            "  Fix automatic netlistsvg decoration/internal views or add "
+            "an explicit SVG_LINKS/V_SVG_LINKS entry to an SVG target.",
             file=sys.stderr,
         )
 

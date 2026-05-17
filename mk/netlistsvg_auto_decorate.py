@@ -6,11 +6,11 @@ for overrides. This helper fills in the common case automatically:
 
 * submodule cells get clean labels from their Yosys/GHDL cell type;
 * cells whose module has its own gallery diagram link to that diagram;
-* otherwise, cells whose module comes from a source file link to source.
+* otherwise, cells whose module is found in source files link to an
+  internal SVG view fragment added after rendering.
 """
 import argparse
 import json
-import os
 from pathlib import Path
 import re
 import sys
@@ -19,6 +19,8 @@ import sys
 ASSIGN_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:?=\s*(.*)$")
 VHDL_ENTITY_RE = re.compile(r"(?im)^\s*entity\s+([A-Za-z][A-Za-z0-9_]*)\s+is\b")
 VERILOG_MODULE_RE = re.compile(r"(?m)^\s*module\s+([A-Za-z_][A-Za-z0-9_$]*)\b")
+INTERNAL_VIEW_TARGET = "__netlistsvg_internal_view__"
+FRAGMENT_SAFE_RE = re.compile(r"[^A-Za-z0-9_.-]+")
 
 
 def _logical_make_lines(text: str):
@@ -98,36 +100,14 @@ def _scan_diagram_targets(
     return targets, labels
 
 
-def _github_source_url(repo_rel: str) -> str | None:
-    base = os.environ.get("NETLISTSVG_SOURCE_BASE")
-    if base:
-        return f"{base.rstrip('/')}/{repo_rel}"
-
-    server = os.environ.get("GITHUB_SERVER_URL")
-    repo = os.environ.get("GITHUB_REPOSITORY")
-    ref = (
-        os.environ.get("NETLISTSVG_SOURCE_REF")
-        or os.environ.get("GITHUB_HEAD_SHA")
-        or os.environ.get("GITHUB_SHA")
-    )
-    if server and repo and ref:
-        return f"{server.rstrip('/')}/{repo}/blob/{ref}/{repo_rel}"
-    return None
-
-
-def _source_url(path: Path, repo_root: Path, svg_path: Path) -> str:
-    repo_rel = path.relative_to(repo_root).as_posix()
-    gh_url = _github_source_url(repo_rel)
-    if gh_url:
-        return gh_url
-    return os.path.relpath(path, svg_path.parent)
+def _view_fragment(cell_id: str) -> str:
+    view_id = FRAGMENT_SAFE_RE.sub("_", f"cell_{cell_id}").strip("_")
+    return f"#view_{view_id}"
 
 
 def _scan_source_targets(
     source_files: list[str],
     project_dir: Path,
-    repo_root: Path,
-    svg_path: Path,
     flow: str,
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     targets: dict[str, set[str]] = {}
@@ -139,9 +119,8 @@ def _scan_source_targets(
             text = path.read_text(encoding="utf-8")
         except OSError:
             continue
-        url = _source_url(path, repo_root, svg_path.resolve())
         for name in pattern.findall(text):
-            _add_alias(targets, name, url)
+            _add_alias(targets, name, INTERNAL_VIEW_TARGET)
             _add_alias(labels, name, name)
     return targets, labels
 
@@ -182,8 +161,10 @@ def _collect_auto_decorations(
             if not label:
                 continue
             relabels.setdefault(cell_id, set()).add(_single(labels, label) or label)
-            target = _single(diagram_targets, label) or _single(source_targets, label)
-            if target:
+            target = _single(diagram_targets, label)
+            if target is None and _single(source_targets, label) == INTERNAL_VIEW_TARGET:
+                target = _view_fragment(cell_id)
+            if target is not None:
                 links.setdefault(cell_id, set()).add(target)
 
     return relabels, links
@@ -225,7 +206,6 @@ def main() -> int:
 
     repo_root = args.repo_root.resolve()
     project_dir = args.project_dir.resolve()
-    svg_path = (project_dir / args.svg).resolve()
 
     with args.json.open(encoding="utf-8") as f:
         netlist = json.load(f)
@@ -234,8 +214,6 @@ def main() -> int:
     source_targets, source_labels = _scan_source_targets(
         args.source_file,
         project_dir,
-        repo_root,
-        svg_path,
         args.flow,
     )
     labels = {**diagram_labels}
