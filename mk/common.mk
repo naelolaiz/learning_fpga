@@ -124,40 +124,18 @@ SKIP_V_WAVEFORM ?=
 V_NO_WAVEFORM_TBS ?=
 V_EXPECTED_X_TBS ?=
 
-# Per-project hooks decorating the rendered netlist diagram. Common
-# submodule relabels and links are inferred automatically from the
-# netlist/source graph; expanded submodules without explicit links use
-# netlistsvg's renderer-owned same-file SVG pages. These variables are
-# explicit overrides and additions, passed directly to netlistsvg.
-#
-# SVG_LINKS turns the named cell into a hyperlink. Format:
-#   cell_id=url
-# (multiple entries separated by spaces). netlistsvg wraps the cell's
-# `<g id="cell_<cell_id>" ...>` element with an SVG link so viewers can
-# drill from a wrapper's diagram into the wrapped module's own diagram.
-# URLs are relative to the SVG itself; for the published gallery that
-# means `../<sibling-artifact>/<top>.svg`.
-#
-# SVG_RELABEL rewrites the displayed text on the named cell. Same
-# format (cell_id=label). Automatic relabeling already handles
-# generated Yosys/GHDL submodule type names (`$paramod...`, `_B...`)
-# and netlistsvg beautifies primitive labels (`$mem_v2`, repeated
-# `-bus` suffixes); keep relabels for intentional project aliases or
-# labels that should not be inferred from the generated type.
-SVG_LINKS     ?=
-V_SVG_LINKS   ?=
-SVG_RELABEL   ?=
-V_SVG_RELABEL ?=
-NETLISTSVG_DECORATION   = $(addprefix --link ,$(SVG_LINKS)) $(addprefix --relabel ,$(SVG_RELABEL))
-V_NETLISTSVG_DECORATION = $(addprefix --link ,$(V_SVG_LINKS)) $(addprefix --relabel ,$(V_SVG_RELABEL))
+# Diagram decoration is fully delegated to netlistsvg:
+#   * label beautifier collapses generated names (`$paramod...`, `_B...`,
+#     `$mem_v2`, repeated `-bus`);
+#   * expanded submodule cells become clickable and jump to a same-file
+#     `:target` drilldown page rendering that submodule on its own.
+# If a project needs an explicit per-cell label or external link, pass
+# `--link` / `--relabel` directly via `$(NETLISTSVG)` in the project's
+# Makefile.
 
 # Used to locate helper scripts/config — common.mk lives next to them.
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-REPO_ROOT := $(abspath $(COMMON_MK_DIR)..)
-NETLISTSVG_AUTODECORATE ?= python3 $(COMMON_MK_DIR)netlistsvg_auto_decorate.py
 NETLISTSVG_CHECK ?= python3 $(COMMON_MK_DIR)check_netlistsvg_labels.py
-NETLISTSVG_AUTO_DECORATION = $(NETLISTSVG_AUTODECORATE) --repo-root $(REPO_ROOT) --project-dir $(CURDIR) --flow vhdl --json $< --svg $@ $(addprefix --source-file ,$(SRC_FILES)) $(addprefix --explicit-link ,$(SVG_LINKS)) $(addprefix --explicit-relabel ,$(SVG_RELABEL))
-V_NETLISTSVG_AUTO_DECORATION = $(NETLISTSVG_AUTODECORATE) --repo-root $(REPO_ROOT) --project-dir $(CURDIR) --flow verilog --json $< --svg $@ $(addprefix --source-file ,$(V_SRC_FILES)) $(addprefix --explicit-link ,$(V_SVG_LINKS)) $(addprefix --explicit-relabel ,$(V_SVG_RELABEL))
 
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
@@ -313,8 +291,7 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 	     write_json -compat-int $@"
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
-	auto_args="$$($(NETLISTSVG_AUTO_DECORATION))" && \
-	    $(NETLISTSVG) $< -o $@ $$auto_args $(NETLISTSVG_DECORATION)
+	$(NETLISTSVG) $< -o $@
 	$(NETLISTSVG_CHECK) $@
 endif
 
@@ -385,8 +362,7 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 	     write_json -compat-int $@"
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
-	auto_args="$$($(V_NETLISTSVG_AUTO_DECORATION))" && \
-	    $(NETLISTSVG) $< -o $@ $$auto_args $(V_NETLISTSVG_DECORATION)
+	$(NETLISTSVG) $< -o $@
 	$(NETLISTSVG_CHECK) $@
 endif
 

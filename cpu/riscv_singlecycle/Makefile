@@ -46,42 +46,4 @@ V_TB_FILES  := test/tb_riscv_singlecycle_addi.v \
                test/tb_riscv_singlecycle_loop.v \
                test/tb_riscv_singlecycle_branches.v
 
-# Diagram tweaks: each submodule instance in the rendered top-level
-# SVG is relabelled and linked to its standalone SVG in the gallery.
-# Cell IDs:
-#   * Entity instances in riscv_singlecycle.vhd: decoder, immgen,
-#     regfile, alu.
-#   * yosys's memory_collect pass turns the `signal dmem` array into
-#     a $mem_v2 cell named cell_dmem; link it against ram_sync, the
-#     reference sync R/W BRAM block this implements.
-#     No relabel — netlistsvg's built-in label beautifier already
-#     renders $mem_v2 as "RAM", which is the right label anyway.
-SVG_RELABEL := decoder=decoder_rv32 \
-               immgen=immgen_rv32 \
-               regfile=regfile_rv32 \
-               alu=alu_rv32
-
-SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32.svg \
-               immgen=../cpu-building_blocks-immgen_rv32/immgen_rv32.svg \
-               regfile=../cpu-building_blocks-regfile_rv32/regfile_rv32.svg \
-               alu=../cpu-building_blocks-alu_rv32/alu_rv32.svg \
-               dmem=../building_blocks-ram_sync/ram_sync.svg \
-               regs=../cpu-building_blocks-regfile_rv32/regfile_rv32.svg
-
-# Same annotations on the Verilog side. The cell IDs match
-# the instance names in riscv_singlecycle.v (which mirror the VHDL's
-# entity-instance labels). The gallery URL convention adds a `_v`
-# suffix to distinguish Verilog netlists from VHDL.
-V_SVG_RELABEL := decoder=decoder_rv32 \
-                 immgen=immgen_rv32 \
-                 regfile=regfile_rv32 \
-                 alu=alu_rv32
-
-V_SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32_v.svg \
-                 immgen=../cpu-building_blocks-immgen_rv32/immgen_rv32_v.svg \
-                 regfile=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg \
-                 alu=../cpu-building_blocks-alu_rv32/alu_rv32_v.svg \
-                 dmem=../building_blocks-ram_sync/ram_sync_v.svg \
-                 regs=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg
-
 include ../../mk/common.mk

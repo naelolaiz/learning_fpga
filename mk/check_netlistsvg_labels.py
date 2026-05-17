@@ -130,8 +130,9 @@ def validate(path: Path) -> bool:
         for label, count in leaks.most_common():
             print(f"    {count:4d}  {label!r}", file=sys.stderr)
         print(
-            "  Fix the netlistsvg label beautifier or add an explicit "
-            "SVG_RELABEL/V_SVG_RELABEL entry.",
+            "  Extend netlistsvg's label beautifier to cover these "
+            "cell types, or pass `--relabel cell=label` from the project's "
+            "Makefile if it's a one-off project-specific alias.",
             file=sys.stderr,
         )
 
@@ -147,8 +148,9 @@ def validate(path: Path) -> bool:
             suffix = f" ({label})" if label else ""
             print(f"    cell_{cell_id}{suffix}", file=sys.stderr)
         print(
-            "  Fix automatic netlistsvg decoration or add an explicit "
-            "SVG_LINKS/V_SVG_LINKS entry.",
+            "  Ensure `render.internalSubmoduleLinks` is enabled in the "
+            "netlistsvg config, or pass `--link cell=URL` from the "
+            "project's Makefile for an explicit external link.",
             file=sys.stderr,
         )
 
@@ -165,8 +167,9 @@ def validate(path: Path) -> bool:
             suffix = f" ({label})" if label else ""
             print(f"    cell_{cell_id}{suffix}: {href}", file=sys.stderr)
         print(
-            "  Fix automatic netlistsvg decoration/internal submodule links or add "
-            "an explicit SVG_LINKS/V_SVG_LINKS entry to an SVG target.",
+            "  Check netlistsvg's internal drilldown links, or pass "
+            "`--link cell=<svg target>` from the project's Makefile "
+            "for an explicit external SVG link.",
             file=sys.stderr,
         )
 

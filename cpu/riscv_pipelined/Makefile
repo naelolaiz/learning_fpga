@@ -54,40 +54,4 @@ V_TB_FILES  := test/tb_riscv_pipelined_addi.v \
                test/tb_riscv_pipelined_branches.v \
                test/tb_riscv_pipelined_load_use.v
 
-# Diagram tweaks. Cell IDs match the entity instance labels in
-# riscv_pipelined.vhd (decoder, immgen, regfile, alu, fu, hd). dmem
-# links to ram_sync the same way the single-cycle CPU's diagram does.
-SVG_RELABEL := decoder=decoder_rv32 \
-               immgen=immgen_rv32 \
-               regfile=regfile_rv32 \
-               alu=alu_rv32 \
-               fu=forwarding_unit \
-               hd=hazard_detector
-
-SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32.svg \
-               immgen=../cpu-building_blocks-immgen_rv32/immgen_rv32.svg \
-               regfile=../cpu-building_blocks-regfile_rv32/regfile_rv32.svg \
-               alu=../cpu-building_blocks-alu_rv32/alu_rv32.svg \
-               fu=../cpu-building_blocks-forwarding_unit/forwarding_unit.svg \
-               hd=../cpu-building_blocks-hazard_detector/hazard_detector.svg \
-               dmem=../building_blocks-ram_sync/ram_sync.svg \
-               regs=../cpu-building_blocks-regfile_rv32/regfile_rv32.svg
-
-# Same annotations on the Verilog side.
-V_SVG_RELABEL := decoder=decoder_rv32 \
-                 immgen=immgen_rv32 \
-                 regfile=regfile_rv32 \
-                 alu=alu_rv32 \
-                 fu=forwarding_unit \
-                 hd=hazard_detector
-
-V_SVG_LINKS   := decoder=../cpu-building_blocks-decoder_rv32/decoder_rv32_v.svg \
-                 immgen=../cpu-building_blocks-immgen_rv32/immgen_rv32_v.svg \
-                 regfile=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg \
-                 alu=../cpu-building_blocks-alu_rv32/alu_rv32_v.svg \
-                 fu=../cpu-building_blocks-forwarding_unit/forwarding_unit_v.svg \
-                 hd=../cpu-building_blocks-hazard_detector/hazard_detector_v.svg \
-                 dmem=../building_blocks-ram_sync/ram_sync_v.svg \
-                 regs=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg
-
 include ../../mk/common.mk

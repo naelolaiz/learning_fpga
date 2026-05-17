@@ -49,43 +49,6 @@ V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
                riscv_soc.v
 V_TB_FILES  := test/tb_riscv_soc.v test/tb_riscv_soc_simd.v
 
-# Diagram tweaks: each submodule instance in the rendered top-level
-# SVG is relabelled and linked to its standalone SVG in the gallery.
-# Cell IDs:
-#   * Entity instances in riscv_soc.vhd: cpu, tx, rx.
-#   * yosys's memory_collect pass turns the SoC's `signal dmem` array
-#     into a $mem_v2 cell named cell_dmem; link it against ram_sync,
-#     the reference sync R/W BRAM block this implements.
-#     No relabel — the skin's $mem_v2 symbol uses a static "RAM"
-#     label; "RAM" is the right label anyway.
-SVG_RELABEL := cpu=riscv_singlecycle \
-               tx=uart_tx \
-               rx=uart_rx \
-               simd=simd_alu \
-               fir=fir4tap
-
-SVG_LINKS   := cpu=../cpu-riscv_singlecycle/riscv_singlecycle.svg \
-               tx=../comm-uart_tx/uart_tx.svg \
-               rx=../comm-uart_rx/uart_rx.svg \
-               simd=../cpu-building_blocks-simd_alu/simd_alu.svg \
-               fir=../cpu-building_blocks-fir4tap/fir4tap.svg \
-               dmem=../building_blocks-ram_sync/ram_sync.svg \
-               regs=../cpu-building_blocks-regfile_rv32/regfile_rv32.svg
-
-# Same annotations on the Verilog side.
-V_SVG_RELABEL := cpu=riscv_singlecycle \
-                 tx=uart_tx \
-                 rx=uart_rx \
-                 simd=simd_alu \
-                 fir=fir4tap
-
-V_SVG_LINKS   := cpu=../cpu-riscv_singlecycle/riscv_singlecycle_v.svg \
-                 tx=../comm-uart_tx/uart_tx_v.svg \
-                 rx=../comm-uart_rx/uart_rx_v.svg \
-                 simd=../cpu-building_blocks-simd_alu/simd_alu_v.svg \
-                 fir=../cpu-building_blocks-fir4tap/fir4tap_v.svg \
-                 dmem=../building_blocks-ram_sync/ram_sync_v.svg \
-                 regs=../cpu-building_blocks-regfile_rv32/regfile_rv32_v.svg
 
 # `make golden` re-assembles programs/prog_hello.S into prog_hello.hex
 # using the project's Python assembler. Review the diff before

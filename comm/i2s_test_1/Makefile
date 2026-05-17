@@ -21,14 +21,4 @@ V_SRC_FILES := sincos_lut.v nco_sine.v i2s_master.v \
                top_level_i2s_oscillator.v top_level_i2s_stereo.v
 V_TB_FILES  := test/tb_top_level_i2s_oscillator.v
 
-# Strip yosys's auto-stamped paramod / arch-suffix labels off the
-# rendered submodule cells in the netlist diagrams. Without this:
-#   * VHDL: nco_sine appears as `nco_sine_Brtl` and i2s_master as
-#     `i2s_master_Brtl_50000000_24576000_24` (ghdl-yosys-plugin tags
-#     `_B<arch>_<generics>`).
-#   * Verilog: i2s_master shows up as `$paramod$<sha>\i2s_master`
-#     (yosys's parametrised-module mangling).
-SVG_RELABEL   := waveform_generator=nco_sine i2s_transmiter=i2s_master
-V_SVG_RELABEL := nco=nco_sine i2s=i2s_master
-
 include ../../mk/common.mk
