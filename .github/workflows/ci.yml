@@ -15,6 +15,7 @@ concurrency:
 permissions:
   contents: read
   packages: read
+  checks: write   # X-band warning gate creates `neutral` check runs
 
 jobs:
   # ------------------------------------------------------------------
@@ -118,25 +119,36 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: make waveform_v
 
-      # Tint the job badge yellow when X-band warnings were emitted
-      # during any of the waveform renders above. The render steps
-      # themselves keep exit 0 — the SVG was produced, just with
-      # uninitialised signals — but `continue-on-error: true` here
-      # gives us a failed-but-non-blocking step, which the GitHub UI
-      # surfaces as a yellow warning marker on the job.
-      - name: X-band warning check
+      # Surface X-band warnings via the Checks API as a `neutral`
+      # check run. continue-on-error: true on a failing step masks
+      # both step and job entirely (both stay green), and there's no
+      # way to flip just the job-icon badge yellow from a step. A
+      # neutral check run shows up as a separate yellow ⚠ status on
+      # the commit/PR view, distinct from the green workflow.
+      - name: Surface X-band warnings as neutral check
         if: always()
-        continue-on-error: true
         working-directory: ${{ matrix.project }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          warnings=$(find build -name '*.warnings' 2>/dev/null)
-          if [ -n "$warnings" ]; then
-            echo "X-band warnings emitted for this project:"
-            for f in $warnings; do
-              echo "  - $(cat "$f")"
-            done
-            exit 1
-          fi
+          mapfile -t warnings < <(find build -name '*.warnings' 2>/dev/null)
+          if [ "${#warnings[@]}" -eq 0 ]; then exit 0; fi
+
+          echo "X-band warnings emitted for this project:"
+          summary=""
+          for f in "${warnings[@]}"; do
+            line=$(cat "$f")
+            echo "  - $line"
+            summary="${summary}- ${line}"$'\n'
+          done
+
+          gh api -X POST repos/${{ github.repository }}/check-runs \
+            -f name="x-bands: ${{ matrix.project }}" \
+            -f head_sha=${{ github.sha }} \
+            -f status=completed \
+            -f conclusion=neutral \
+            -f "output[title]=Waveform X-bands (uninitialised signals)" \
+            -f "output[summary]=${summary}"
 
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.
