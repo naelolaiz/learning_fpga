@@ -17,6 +17,11 @@ permissions:
   packages: read
   checks: write   # X-band warning gate creates `neutral` check runs
 
+env:
+  # PR workflows run on a synthetic merge SHA by default. Source links
+  # embedded in generated SVGs should point at the branch commit.
+  NETLISTSVG_SOURCE_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   # ------------------------------------------------------------------
   # discover - list every project Makefile so the build job fans out
@@ -134,6 +139,7 @@ jobs:
         if: always()
         continue-on-error: true
         working-directory: ${{ matrix.project }}
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

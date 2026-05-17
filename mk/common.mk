@@ -108,6 +108,10 @@ SKIP_WAVEFORM ?=
 # anyway. The TB still simulates and its assertions still guard CI,
 # it just doesn't produce a rendered diagram.
 NO_WAVEFORM_TBS ?=
+# Testbenches known to expose X/uninitialised bands still emit a
+# warning marker; the name documents intent but does not hide the
+# yellow signal from CI.
+EXPECTED_X_TBS ?=
 
 V_SRC_FILES   ?=
 V_TB_FILES    ?=
@@ -118,9 +122,12 @@ V_INCDIRS     ?=
 SKIP_V_DIAGRAM ?=
 SKIP_V_WAVEFORM ?=
 V_NO_WAVEFORM_TBS ?=
+V_EXPECTED_X_TBS ?=
 
-# Per-project hooks decorating the rendered netlist diagram. These are
-# passed directly to netlistsvg.
+# Per-project hooks decorating the rendered netlist diagram. Common
+# submodule relabels and links are inferred automatically from the
+# netlist/source graph; these variables are explicit overrides and
+# additions, passed directly to netlistsvg.
 #
 # SVG_LINKS turns the named cell into a hyperlink. Format:
 #   cell_id=url
@@ -131,10 +138,11 @@ V_NO_WAVEFORM_TBS ?=
 # means `../<sibling-artifact>/<top>.svg`.
 #
 # SVG_RELABEL rewrites the displayed text on the named cell. Same
-# format (cell_id=label). netlistsvg already beautifies common
-# generated Yosys/GHDL type names (`$paramod...`, `_Brtl...`, `$mem_v2`,
-# repeated `-bus` suffixes); keep relabels for intentional project
-# aliases or labels that should not be inferred from the generated type.
+# format (cell_id=label). Automatic relabeling already handles
+# generated Yosys/GHDL submodule type names (`$paramod...`, `_B...`)
+# and netlistsvg beautifies primitive labels (`$mem_v2`, repeated
+# `-bus` suffixes); keep relabels for intentional project aliases or
+# labels that should not be inferred from the generated type.
 SVG_LINKS     ?=
 V_SVG_LINKS   ?=
 SVG_RELABEL   ?=
@@ -144,7 +152,11 @@ V_NETLISTSVG_DECORATION = $(addprefix --link ,$(V_SVG_LINKS)) $(addprefix --rela
 
 # Used to locate helper scripts/config — common.mk lives next to them.
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+REPO_ROOT := $(abspath $(COMMON_MK_DIR)..)
+NETLISTSVG_AUTODECORATE ?= python3 $(COMMON_MK_DIR)netlistsvg_auto_decorate.py
 NETLISTSVG_CHECK ?= python3 $(COMMON_MK_DIR)check_netlistsvg_labels.py
+NETLISTSVG_AUTO_DECORATION = $(NETLISTSVG_AUTODECORATE) --repo-root $(REPO_ROOT) --project-dir $(CURDIR) --flow vhdl --json $< --svg $@ $(addprefix --source-file ,$(SRC_FILES)) $(addprefix --explicit-link ,$(SVG_LINKS)) $(addprefix --explicit-relabel ,$(SVG_RELABEL))
+V_NETLISTSVG_AUTO_DECORATION = $(NETLISTSVG_AUTODECORATE) --repo-root $(REPO_ROOT) --project-dir $(CURDIR) --flow verilog --json $< --svg $@ $(addprefix --source-file ,$(V_SRC_FILES)) $(addprefix --explicit-link ,$(V_SVG_LINKS)) $(addprefix --explicit-relabel ,$(V_SVG_RELABEL))
 
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
@@ -277,9 +289,9 @@ define GHDL_PNG_RULE
 $$(BUILD_DIR)/$(1).png: $$(call tb_wave,$(1))
 	$$(WAVEVIEW) --input $$< --output $$(@:.png=.svg) --png \
 	    $$(if $$(ZOOM_RANGE_$(1)),--zoom-range $$(ZOOM_RANGE_$(1)))
-	$$(if $$(filter $(1),$$(EXPECTED_X_TBS)),\
-	    @echo "[$(PROJECT_NAME)] $(1): X-band check skipped (EXPECTED_X_TBS)",\
-	    @python3 $$(COMMON_MK_DIR)check_waveform_xbands.py $$(@:.png=.svg))
+	@python3 $$(COMMON_MK_DIR)check_waveform_xbands.py \
+	    $$(@:.png=.svg) \
+	    $$(if $$(filter $(1),$$(EXPECTED_X_TBS)),--expected)
 endef
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_PNG_RULE,$(tb))))
 
@@ -300,7 +312,8 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 	     write_json -compat-int $@"
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
-	$(NETLISTSVG) $< -o $@ $(NETLISTSVG_DECORATION)
+	auto_args="$$($(NETLISTSVG_AUTO_DECORATION))" && \
+	    $(NETLISTSVG) $< -o $@ $$auto_args $(NETLISTSVG_DECORATION)
 	$(NETLISTSVG_CHECK) $@
 endif
 
@@ -348,9 +361,9 @@ define VERILOG_PNG_RULE
 $$(BUILD_DIR)/$(1)_v.png: $$(call v_tb_wave,$(1))
 	$$(WAVEVIEW) --input $$< --output $$(@:.png=.svg) --png \
 	    $$(if $$(V_ZOOM_RANGE_$(1)),--zoom-range $$(V_ZOOM_RANGE_$(1)))
-	$$(if $$(filter $(1),$$(V_EXPECTED_X_TBS)),\
-	    @echo "[$(PROJECT_NAME)] $(1)_v: X-band check skipped (V_EXPECTED_X_TBS)",\
-	    @python3 $$(COMMON_MK_DIR)check_waveform_xbands.py $$(@:.png=.svg))
+	@python3 $$(COMMON_MK_DIR)check_waveform_xbands.py \
+	    $$(@:.png=.svg) \
+	    $$(if $$(filter $(1),$$(V_EXPECTED_X_TBS)),--expected)
 endef
 $(foreach tb,$(V_TB_TOPS),$(eval $(call VERILOG_PNG_RULE,$(tb))))
 
@@ -371,7 +384,8 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 	     write_json -compat-int $@"
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
-	$(NETLISTSVG) $< -o $@ $(V_NETLISTSVG_DECORATION)
+	auto_args="$$($(V_NETLISTSVG_AUTO_DECORATION))" && \
+	    $(NETLISTSVG) $< -o $@ $$auto_args $(V_NETLISTSVG_DECORATION)
 	$(NETLISTSVG_CHECK) $@
 endif
 
