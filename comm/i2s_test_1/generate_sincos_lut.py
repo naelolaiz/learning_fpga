@@ -12,7 +12,7 @@
 #
 # Run from the project directory:
 #   podman run --rm -v "$PWD":/work:rw -w /work \
-#       ghcr.io/naelolaiz/hdltools:netlistsvg-hierarchy \
+#       ghcr.io/naelolaiz/hdltools:release \
 #       python3 generate_sincos_lut.py
 
 import math
