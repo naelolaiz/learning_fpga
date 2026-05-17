@@ -118,6 +118,26 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: make waveform_v
 
+      # Tint the job badge yellow when X-band warnings were emitted
+      # during any of the waveform renders above. The render steps
+      # themselves keep exit 0 — the SVG was produced, just with
+      # uninitialised signals — but `continue-on-error: true` here
+      # gives us a failed-but-non-blocking step, which the GitHub UI
+      # surfaces as a yellow warning marker on the job.
+      - name: X-band warning check
+        if: always()
+        continue-on-error: true
+        working-directory: ${{ matrix.project }}
+        run: |
+          warnings=$(find build -name '*.warnings' 2>/dev/null)
+          if [ -n "$warnings" ]; then
+            echo "X-band warnings emitted for this project:"
+            for f in $warnings; do
+              echo "  - $(cat "$f")"
+            done
+            exit 1
+          fi
+
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.
       - name: Normalise artifact name
