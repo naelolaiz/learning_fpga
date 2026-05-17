@@ -2,19 +2,23 @@ library ieee;
 use ieee.std_logic_1164.ALL;
 use ieee.numeric_std.ALL;
 
--- Testbench for DotBlinker (the middle-dot blinker).
+-- Testbench for mode_blink driving the middle-dot.
 --
--- DotBlinker is the salvaged 2022 dot-blink feature carved into its own
--- entity so it can be exercised without standing up the full clock
--- divider chain. The cause-effect property under test:
+-- `mode_blink` is the building block the clock uses for its
+-- middle-decimal-point blink (formerly the DotBlinker entity local
+-- to this project; now lives in building_blocks/mode_blink/ with
+-- mode-agnostic port names). This testbench exercises it in the
+-- same role: square wave in, blink out, mode-selectable.
 --
---     switching `isHHMMMode` from '0' (MMSS view) to '1' (HHMM view)
---     halves the toggle rate of `dotOut`, given the same square-wave
---     input.
+-- The cause-effect property under test:
+--
+--     switching `toggleMode` from '0' (MMSS view) to '1' (HHMM
+--     view) halves the toggle rate of the output, given the same
+--     square-wave input.
 --
 -- We drive a synthetic 1 Hz square wave at high simulated frequency,
--- count rising edges of `dotOut` in each mode, and assert MMSS sees ~2x
--- the edges of HHMM.
+-- count rising edges of the output in each mode, and assert MMSS
+-- sees ~2× the edges of HHMM.
 --
 -- This file is plain VHDL-93 in style (no 2008-only constructs); it
 -- compiles under `--std=08` because the project's ghdl analyse step
@@ -24,9 +28,9 @@ entity tb_clock_dot_blink is
 end tb_clock_dot_blink;
 
 architecture testbench of tb_clock_dot_blink is
-   -- Synthetic 1 Hz period: the only thing the DotBlinker cares about
-   -- is the rising/falling-edge structure of its input, so we use a
-   -- tiny period so the test completes in microseconds.
+   -- Synthetic 1 Hz period: mode_blink only cares about the
+   -- rising/falling-edge structure of its input, so we use a tiny
+   -- period and the test completes in microseconds.
    constant SQ_PERIOD   : time := 200 ns;     -- "1 Hz" in shrunk time
    constant SQ_HALF     : time := SQ_PERIOD / 2;
 
@@ -42,11 +46,11 @@ architecture testbench of tb_clock_dot_blink is
    signal sCountingHHMM : boolean := false;
 begin
 
-   DUT : entity work.DotBlinker(RTL)
+   DUT : entity work.mode_blink(RTL)
       port map (
-         oneSecondPeriodSquare => sSquare,
-         isHHMMMode            => sIsHHMMMode,
-         dotOut                => sDotOut);
+         signalIn   => sSquare,
+         toggleMode => sIsHHMMMode,
+         signalOut  => sDotOut);
 
    -- Generate the synthetic square wave with absolute-time toggles, so
    -- this TB doesn't depend on the rest of the design's clock dividers.
@@ -61,9 +65,9 @@ begin
       wait;
    end process;
 
-   -- Edge counter: bumps the active phase's counter on every dotOut
-   -- transition. No mux to alias through this time -- DotBlinker has a
-   -- direct port.
+   -- Edge counter: bumps the active phase's counter on every
+   -- transition of mode_blink's output. No mux to alias through —
+   -- the DUT drives sDotOut directly.
    edge_counter : process
    begin
       wait until sDotOut'event or not sSimulationActive;
