@@ -119,30 +119,30 @@ SKIP_V_DIAGRAM ?=
 SKIP_V_WAVEFORM ?=
 V_NO_WAVEFORM_TBS ?=
 
-# Per-project hooks decorating the rendered netlist diagram.
-# Both run after netlistsvg writes its SVG, via mk/svg_add_links.py.
+# Per-project hooks decorating the rendered netlist diagram. These are
+# passed directly to netlistsvg.
 #
 # SVG_LINKS turns the named cell into a hyperlink. Format:
 #   cell_id=url
-# (multiple entries separated by spaces). The script wraps the cell's
-# `<g id="cell_<cell_id>" ...>` element with `<a xlink:href="url">`,
-# so an SVG viewer can drill from a wrapper's diagram into the
-# wrapped module's own diagram. URLs are relative to the SVG itself;
-# for the published gallery that means `../<sibling-artifact>/<top>.svg`.
+# (multiple entries separated by spaces). netlistsvg wraps the cell's
+# `<g id="cell_<cell_id>" ...>` element with an SVG link so viewers can
+# drill from a wrapper's diagram into the wrapped module's own diagram.
+# URLs are relative to the SVG itself; for the published gallery that
+# means `../<sibling-artifact>/<top>.svg`.
 #
 # SVG_RELABEL rewrites the displayed text on the named cell. Same
-# format (cell_id=label). Useful when a wrapped sub-instance arrives
-# with yosys's `$paramod\<sub>\<param>=<val>` (Verilog) or
-# `<sub>_B<arch>_<width>` (VHDL via ghdl-yosys-plugin) auto-name
-# stamped on the box: post-rewrite the label back to the bare
-# submodule name. yosys's own `rename` won't propagate to cell-type
-# references, so post-processing the SVG is the practical fix.
+# format (cell_id=label). netlistsvg already beautifies common
+# generated Yosys/GHDL type names (`$paramod...`, `_Brtl...`, `$mem_v2`,
+# repeated `-bus` suffixes); keep relabels for intentional project
+# aliases or labels that should not be inferred from the generated type.
 SVG_LINKS     ?=
 V_SVG_LINKS   ?=
 SVG_RELABEL   ?=
 V_SVG_RELABEL ?=
+NETLISTSVG_DECORATION   = $(addprefix --link ,$(SVG_LINKS)) $(addprefix --relabel ,$(SVG_RELABEL))
+V_NETLISTSVG_DECORATION = $(addprefix --link ,$(V_SVG_LINKS)) $(addprefix --relabel ,$(V_SVG_RELABEL))
 
-# Used to locate svg_add_links.py — common.mk lives next to it.
+# Used to locate helper scripts/config — common.mk lives next to them.
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 # ---- Layout ----------------------------------------------------------------
@@ -299,10 +299,7 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 	     write_json -compat-int $@"
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
-	$(NETLISTSVG) $< -o $@
-	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
-	    $(addprefix --link ,$(SVG_LINKS)) \
-	    $(addprefix --relabel ,$(SVG_RELABEL))
+	$(NETLISTSVG) $< -o $@ $(NETLISTSVG_DECORATION)
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -372,10 +369,7 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 	     write_json -compat-int $@"
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
-	$(NETLISTSVG) $< -o $@
-	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
-	    $(addprefix --link ,$(V_SVG_LINKS)) \
-	    $(addprefix --relabel ,$(V_SVG_RELABEL))
+	$(NETLISTSVG) $< -o $@ $(V_NETLISTSVG_DECORATION)
 endif
 
 else

@@ -54,9 +54,8 @@ V_TB_FILES  := test/tb_riscv_singlecycle_addi.v \
 #   * yosys's memory_collect pass turns the `signal dmem` array into
 #     a $mem_v2 cell named cell_dmem; link it against ram_sync, the
 #     reference sync R/W BRAM block this implements.
-#     No relabel — the skin's $mem_v2 symbol uses a static "RAM"
-#     label (not parameterised by $cell_id), so svg_add_links'
-#     relabel pass can't target it; "RAM" is the right label anyway.
+#     No relabel — netlistsvg's built-in label beautifier already
+#     renders $mem_v2 as "RAM", which is the right label anyway.
 SVG_RELABEL := decoder=decoder_rv32 \
                immgen=immgen_rv32 \
                regfile=regfile_rv32 \
