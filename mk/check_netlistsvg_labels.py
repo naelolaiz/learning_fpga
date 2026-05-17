@@ -4,7 +4,8 @@
 The label/link edits happen in netlistsvg itself. This helper is only
 a guardrail: after rendering, make sure the SVG is parseable XML, no
 visible cell nodelabel still exposes a raw yosys `$...` type, and all
-hierarchical submodule cells are wrapped in SVG/fragment links.
+hierarchical submodule cells are wrapped in SVG links or same-file
+SVG page links.
 """
 import argparse
 from collections import Counter
@@ -157,14 +158,14 @@ def validate(path: Path) -> bool:
         print(
             f"check_netlistsvg_labels: {path}: {len(bad_links)} "
             "hierarchical submodule link(s) do not target an SVG or "
-            "same-file SVG fragment:",
+            "same-file SVG page:",
             file=sys.stderr,
         )
         for cell_id, label, href in bad_links:
             suffix = f" ({label})" if label else ""
             print(f"    cell_{cell_id}{suffix}: {href}", file=sys.stderr)
         print(
-            "  Fix automatic netlistsvg decoration/internal views or add "
+            "  Fix automatic netlistsvg decoration/internal submodule links or add "
             "an explicit SVG_LINKS/V_SVG_LINKS entry to an SVG target.",
             file=sys.stderr,
         )

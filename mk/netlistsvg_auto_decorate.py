@@ -6,8 +6,7 @@ for overrides. This helper fills in the common case automatically:
 
 * submodule cells get clean labels from their Yosys/GHDL cell type;
 * cells whose module has its own gallery diagram link to that diagram;
-* otherwise, cells whose module is found in source files link to an
-  internal SVG view fragment added after rendering.
+* source files provide label aliases for generated module type names.
 """
 import argparse
 import json
@@ -19,8 +18,6 @@ import sys
 ASSIGN_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:?=\s*(.*)$")
 VHDL_ENTITY_RE = re.compile(r"(?im)^\s*entity\s+([A-Za-z][A-Za-z0-9_]*)\s+is\b")
 VERILOG_MODULE_RE = re.compile(r"(?m)^\s*module\s+([A-Za-z_][A-Za-z0-9_$]*)\b")
-INTERNAL_VIEW_TARGET = "__netlistsvg_internal_view__"
-FRAGMENT_SAFE_RE = re.compile(r"[^A-Za-z0-9_.-]+")
 
 
 def _logical_make_lines(text: str):
@@ -100,17 +97,11 @@ def _scan_diagram_targets(
     return targets, labels
 
 
-def _view_fragment(cell_id: str) -> str:
-    view_id = FRAGMENT_SAFE_RE.sub("_", f"cell_{cell_id}").strip("_")
-    return f"#view_{view_id}"
-
-
-def _scan_source_targets(
+def _scan_source_labels(
     source_files: list[str],
     project_dir: Path,
     flow: str,
-) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
-    targets: dict[str, set[str]] = {}
+) -> dict[str, set[str]]:
     labels: dict[str, set[str]] = {}
     pattern = VERILOG_MODULE_RE if flow == "verilog" else VHDL_ENTITY_RE
     for src in source_files:
@@ -120,9 +111,8 @@ def _scan_source_targets(
         except OSError:
             continue
         for name in pattern.findall(text):
-            _add_alias(targets, name, INTERNAL_VIEW_TARGET)
             _add_alias(labels, name, name)
-    return targets, labels
+    return labels
 
 
 def canonical_type(cell_type: str) -> str | None:
@@ -149,7 +139,6 @@ def _cell_id(mapping: str) -> str:
 def _collect_auto_decorations(
     netlist: dict,
     diagram_targets: dict[str, set[str]],
-    source_targets: dict[str, set[str]],
     labels: dict[str, set[str]],
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     relabels: dict[str, set[str]] = {}
@@ -162,8 +151,6 @@ def _collect_auto_decorations(
                 continue
             relabels.setdefault(cell_id, set()).add(_single(labels, label) or label)
             target = _single(diagram_targets, label)
-            if target is None and _single(source_targets, label) == INTERNAL_VIEW_TARGET:
-                target = _view_fragment(cell_id)
             if target is not None:
                 links.setdefault(cell_id, set()).add(target)
 
@@ -211,7 +198,7 @@ def main() -> int:
         netlist = json.load(f)
 
     diagram_targets, diagram_labels = _scan_diagram_targets(repo_root, args.flow)
-    source_targets, source_labels = _scan_source_targets(
+    source_labels = _scan_source_labels(
         args.source_file,
         project_dir,
         args.flow,
@@ -223,7 +210,6 @@ def main() -> int:
     relabels, links = _collect_auto_decorations(
         netlist,
         diagram_targets,
-        source_targets,
         labels,
     )
 

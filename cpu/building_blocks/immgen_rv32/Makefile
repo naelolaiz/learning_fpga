@@ -20,7 +20,8 @@ V_TB_FILES  := test/tb_immgen_rv32.v
 # netlistsvg's recursive `gather`; ~8 MB is plenty. The hdltools
 # container ships netlistsvg as a node-shebang script at
 # /usr/local/bin/netlistsvg — `command -v` resolves it at recipe
-# time, evaluated by sh (the `$$` defers expansion past Make).
-NETLISTSVG := node --stack-size=8000 $$(command -v netlistsvg)
+# time, evaluated by sh (the `$$` defers expansion past Make). Override
+# NETLISTSVG_BIN so the shared config from common.mk still applies.
+NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 
 include ../../../mk/common.mk

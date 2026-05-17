@@ -1,5 +1,8 @@
 {
   "hierarchy": {
     "enable": "all"
+  },
+  "render": {
+    "internalSubmoduleLinks": true
   }
 }

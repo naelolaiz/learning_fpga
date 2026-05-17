@@ -15,7 +15,8 @@ V_TB_FILES  := test/tb_decoder_rv32.v
 
 # Same Node-stack bump as immgen_rv32: the synthesised decoder is a
 # big shallow combinational tree that trips netlistsvg's recursive
-# `gather` on the default ~1 MB JS stack. ~8 MB is plenty.
-NETLISTSVG := node --stack-size=8000 $$(command -v netlistsvg)
+# `gather` on the default ~1 MB JS stack. Override NETLISTSVG_BIN so
+# the shared config from common.mk still applies.
+NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 
 include ../../../mk/common.mk

@@ -126,9 +126,9 @@ V_EXPECTED_X_TBS ?=
 
 # Per-project hooks decorating the rendered netlist diagram. Common
 # submodule relabels and links are inferred automatically from the
-# netlist/source graph; same-file submodules link to internal SVG view
-# fragments added after rendering. These variables are explicit
-# overrides and additions, passed directly to netlistsvg.
+# netlist/source graph; expanded submodules without explicit links use
+# netlistsvg's renderer-owned same-file SVG pages. These variables are
+# explicit overrides and additions, passed directly to netlistsvg.
 #
 # SVG_LINKS turns the named cell into a hyperlink. Format:
 #   cell_id=url
@@ -155,7 +155,6 @@ V_NETLISTSVG_DECORATION = $(addprefix --link ,$(V_SVG_LINKS)) $(addprefix --rela
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 REPO_ROOT := $(abspath $(COMMON_MK_DIR)..)
 NETLISTSVG_AUTODECORATE ?= python3 $(COMMON_MK_DIR)netlistsvg_auto_decorate.py
-NETLISTSVG_INTERNAL_VIEWS ?= python3 $(COMMON_MK_DIR)netlistsvg_internal_views.py
 NETLISTSVG_CHECK ?= python3 $(COMMON_MK_DIR)check_netlistsvg_labels.py
 NETLISTSVG_AUTO_DECORATION = $(NETLISTSVG_AUTODECORATE) --repo-root $(REPO_ROOT) --project-dir $(CURDIR) --flow vhdl --json $< --svg $@ $(addprefix --source-file ,$(SRC_FILES)) $(addprefix --explicit-link ,$(SVG_LINKS)) $(addprefix --explicit-relabel ,$(SVG_RELABEL))
 V_NETLISTSVG_AUTO_DECORATION = $(NETLISTSVG_AUTODECORATE) --repo-root $(REPO_ROOT) --project-dir $(CURDIR) --flow verilog --json $< --svg $@ $(addprefix --source-file ,$(V_SRC_FILES)) $(addprefix --explicit-link ,$(V_SVG_LINKS)) $(addprefix --explicit-relabel ,$(V_SVG_RELABEL))
@@ -316,7 +315,6 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	auto_args="$$($(NETLISTSVG_AUTO_DECORATION))" && \
 	    $(NETLISTSVG) $< -o $@ $$auto_args $(NETLISTSVG_DECORATION)
-	$(NETLISTSVG_INTERNAL_VIEWS) $@
 	$(NETLISTSVG_CHECK) $@
 endif
 
@@ -389,7 +387,6 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	auto_args="$$($(V_NETLISTSVG_AUTO_DECORATION))" && \
 	    $(NETLISTSVG) $< -o $@ $$auto_args $(V_NETLISTSVG_DECORATION)
-	$(NETLISTSVG_INTERNAL_VIEWS) $@
 	$(NETLISTSVG_CHECK) $@
 endif
 
