@@ -1,23 +1,22 @@
-// Verilog mirror of 7segmentsDigit.vhd (entity name: Digit).
+// mod_counter — Verilog mirror of mod_counter.vhd.
 //
-// One BCD digit. On every rising edge of `clock`, count up (when
-// direction = 1) or down (when direction = 0); wrap to 0 (or to
-// MAX_NUMBER) on overflow and pulse `carryBit` for one cycle. The clock
-// for downstream digits is the carry of this one — chained, the cascade
-// implements a multi-digit BCD counter without any explicit central
-// state.
+// Up/down modulo-N counter with carry-out. Counts 0..MAX_NUMBER
+// (forward) or MAX_NUMBER..0 (backward), pulsing carryBit for one
+// cycle on every wrap. 4-bit output makes it a drop-in single BCD
+// digit at MAX_NUMBER=9; other moduli up to 15 share the same width.
 
-module Digit #(
+module mod_counter #(
     parameter integer MAX_NUMBER = 9
 ) (
     input  wire       clock,
     input  wire       reset,
-    input  wire       direction,         // 1 = forward
+    input  wire       direction,        // 1 = forward, 0 = backward
     output wire [3:0] currentNumber,
-    output reg        carryBit = 1'b0
+    output reg        carryBit
 );
 
     reg [3:0] currentNumberSignal = 4'd0;
+    initial carryBit = 1'b0;
 
     always @(posedge clock) begin
         if (reset) begin

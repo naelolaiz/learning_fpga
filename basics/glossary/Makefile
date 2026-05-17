@@ -18,16 +18,11 @@ V_TB_TOPS   := tb_glossary
 V_SRC_FILES := glossary.v top_glossary_board.v
 V_TB_FILES  := test/tb_glossary.v
 
-# The skin (a superset of netlistsvg's default that adds shape labels
-# for each primitive — AND/OR/NOT/XOR/etc. — plus a $ne shape upstream
-# is missing) lives at mk/skin.svg and is the default for every project
-# via common.mk's NETLISTSVG_SKIN.
-#
-# Only the Node V8 stack bump is project-local: the glossary instances
-# every cell type at once, so the synthesised mux+wire tree is wider
-# than what netlistsvg's recursive `gather` handles on the default
-# stack. Override NETLISTSVG_BIN (not NETLISTSVG) so the default skin
-# is inherited.
+# Only the Node V8 stack bump is project-local: the glossary
+# instances every cell type at once, so the synthesised mux+wire tree
+# is wider than what netlistsvg's recursive `gather` handles on the
+# default stack. Override NETLISTSVG_BIN (not NETLISTSVG) so the skin
+# and config defaults from common.mk are inherited.
 NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 
 # Glossary intentionally infers a level-sensitive D-latch (the

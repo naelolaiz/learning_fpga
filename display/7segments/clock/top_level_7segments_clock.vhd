@@ -71,6 +71,7 @@ signal mainClockForClock: std_logic := '0';
 signal clockForAlarmSet: std_logic := '0';
 signal oneSecondPeriodSquare: std_logic := '0';
 signal squareWaveForBuzzer: std_logic := '0';
+signal alarmMatch: std_logic := '0';
 
 type ClockMode is (MMSS,HHMM);
 signal currentClockMode : ClockMode := MMSS;
@@ -124,13 +125,16 @@ bcdDigitsDisplayed <= bcdDigits when currentSelectedClock = MAIN_CLOCK else alar
 directionForMainClock  <= '1' when currentSelectedClock = ALARM_CLOCK else decreaseTimeButtonDebounced;
 directionForAlarmClock <= '1' when currentSelectedClock = MAIN_CLOCK  else decreaseTimeButtonDebounced;
 
--- Middle-dot blink — delegated to DotBlinker so a testbench can drive
--- the 1 Hz square directly without paying for the divider chain.
-dotBlinker : entity work.DotBlinker(RTL)
+-- Middle-dot blink — delegated to the mode_blink building block so a
+-- testbench can drive the 1 Hz square directly without paying for
+-- the divider chain. mode_blink's neutral port names map cleanly:
+-- signalIn = the 1 Hz square, toggleMode selects between full-rate
+-- pass-through (MMSS) and rising-edge-toggle half rate (HHMM).
+dotBlinker : entity work.mode_blink(RTL)
    port map (
-      oneSecondPeriodSquare => oneSecondPeriodSquare,
-      isHHMMMode            => isHHMMModeBit,
-      dotOut                => dotBlinkingSignal);
+      signalIn   => oneSecondPeriodSquare,
+      toggleMode => isHHMMModeBit,
+      signalOut  => dotBlinkingSignal);
 
  --------------------------------
  -- timer to get ticks every 1 sec
@@ -147,7 +151,7 @@ dotBlinker : entity work.DotBlinker(RTL)
                  timerTriggered => timerTick00015Sec,
                  reset => resetButtonSignal);
 
-   variableTimerForTimeSet : entity work.VariableTimer(behaviorVariableTimer)
+   variableTimerForTimeSet : entity work.VariableTimer(composition)
       generic map ( MAX_NUMBER => MAX_NUMBER_FOR_VARIABLE_TIMER )
       port map ( clock => clock,
                  timerTriggered => variableTimerTickForTimeSet,
@@ -171,7 +175,7 @@ dotBlinker : entity work.DotBlinker(RTL)
    enabledDigit <= muxCounterFull(1 downto 0);
 
  -- Main-clock digit cascade.
-   digitSecsUnit : entity work.Digit(behaviorDigit)
+   digitSecsUnit : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 9)
     port map (
       clock => mainClockForClock,
@@ -180,7 +184,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => carryBitSecondsUnit,
       reset => resetButtonSignal);
 
-   digitSecsTens : entity work.Digit(behaviorDigit)
+   digitSecsTens : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 5)
     port map (
       clock => carryBitSecondsUnit,
@@ -189,7 +193,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => carryBitSecondsTens,
       reset => resetButtonSignal);
 
-   digitMinsUnit : entity work.Digit(behaviorDigit)
+   digitMinsUnit : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 9)
     port map (
       clock => carryBitSecondsTens,
@@ -198,7 +202,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => carryBitMinutesUnit,
       reset => resetButtonSignal);
 
-   digitMinsTens : entity work.Digit(behaviorDigit)
+   digitMinsTens : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 5)
     port map (
       clock => carryBitMinutesUnit,
@@ -207,7 +211,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => carryBitMinutesTens,
       reset => resetButtonSignal);
 
-   digitHoursUnit : entity work.Digit(behaviorDigit)
+   digitHoursUnit : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 3)
     port map (
       clock => carryBitMinutesTens,
@@ -216,7 +220,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => carryBitHoursUnit,
       reset => resetButtonSignal);
 
-   digitHoursTens : entity work.Digit(behaviorDigit)
+   digitHoursTens : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 2)
     port map (
       clock => carryBitHoursUnit,
@@ -225,7 +229,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       reset => resetButtonSignal);
 
  -- Alarm-clock digit cascade (same shape, fed from clockForAlarmSet).
-   alarmDigitSecsUnit : entity work.Digit(behaviorDigit)
+   alarmDigitSecsUnit : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 9)
     port map (
       clock => clockForAlarmSet,
@@ -234,7 +238,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => alarmCarryBitSecondsUnit,
       reset => resetButtonSignal);
 
-   alarmDigitSecsTens : entity work.Digit(behaviorDigit)
+   alarmDigitSecsTens : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 5)
     port map (
       clock => alarmCarryBitSecondsUnit,
@@ -243,7 +247,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => alarmCarryBitSecondsTens,
       reset => resetButtonSignal);
 
-   alarmDigitMinsUnit : entity work.Digit(behaviorDigit)
+   alarmDigitMinsUnit : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 9)
     port map (
       clock => alarmCarryBitSecondsTens,
@@ -252,7 +256,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => alarmCarryBitMinutesUnit,
       reset => resetButtonSignal);
 
-   alarmDigitMinsTens : entity work.Digit(behaviorDigit)
+   alarmDigitMinsTens : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 5)
     port map (
       clock => alarmCarryBitMinutesUnit,
@@ -261,7 +265,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => alarmCarryBitMinutesTens,
       reset => resetButtonSignal);
 
-   alarmDigitHoursUnit : entity work.Digit(behaviorDigit)
+   alarmDigitHoursUnit : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 3)
     port map (
       clock => alarmCarryBitMinutesTens,
@@ -270,7 +274,7 @@ dotBlinker : entity work.DotBlinker(RTL)
       carryBit => alarmCarryBitHoursUnit,
       reset => resetButtonSignal);
 
-   alarmDigitHoursTens : entity work.Digit(behaviorDigit)
+   alarmDigitHoursTens : entity work.mod_counter(behaviorModCounter)
     generic map (MAX_NUMBER => 2)
     port map (
       clock => alarmCarryBitHoursUnit,
@@ -278,14 +282,15 @@ dotBlinker : entity work.DotBlinker(RTL)
       currentNumber => alarmBcdDigits(23 downto 20),
       reset => resetButtonSignal);
 
-   -- Alarm comparator + buzzer gating, factored into AlarmTrigger.
-   alarm : entity work.AlarmTrigger(RTL)
-      port map (
-         mainBcd   => bcdDigits,
-         alarmBcd  => alarmBcdDigits,
-         tone      => squareWaveForBuzzer,
-         gate      => oneSecondPeriodSquare,
-         buzzerOut => buzzer);
+   -- Alarm comparator + buzzer gating, inlined.
+   --
+   -- Compare bits 23..4 (everything above seconds-units) so a single
+   -- match holds for ~10 simulated seconds before the units roll
+   -- over; AND the ~400 Hz tone with the 1 Hz square so the alarm
+   -- beeps once per second instead of holding a continuous tone.
+   alarmMatch <= '1' when alarmBcdDigits(23 downto 4) = bcdDigits(23 downto 4)
+                 else '0';
+   buzzer     <= alarmMatch and squareWaveForBuzzer and oneSecondPeriodSquare;
 
    debounce_clock_mode_switch : entity work.Debounce(RTL)
     port map(

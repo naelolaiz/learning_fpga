@@ -17,7 +17,12 @@ module tb_simd_alu;
 
     initial begin
         $dumpfile(`FST_OUT);
-        $dumpvars(0, tb_simd_alu);
+        // Selective dump: testbench top + everything under dut, but
+        // skip task locals (`check.tag/.exp_f/.exp_r`) which are
+        // X-initialised until the first task call and would paint
+        // visible red bands in the rendered waveform.
+        $dumpvars(1, tb_simd_alu);
+        $dumpvars(0, dut);
     end
 
     integer errors = 0;
