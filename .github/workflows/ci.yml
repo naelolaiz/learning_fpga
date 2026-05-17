@@ -132,9 +132,9 @@ jobs:
       # the commit/PR view, distinct from the green workflow.
       #
       # The hdltools container doesn't ship the `gh` CLI, so call the
-      # API directly with curl. `continue-on-error: true` keeps the
-      # workflow run from turning red if the curl itself errors (e.g.
-      # the token doesn't have checks:write on a fork).
+      # API directly with Python stdlib HTTP. `continue-on-error: true`
+      # keeps the workflow run from turning red if the API itself errors
+      # (e.g. the token doesn't have checks:write on a fork).
       - name: Surface X-band warnings as neutral check
         if: always()
         continue-on-error: true
@@ -156,7 +156,7 @@ jobs:
 
           payload=$(SUMMARY="$summary" \
                     PROJECT="${{ matrix.project }}" \
-                    HEAD_SHA="${{ github.sha }}" \
+                    HEAD_SHA="${NETLISTSVG_SOURCE_REF}" \
                     python3 -c "
           import json, os
           print(json.dumps({
@@ -170,18 +170,56 @@ jobs:
             },
           }))")
 
-          curl -sS -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -d "$payload" \
-            "https://api.github.com/repos/${{ github.repository }}/check-runs" \
-            > /tmp/check_run_resp.json
+          response_path=/tmp/check_run_resp.json
+          if ! GH_TOKEN="${GH_TOKEN}" \
+               GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" \
+               CHECK_PAYLOAD="${payload}" \
+               RESPONSE_PATH="${response_path}" \
+               python3 - <<'PY'
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          response_path = os.environ["RESPONSE_PATH"]
+          request = urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/check-runs",
+              data=os.environ["CHECK_PAYLOAD"].encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  body = response.read()
+          except urllib.error.HTTPError as exc:
+              body = exc.read()
+              with open(response_path, "wb") as fh:
+                  fh.write(body)
+              sys.exit(1)
+          except urllib.error.URLError as exc:
+              with open(response_path, "w", encoding="utf-8") as fh:
+                  fh.write(str(exc))
+              sys.exit(1)
+
+          with open(response_path, "wb") as fh:
+              fh.write(body)
+          PY
+          then
+            echo "Checks API call failed; response:"
+            cat "${response_path}"
+            exit 1
+          fi
           # Surface failures, but don't break the run if the API
           # rejects the call — continue-on-error above covers that.
-          if ! grep -q '"id":' /tmp/check_run_resp.json; then
+          if ! grep -q '"id":' "${response_path}"; then
             echo "Checks API call did not return an id; response:"
-            cat /tmp/check_run_resp.json
+            cat "${response_path}"
             exit 1
           fi
 
