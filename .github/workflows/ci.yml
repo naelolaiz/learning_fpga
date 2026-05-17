@@ -125,8 +125,14 @@ jobs:
       # way to flip just the job-icon badge yellow from a step. A
       # neutral check run shows up as a separate yellow ⚠ status on
       # the commit/PR view, distinct from the green workflow.
+      #
+      # The hdltools container doesn't ship the `gh` CLI, so call the
+      # API directly with curl. `continue-on-error: true` keeps the
+      # workflow run from turning red if the curl itself errors (e.g.
+      # the token doesn't have checks:write on a fork).
       - name: Surface X-band warnings as neutral check
         if: always()
+        continue-on-error: true
         working-directory: ${{ matrix.project }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,13 +148,36 @@ jobs:
             summary="${summary}- ${line}"$'\n'
           done
 
-          gh api -X POST repos/${{ github.repository }}/check-runs \
-            -f name="x-bands: ${{ matrix.project }}" \
-            -f head_sha=${{ github.sha }} \
-            -f status=completed \
-            -f conclusion=neutral \
-            -f "output[title]=Waveform X-bands (uninitialised signals)" \
-            -f "output[summary]=${summary}"
+          payload=$(SUMMARY="$summary" \
+                    PROJECT="${{ matrix.project }}" \
+                    HEAD_SHA="${{ github.sha }}" \
+                    python3 -c "
+          import json, os
+          print(json.dumps({
+            'name':       'x-bands: ' + os.environ['PROJECT'],
+            'head_sha':   os.environ['HEAD_SHA'],
+            'status':     'completed',
+            'conclusion': 'neutral',
+            'output': {
+              'title':   'Waveform X-bands (uninitialised signals)',
+              'summary': os.environ['SUMMARY'],
+            },
+          }))")
+
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d "$payload" \
+            "https://api.github.com/repos/${{ github.repository }}/check-runs" \
+            > /tmp/check_run_resp.json
+          # Surface failures, but don't break the run if the API
+          # rejects the call — continue-on-error above covers that.
+          if ! grep -q '"id":' /tmp/check_run_resp.json; then
+            echo "Checks API call did not return an id; response:"
+            cat /tmp/check_run_resp.json
+            exit 1
+          fi
 
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.
