@@ -22,6 +22,8 @@ Usage:
     check_waveform_xbands.py <waveform.svg>
         [--min-width N]              # ignore X-bands narrower than
                                        N SVG units (default 5)
+        [--expected]                 # mark the warning as intentional
+                                      # but still surface it in CI
         [--allow signal_name ...]    # not yet enforced — placeholder
                                        so per-project allowlists are
                                        easy to slot in later
@@ -60,6 +62,10 @@ def main() -> int:
                         help='signal name expected to carry X bands '
                              '(placeholder for future per-signal '
                              'attribution; currently unused)')
+    parser.add_argument('--expected', action='store_true',
+                        help='X bands are intentional for this '
+                             'testbench; still emit the warning marker '
+                             'so CI shows the yellow signal.')
     args = parser.parse_args()
 
     try:
@@ -83,9 +89,12 @@ def main() -> int:
     # else, where the line still reads clearly.
     in_ci = os.environ.get('GITHUB_ACTIONS') == 'true'
     prefix = '::warning::' if in_ci else 'WARNING: '
-    msg = (f'{args.svg_path}: {count} X-band(s) (uninitialised signal '
-           f'bits) in waveform — paint a real value at t=0 or document '
-           f'the expectation.')
+    expectation = ' expected' if args.expected else ''
+    suffix = (' Documented by EXPECTED_X_TBS.'
+              if args.expected
+              else ' Paint a real value at t=0 or document the expectation.')
+    msg = (f'{args.svg_path}: {count}{expectation} X-band(s) '
+           f'(uninitialised signal bits) in waveform.{suffix}')
     print(f'{prefix}{msg}', file=sys.stderr)
 
     # Drop a sibling marker file so a later CI step can decide whether
