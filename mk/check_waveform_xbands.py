@@ -61,10 +61,22 @@ def main() -> int:
     # else, where the line still reads clearly.
     in_ci = os.environ.get('GITHUB_ACTIONS') == 'true'
     prefix = '::warning::' if in_ci else 'WARNING: '
-    print(f'{prefix}{args.svg_path}: {count} X-band(s) (uninitialised '
-          f'signal bits) in waveform — paint a real value at t=0 '
-          f'or document the expectation.',
-          file=sys.stderr)
+    msg = (f'{args.svg_path}: {count} X-band(s) (uninitialised signal '
+           f'bits) in waveform — paint a real value at t=0 or document '
+           f'the expectation.')
+    print(f'{prefix}{msg}', file=sys.stderr)
+
+    # Drop a sibling marker file so a later CI step can decide whether
+    # to flip the job icon to yellow (via a `continue-on-error: true`
+    # step that fails when any marker exists). The annotation alone
+    # only paints the side panel; it doesn't change the job badge.
+    try:
+        with open(args.svg_path + '.warnings', 'w', encoding='utf-8') as f:
+            f.write(msg + '\n')
+    except OSError as e:
+        print(f'check_waveform_xbands: marker write failed: {e}',
+              file=sys.stderr)
+
     return 0
 
 
