@@ -18,6 +18,14 @@ VHDL_STANDARD := 08
 # on latches; tell it to permit them so the diagram can render.
 GHDL_SYNTH_EXTRA := --latches
 
+# Demonstrating *why* uninitialised signals matter is the whole point
+# of this project — `seq_no_init`, the intentional latch, and the
+# comb-process-with-missing-else trap all start as X. Opt the
+# project out of the waveform X-band check so those expected reds
+# don't trip the gallery's yellow warning.
+EXPECTED_X_TBS   := tb_logic_styles
+V_EXPECTED_X_TBS := tb_logic_styles
+
 V_TOP       := logic_styles
 V_TB_TOPS   := tb_logic_styles
 V_SRC_FILES := logic_styles.v top_logic_styles_board.v

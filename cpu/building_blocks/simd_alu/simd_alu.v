@@ -69,13 +69,17 @@ module simd_alu (
     end
     endfunction
 
-    integer            lane;
-    reg signed [7:0]   a8, b8;
-    reg signed [15:0]  a16, b16;
-    reg [8:0]          lane8_out;
-    reg [16:0]         lane16_out;
-    reg                is_sub_w;
-    reg                do_sat_w;
+    integer            lane = 0;
+    // Lane working-regs — initialised so the waveform doesn't paint
+    // visible X-bands before the first always-block re-evaluation
+    // assigns them. The values themselves don't matter for synthesis;
+    // the always @(*) re-runs whenever any input changes.
+    reg signed [7:0]   a8 = 8'sd0, b8 = 8'sd0;
+    reg signed [15:0]  a16 = 16'sd0, b16 = 16'sd0;
+    reg [8:0]          lane8_out = 9'd0;
+    reg [16:0]         lane16_out = 17'd0;
+    reg                is_sub_w = 1'b0;
+    reg                do_sat_w = 1'b0;
 
     always @(*) begin
         result   = 32'b0;

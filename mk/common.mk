@@ -276,7 +276,9 @@ define GHDL_PNG_RULE
 $$(BUILD_DIR)/$(1).png: $$(call tb_wave,$(1))
 	$$(WAVEVIEW) --input $$< --output $$(@:.png=.svg) --png \
 	    $$(if $$(ZOOM_RANGE_$(1)),--zoom-range $$(ZOOM_RANGE_$(1)))
-	@python3 $$(COMMON_MK_DIR)check_waveform_xbands.py $$(@:.png=.svg)
+	$$(if $$(filter $(1),$$(EXPECTED_X_TBS)),\
+	    @echo "[$(PROJECT_NAME)] $(1): X-band check skipped (EXPECTED_X_TBS)",\
+	    @python3 $$(COMMON_MK_DIR)check_waveform_xbands.py $$(@:.png=.svg))
 endef
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_PNG_RULE,$(tb))))
 
@@ -347,7 +349,9 @@ define VERILOG_PNG_RULE
 $$(BUILD_DIR)/$(1)_v.png: $$(call v_tb_wave,$(1))
 	$$(WAVEVIEW) --input $$< --output $$(@:.png=.svg) --png \
 	    $$(if $$(V_ZOOM_RANGE_$(1)),--zoom-range $$(V_ZOOM_RANGE_$(1)))
-	@python3 $$(COMMON_MK_DIR)check_waveform_xbands.py $$(@:.png=.svg)
+	$$(if $$(filter $(1),$$(V_EXPECTED_X_TBS)),\
+	    @echo "[$(PROJECT_NAME)] $(1)_v: X-band check skipped (V_EXPECTED_X_TBS)",\
+	    @python3 $$(COMMON_MK_DIR)check_waveform_xbands.py $$(@:.png=.svg))
 endef
 $(foreach tb,$(V_TB_TOPS),$(eval $(call VERILOG_PNG_RULE,$(tb))))
 
