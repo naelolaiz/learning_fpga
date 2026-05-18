@@ -75,17 +75,13 @@ YOSYS         ?= yosys
 # other. Common cases:
 #   * Big designs that need a bigger Node V8 stack just override
 #     NETLISTSVG_BIN (see cpu/riscv_singlecycle/Makefile).
-#   * Projects that want a different glyph style override
-#     NETLISTSVG_SKIN.
-#   * Projects that need both override NETLISTSVG directly.
-# The default skin (mk/skin.svg) is a superset of netlistsvg's
-# upstream default — same cell shapes plus $ne (the inequality
-# comparator yosys emits but upstream forgot to draw), so a yosys
-# graph with a `!=` operator renders consistently with the other
-# comparators instead of falling through to a text rectangle.
+#   * Projects that need a custom glyph set can pass --skin via NETLISTSVG.
+# No --skin is passed by default — netlistsvg's bundled default skin
+# already covers every primitive yosys emits for our designs
+# (including $ne and the -bus variants used by hierarchical rendering).
 NETLISTSVG_BIN  ?= netlistsvg
-NETLISTSVG_SKIN ?= $(COMMON_MK_DIR)skin.svg
-NETLISTSVG      ?= $(NETLISTSVG_BIN) --skin $(NETLISTSVG_SKIN)
+NETLISTSVG_CONFIG ?= $(COMMON_MK_DIR)netlistsvg-hierarchy.json
+NETLISTSVG      ?= $(NETLISTSVG_BIN) --config $(NETLISTSVG_CONFIG)
 WAVEVIEW      ?= waveview
 IVERILOG      ?= iverilog
 VVP           ?= vvp
@@ -112,6 +108,10 @@ SKIP_WAVEFORM ?=
 # anyway. The TB still simulates and its assertions still guard CI,
 # it just doesn't produce a rendered diagram.
 NO_WAVEFORM_TBS ?=
+# Testbenches known to expose X/uninitialised bands still emit a
+# warning marker; the name documents intent but does not hide the
+# yellow signal from CI.
+EXPECTED_X_TBS ?=
 
 V_SRC_FILES   ?=
 V_TB_FILES    ?=
@@ -122,44 +122,20 @@ V_INCDIRS     ?=
 SKIP_V_DIAGRAM ?=
 SKIP_V_WAVEFORM ?=
 V_NO_WAVEFORM_TBS ?=
+V_EXPECTED_X_TBS ?=
 
-# Per-project hooks decorating the rendered netlist diagram.
-# Both run after netlistsvg writes its SVG, via mk/svg_add_links.py.
-#
-# SVG_LINKS turns the named cell into a hyperlink. Format:
-#   cell_id=url
-# (multiple entries separated by spaces). The script wraps the cell's
-# `<g id="cell_<cell_id>" ...>` element with `<a xlink:href="url">`,
-# so an SVG viewer can drill from a wrapper's diagram into the
-# wrapped module's own diagram. URLs are relative to the SVG itself;
-# for the published gallery that means `../<sibling-artifact>/<top>.svg`.
-#
-# SVG_RELABEL rewrites the displayed text on the named cell. Same
-# format (cell_id=label). Useful when a wrapped sub-instance arrives
-# with yosys's `$paramod\<sub>\<param>=<val>` (Verilog) or
-# `<sub>_B<arch>_<width>` (VHDL via ghdl-yosys-plugin) auto-name
-# stamped on the box: post-rewrite the label back to the bare
-# submodule name. yosys's own `rename` won't propagate to cell-type
-# references, so post-processing the SVG is the practical fix.
-#
-# SVG_PREVIEW inlines the SVG at `local_path` as a nested `<svg>`
-# inside cell_<cell_id>. Format: `cell_id=local_path`. We can't use
-# `<image href="other.svg">` because GitHub's raw.githubusercontent.com
-# serves SVGs with `Content-Security-Policy: default-src 'none'`,
-# which blocks the cross-document fetch that an `<image>` needs;
-# inlining bypasses that. Project Makefiles using SVG_PREVIEW need
-# to add the sibling's SVG as a prereq on the diagram step so it
-# exists at preview-inline time (CI builds projects in parallel
-# matrix jobs that don't share artifacts otherwise).
-SVG_LINKS     ?=
-V_SVG_LINKS   ?=
-SVG_RELABEL   ?=
-V_SVG_RELABEL ?=
-SVG_PREVIEW   ?=
-V_SVG_PREVIEW ?=
+# Diagram decoration is fully delegated to netlistsvg:
+#   * label beautifier collapses generated names (`$paramod...`, `_B...`,
+#     `$mem_v2`, repeated `-bus`);
+#   * expanded submodule cells become clickable and jump to a same-file
+#     `:target` drilldown page rendering that submodule on its own.
+# If a project needs an explicit per-cell label or external link, pass
+# `--link` / `--relabel` directly via `$(NETLISTSVG)` in the project's
+# Makefile.
 
-# Used to locate svg_add_links.py — common.mk lives next to it.
+# Used to locate helper scripts/config — common.mk lives next to them.
 COMMON_MK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+NETLISTSVG_CHECK ?= python3 $(COMMON_MK_DIR)check_netlistsvg_labels.py
 
 # ---- Layout ----------------------------------------------------------------
 BUILD_DIR     := build
@@ -292,6 +268,9 @@ define GHDL_PNG_RULE
 $$(BUILD_DIR)/$(1).png: $$(call tb_wave,$(1))
 	$$(WAVEVIEW) --input $$< --output $$(@:.png=.svg) --png \
 	    $$(if $$(ZOOM_RANGE_$(1)),--zoom-range $$(ZOOM_RANGE_$(1)))
+	@python3 $$(COMMON_MK_DIR)check_waveform_xbands.py \
+	    $$(@:.png=.svg) \
+	    $$(if $$(filter $(1),$$(EXPECTED_X_TBS)),--expected)
 endef
 $(foreach tb,$(TB_TOPS),$(eval $(call GHDL_PNG_RULE,$(tb))))
 
@@ -313,10 +292,7 @@ $(NETLIST_JSON): $(SRC_FILES) | $(BUILD_DIR)
 
 $(DIAGRAM_SVG): $(NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
-	    $(addprefix --link ,$(SVG_LINKS)) \
-	    $(addprefix --relabel ,$(SVG_RELABEL)) \
-	    $(addprefix --preview ,$(SVG_PREVIEW))
+	$(NETLISTSVG_CHECK) $@
 endif
 
 # ---- Verilog flow ---------------------------------------------------------
@@ -363,6 +339,9 @@ define VERILOG_PNG_RULE
 $$(BUILD_DIR)/$(1)_v.png: $$(call v_tb_wave,$(1))
 	$$(WAVEVIEW) --input $$< --output $$(@:.png=.svg) --png \
 	    $$(if $$(V_ZOOM_RANGE_$(1)),--zoom-range $$(V_ZOOM_RANGE_$(1)))
+	@python3 $$(COMMON_MK_DIR)check_waveform_xbands.py \
+	    $$(@:.png=.svg) \
+	    $$(if $$(filter $(1),$$(V_EXPECTED_X_TBS)),--expected)
 endef
 $(foreach tb,$(V_TB_TOPS),$(eval $(call VERILOG_PNG_RULE,$(tb))))
 
@@ -384,10 +363,7 @@ $(V_NETLIST_JSON): $(V_SRC_FILES) | $(BUILD_DIR)
 
 $(V_DIAGRAM_SVG): $(V_NETLIST_JSON)
 	$(NETLISTSVG) $< -o $@
-	python3 $(COMMON_MK_DIR)svg_add_links.py $@ --beautify-primitives \
-	    $(addprefix --link ,$(V_SVG_LINKS)) \
-	    $(addprefix --relabel ,$(V_SVG_RELABEL)) \
-	    $(addprefix --preview ,$(V_SVG_PREVIEW))
+	$(NETLISTSVG_CHECK) $@
 endif
 
 else

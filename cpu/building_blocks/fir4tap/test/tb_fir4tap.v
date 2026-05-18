@@ -29,7 +29,13 @@ module tb_fir4tap;
 
     initial begin
         $dumpfile(`FST_OUT);
-        $dumpvars(0, tb_fir4tap);
+        // Dump the testbench's top-level signals + everything under
+        // the DUT, but skip task locals (`stream_and_check.tag`,
+        // `.sample`, `.expected`) — they're X-initialised until the
+        // first call, which paints uninitialised-signal red bands
+        // into the waveform.
+        $dumpvars(1, tb_fir4tap);
+        $dumpvars(0, dut);
     end
 
     always #(CLK_PERIOD/2.0) if (sim_active) clk = ~clk;

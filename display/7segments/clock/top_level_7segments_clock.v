@@ -1,8 +1,9 @@
 // Verilog mirror of top_level_7segments_clock.vhd.
 //
-// Mirrors the VHDL top-level 1:1: same port names, same generic-shaped
-// parameters (so testbenches can shrink the timers identically), same
-// internal signal names where reasonable. The shape is:
+// Mirrors the VHDL top-level 1:1: same port names, same generic-
+// shaped parameters (so testbenches can shrink the timers
+// identically), same internal signal names where reasonable. The
+// shape is:
 //
 //   +-- Timer (1 Hz square)         --+
 //   +-- Timer (~666 Hz fast-set)    --+
@@ -10,11 +11,14 @@
 //   +-- Timer (~400 Hz buzzer tone) --+    clockForAlarmSet
 //   +-- CounterTimer (mux 4 digits) --+
 //   |
-//   +-- Digit cascade (main, 6 digits)
-//   +-- Digit cascade (alarm, 6 digits)
-//   +-- DotBlinker  (drives the middle-dot bit)
-//   +-- AlarmTrigger(drives the buzzer)
+//   +-- mod_counter cascade (main, 6 digits)
+//   +-- mod_counter cascade (alarm, 6 digits)
+//   +-- mode_blink (drives the middle-dot bit)
 //   +-- Debounce x4 (mode toggle, alarm-view toggle, +/- buttons)
+//
+// The alarm comparator + buzzer gating is a single inline expression
+// (the AlarmTrigger entity from the 2022 source has been dropped
+// since its body was three combinational lines).
 //
 // The Verilog encoder for the BCD-to-7-seg lookup uses a `case`, where
 // the VHDL uses a chained when-else. Logically identical.
@@ -92,24 +96,28 @@ module top_level_7segments_clock #(
                                     ? 1'b1 : decreaseTimeButtonDebounced;
 
     // ---- Middle-dot blinker ---------------------------------------------
-    DotBlinker dotBlinker_i (
-        .oneSecondPeriodSquare (oneSecondPeriodSquare),
-        .isHHMMMode            (isHHMMModeBit),
-        .dotOut                (dotBlinkingSignal)
+    mode_blink dotBlinker (
+        .signalIn   (oneSecondPeriodSquare),
+        .toggleMode (isHHMMModeBit),
+        .signalOut  (dotBlinkingSignal)
     );
 
     // ---- Timers ----------------------------------------------------------
+    // Each instance drives `maxLimit` explicitly (Verilog input ports
+    // have no default value, so leaving it unconnected would feed Z).
     Timer #(.MAX_NUMBER(MAX_NUMBER_FOR_1SEC_TIMER),
             .TRIGGER_DURATION(TRIGGER_DURATION_FOR_1SEC_TIMER))
         timer1Sec (
             .clock          (clock),
             .reset          (resetButtonSignal),
+            .maxLimit       (MAX_NUMBER_FOR_1SEC_TIMER[31:0]),
             .timerTriggered (oneSecondPeriodSquare));
 
     Timer #(.MAX_NUMBER(MAX_NUMBER_FOR_FAST_SET_TIMER))
         timer00015Sec (
             .clock          (clock),
             .reset          (resetButtonSignal),
+            .maxLimit       (MAX_NUMBER_FOR_FAST_SET_TIMER[31:0]),
             .timerTriggered (timerTick00015Sec));
 
     VariableTimer #(.MAX_NUMBER(MAX_NUMBER_FOR_VARIABLE_TIMER))
@@ -125,6 +133,7 @@ module top_level_7segments_clock #(
         square400Hz (
             .clock          (clock),
             .reset          (resetButtonSignal),
+            .maxLimit       (MAX_NUMBER_FOR_BUZZER_TIMER[31:0]),
             .timerTriggered (squareWaveForBuzzer));
 
     // ---- Mux counter (4 digits) -----------------------------------------
@@ -140,27 +149,27 @@ module top_level_7segments_clock #(
     wire carryBitSecondsUnit, carryBitSecondsTens;
     wire carryBitMinutesUnit, carryBitMinutesTens, carryBitHoursUnit;
 
-    Digit #(.MAX_NUMBER(9)) digitSecsUnit (
+    mod_counter #(.MAX_NUMBER(9)) digitSecsUnit (
         .clock(mainClockForClock), .reset(resetButtonSignal),
         .direction(directionForMainClock),
         .currentNumber(bcdDigits[3:0]),  .carryBit(carryBitSecondsUnit));
-    Digit #(.MAX_NUMBER(5)) digitSecsTens (
+    mod_counter #(.MAX_NUMBER(5)) digitSecsTens (
         .clock(carryBitSecondsUnit), .reset(resetButtonSignal),
         .direction(directionForMainClock),
         .currentNumber(bcdDigits[7:4]),  .carryBit(carryBitSecondsTens));
-    Digit #(.MAX_NUMBER(9)) digitMinsUnit (
+    mod_counter #(.MAX_NUMBER(9)) digitMinsUnit (
         .clock(carryBitSecondsTens), .reset(resetButtonSignal),
         .direction(directionForMainClock),
         .currentNumber(bcdDigits[11:8]), .carryBit(carryBitMinutesUnit));
-    Digit #(.MAX_NUMBER(5)) digitMinsTens (
+    mod_counter #(.MAX_NUMBER(5)) digitMinsTens (
         .clock(carryBitMinutesUnit), .reset(resetButtonSignal),
         .direction(directionForMainClock),
         .currentNumber(bcdDigits[15:12]), .carryBit(carryBitMinutesTens));
-    Digit #(.MAX_NUMBER(3)) digitHoursUnit (
+    mod_counter #(.MAX_NUMBER(3)) digitHoursUnit (
         .clock(carryBitMinutesTens), .reset(resetButtonSignal),
         .direction(directionForMainClock),
         .currentNumber(bcdDigits[19:16]), .carryBit(carryBitHoursUnit));
-    Digit #(.MAX_NUMBER(2)) digitHoursTens (
+    mod_counter #(.MAX_NUMBER(2)) digitHoursTens (
         .clock(carryBitHoursUnit), .reset(resetButtonSignal),
         .direction(directionForMainClock),
         .currentNumber(bcdDigits[23:20]), .carryBit());
@@ -169,39 +178,38 @@ module top_level_7segments_clock #(
     wire alarmCarryBitSecondsUnit, alarmCarryBitSecondsTens;
     wire alarmCarryBitMinutesUnit, alarmCarryBitMinutesTens, alarmCarryBitHoursUnit;
 
-    Digit #(.MAX_NUMBER(9)) alarmDigitSecsUnit (
+    mod_counter #(.MAX_NUMBER(9)) alarmDigitSecsUnit (
         .clock(clockForAlarmSet), .reset(resetButtonSignal),
         .direction(directionForAlarmClock),
         .currentNumber(alarmBcdDigits[3:0]),  .carryBit(alarmCarryBitSecondsUnit));
-    Digit #(.MAX_NUMBER(5)) alarmDigitSecsTens (
+    mod_counter #(.MAX_NUMBER(5)) alarmDigitSecsTens (
         .clock(alarmCarryBitSecondsUnit), .reset(resetButtonSignal),
         .direction(directionForAlarmClock),
         .currentNumber(alarmBcdDigits[7:4]),  .carryBit(alarmCarryBitSecondsTens));
-    Digit #(.MAX_NUMBER(9)) alarmDigitMinsUnit (
+    mod_counter #(.MAX_NUMBER(9)) alarmDigitMinsUnit (
         .clock(alarmCarryBitSecondsTens), .reset(resetButtonSignal),
         .direction(directionForAlarmClock),
         .currentNumber(alarmBcdDigits[11:8]), .carryBit(alarmCarryBitMinutesUnit));
-    Digit #(.MAX_NUMBER(5)) alarmDigitMinsTens (
+    mod_counter #(.MAX_NUMBER(5)) alarmDigitMinsTens (
         .clock(alarmCarryBitMinutesUnit), .reset(resetButtonSignal),
         .direction(directionForAlarmClock),
         .currentNumber(alarmBcdDigits[15:12]), .carryBit(alarmCarryBitMinutesTens));
-    Digit #(.MAX_NUMBER(3)) alarmDigitHoursUnit (
+    mod_counter #(.MAX_NUMBER(3)) alarmDigitHoursUnit (
         .clock(alarmCarryBitMinutesTens), .reset(resetButtonSignal),
         .direction(directionForAlarmClock),
         .currentNumber(alarmBcdDigits[19:16]), .carryBit(alarmCarryBitHoursUnit));
-    Digit #(.MAX_NUMBER(2)) alarmDigitHoursTens (
+    mod_counter #(.MAX_NUMBER(2)) alarmDigitHoursTens (
         .clock(alarmCarryBitHoursUnit), .reset(resetButtonSignal),
         .direction(directionForAlarmClock),
         .currentNumber(alarmBcdDigits[23:20]), .carryBit());
 
-    // ---- Alarm trigger --------------------------------------------------
-    AlarmTrigger alarm_i (
-        .mainBcd   (bcdDigits),
-        .alarmBcd  (alarmBcdDigits),
-        .tone      (squareWaveForBuzzer),
-        .gate      (oneSecondPeriodSquare),
-        .buzzerOut (buzzer)
-    );
+    // ---- Alarm comparator + buzzer gating (inlined) ---------------------
+    // Compare bits 23..4 (everything above seconds-units) so a single
+    // match holds for ~10 simulated seconds before the units roll
+    // over; AND the ~400 Hz tone with the 1 Hz square so the alarm
+    // beeps once per second instead of holding a continuous tone.
+    wire alarmMatch = (bcdDigits[23:4] == alarmBcdDigits[23:4]);
+    assign buzzer = alarmMatch & squareWaveForBuzzer & oneSecondPeriodSquare;
 
     // ---- Debounced buttons ----------------------------------------------
     Debounce debounce_clock_mode_switch (
