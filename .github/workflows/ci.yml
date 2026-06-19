@@ -33,7 +33,7 @@ jobs:
     outputs:
       projects: ${{ steps.enumerate.outputs.projects }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - id: enumerate
         name: Enumerate projects
@@ -70,7 +70,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # The container already ships ghdl, yosys, ghdl-yosys-plugin,
       # iverilog, netlistsvg and waveview, so no extra setup is needed
