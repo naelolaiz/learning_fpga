@@ -14,3 +14,9 @@ V_SRC_FILES := Timer.v
 V_TB_FILES  := test/tb_timer.v
 
 include ../../mk/common.mk
+
+# The shared test target includes this cross-language contract check.
+.PHONY: equivalence
+verify: equivalence
+equivalence:
+	python3 ../../tools/check_timer_equivalence.py

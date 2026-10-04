@@ -13,14 +13,18 @@
 -- The counter is typed `integer range 0 to MAX_NUMBER`, so any
 -- runtime `maxLimit` value must fit in that range. Wrappers that
 -- accept arbitrary user input should clamp before driving the port.
+-- Reset is synchronous and clears both the count and the output. A
+-- lowered limit already passed by the counter triggers on the next edge.
+-- Pulses overlap when TRIGGER_DURATION >= maxLimit + 1, leaving the
+-- output high until reset or until a longer period lets the pulse end.
 
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 use ieee.numeric_std.ALL;
 
 entity Timer is
-   generic (MAX_NUMBER       : integer := 50000000;
-            TRIGGER_DURATION : integer := 1);
+   generic (MAX_NUMBER       : natural := 50000000;
+            TRIGGER_DURATION : positive := 1);
    port (clock          : in  std_logic := '0';
          reset          : in  std_logic := '0';
          maxLimit       : in  integer range 0 to MAX_NUMBER := MAX_NUMBER;
@@ -29,19 +33,19 @@ end Timer;
 
 architecture behaviorTimer of Timer is
 begin
-   timerTimer : process(clock, reset)
+   timerTimer : process(clock)
       variable counterForTriggerOut : integer range 0 to MAX_NUMBER := 0;
    begin
-      if clock'event and clock = '1' then
+      if rising_edge(clock) then
          if reset = '1' then
             counterForTriggerOut := 0;
-         end if;
-         if counterForTriggerOut = maxLimit then
+            timerTriggered <= '0';
+         elsif counterForTriggerOut >= maxLimit then
             counterForTriggerOut := 0;
             timerTriggered <= '1';
          else
             counterForTriggerOut := counterForTriggerOut + 1;
-            if counterForTriggerOut = TRIGGER_DURATION then
+            if counterForTriggerOut >= TRIGGER_DURATION then
                timerTriggered <= '0';
             end if;
          end if;
