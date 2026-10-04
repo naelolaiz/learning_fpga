@@ -74,6 +74,17 @@ External:
 - Waveshare UDA1380 board wiki: <https://www.waveshare.com/wiki/UDA1380_Board>
   (the same source as the local copies above).
 
+Other I2C masters to read alongside this one:
+
+- DigiKey TechForum, [I2C Master (VHDL)](https://forum.digikey.com/t/i2c-master-vhdl/12797)
+  — a step-by-step write-up with transaction timing diagrams.
+- OpenCores [`i2c_master_slave`](https://opencores.org/projects/i2c_master_slave)
+  (VHDL, BSD) — master and slave in one core, with burst transfers.
+- OpenCores [`i2c_master_slave_core`](https://opencores.org/projects/i2c_master_slave_core)
+  (Verilog) — Wishbone-attached master / slave.
+- OpenCores [`iicmb`](https://opencores.org/projects/iicmb) (VHDL, BSD)
+  — one controller driving several I2C buses.
+
 ## Wiring (RZ EasyFPGA A2.2 → UDA1380 board)
 
 | FPGA port (entity) | UDA1380 pin | Notes |
