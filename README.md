@@ -73,7 +73,7 @@ run the testbench, then try its exercise.
 | 1 | [Glossary](basics/glossary/) → [Blink LED](basics/blink_led/) → [Logic styles](basics/logic_styles/) | Gates, vector registers, clock edges, and inferred latches |
 | 2 | [Clock enable](basics/clock_enable/) → [PWM](basics/pwm_led/) | Keep logic on one clock; relate counters to output timing |
 | 3 | [Shift register](building_blocks/shift_register/) → [Debounce](building_blocks/debounce/) → [FIFO](building_blocks/fifo_sync/) | State, input filtering, and ordered buffering |
-| 4 | [UART TX](comm/uart_tx/) → [UART RX](comm/uart_rx/) | State machines, serial framing, and asynchronous inputs |
+| 4 | [UART TX](comm/uart_tx/) → [UART RX](comm/uart_rx/) → [I2C master](comm/i2c_master/) | State machines, serial framing, asynchronous inputs, and a shared open-drain bus |
 | 5 | [7-segment counter](display/7segments/counter/) → [Clock](display/7segments/clock/) → [VGA](display/vga/) | Compose blocks and multiplex displays |
 | 6 | [CPU tutorial](cpu/README.md) | Datapaths, instructions, pipelines, and memory-mapped peripherals |
 
@@ -413,6 +413,18 @@ Same `CLKS_PER_BIT` generic as `uart_tx` (default 5208 for 50 MHz / 9600 baud). 
 
 </details>
 
+<details>
+<summary><b><code>i2c_master</code></b> — single-master I2C byte engine with START / STOP framing and clock stretching</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `i2c_master` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-i2c_master/i2c_master.svg" alt="i2c_master netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-i2c_master/i2c_master_v.svg" alt="i2c_master netlist (Verilog)" width="480"> |
+| `tb_i2c_master` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-i2c_master/tb_i2c_master.png" alt="i2c_master waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/comm-i2c_master/tb_i2c_master_v.png" alt="i2c_master waveform (Verilog)" width="480"> |
+
+One command per byte on the bus, with flags for the START before it and the STOP after it; `CLKS_PER_QUARTER` sets the SCL rate (default 125 for 50 MHz / 100 kHz). The waveform shows a four-byte write to the testbench's behavioural slave. Used by `comm/uda1380` to boot the codec.
+
+</details>
+
 ### CPU
 
 > See [cpu/README.md](cpu/README.md) for the tutorial overview — recommended reading order, RV32I subset reference, SoC MMIO map, and how to write+assemble+run your own program.
@@ -619,7 +631,8 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | [uart_tx](comm/uart_tx/)       | ✅ | VHDL + Verilog | 8N1 UART transmitter. |
 | [uart_rx](comm/uart_rx/)       | ✅ | VHDL + Verilog | 8N1 UART receiver, 3-tap majority sampler at mid-bit. Pairs with `uart_tx`; used by `cpu/riscv_soc`'s memory-mapped UART_RX peripheral. |
 | [i2s_test_1](comm/i2s_test_1/) | ✅ | VHDL + Verilog | Sine NCO over I2S to a PCM5102 DAC; mono + stereo top-levels share one `nco_sine` / `sincos_lut` chain. |
-| [uda1380](comm/uda1380/)       | ✅ | VHDL + Verilog | Boot-FSM walks the codec init sequence over I2C; integrated I2S master + tone source for end-to-end playback. Two tops: simulation (`inout`) + a `_core` diagram variant with split `(oe, i)` so netlistsvg renders. |
+| [i2c_master](comm/i2c_master/) | ✅ | VHDL + Verilog | Single-master I2C byte engine: START / repeated START / STOP framing, ACK reporting, clock stretching. Tested against a behavioural slave on the bus. |
+| [uda1380](comm/uda1380/)       | ✅ | VHDL + Verilog | Boot-FSM walks the codec init sequence over I2C using `i2c_master`; integrated I2S master + tone source for end-to-end playback. Two tops: a `_core` with split `(oe, i)` I2C lines for simulation and netlistsvg, and a thin `inout` wrapper for the board. |
 
 ### CPU
 
@@ -675,7 +688,7 @@ RV32-specific sub-entities that compose into the CPUs above. (Generic blocks lik
 - Every built-in-CI example ships a Verilog twin with matching
   behaviour — read the two languages side-by-side in [Gallery](#gallery).
 - New dual-language examples: `pwm_led`, `uart_tx`, `shift_register`,
-  `fifo_sync`.
+  `fifo_sync`, `i2c_master`.
 
 ### RISC-V tutorial — done ✅
 
@@ -704,6 +717,10 @@ Out of scope by design (deferrable): byte/halfword memory ops, CSRs, interrupts,
   invariants). Rewrote `display/7segments/counter/tb_counter` from 0 assertions
   to three invariants (mux one-hot, valid 7-seg encodings, full
   digit rotation).
+- Bus-level I2C checks: `comm/i2c_master` ships a behavioural slave
+  model, and `uda1380`'s integration test uses it to compare every
+  boot byte the codec receives against one expected stream in both
+  languages.
 
 ### In progress 🛠️
 
