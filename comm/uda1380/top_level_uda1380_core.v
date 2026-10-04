@@ -1,9 +1,10 @@
-// top_level_uda1380_core.v
+// top_level_uda1380_core.v - Verilog mirror of top_level_uda1380_core.vhd.
 //
-// Diagram-renderable mirror of top_level_uda1380.v: the I2C bus is
-// split into (oe, i) pairs instead of inout. The simulation top
-// wraps this core and resolves the inout pin against the external
-// pull-up; netlistsvg can render this one because it has no inout.
+// init_fsm + i2c_master (comm/i2c_master) + i2s_master + tone_gen.
+// The I2C bus leaves this module as (oe, i) pairs instead of inout,
+// so the hierarchy has no tristates: it simulates with plain 0 / 1
+// levels and netlistsvg can render it. top_level_uda1380.v wraps
+// this core and adds the two open-drain pins for the board.
 
 module top_level_uda1380_core #(
     parameter integer SYS_CLK_FREQ      = 50_000_000,
@@ -12,7 +13,7 @@ module top_level_uda1380_core #(
     parameter integer TONE_HALF_CYCLES  = 96
 ) (
     input  wire iClk,
-    input  wire iNoReset,
+    input  wire iNoReset,                     // active-low
     output wire oI2cSclOe,
     input  wire iI2cSclIn,
     output wire oI2cSdaOe,
@@ -26,13 +27,12 @@ module top_level_uda1380_core #(
 
     wire reset_h = ~iNoReset;
 
-    wire        i2c_ena;
-    wire [6:0]  i2c_addr;
-    wire        i2c_rw;
-    wire [7:0]  i2c_data_wr;
+    wire        cmd_valid;
+    wire        cmd_start;
+    wire        cmd_stop;
+    wire [7:0]  cmd_wdata;
+    wire        cmd_ready;
     wire        i2c_busy;
-    wire        i2c_ack_err;
-    wire [7:0]  i2c_data_rd;
 
     wire [23:0] sample_24;
     wire        lrclk_int;
@@ -40,34 +40,41 @@ module top_level_uda1380_core #(
     uda1380_init_fsm #(
         .INIT_DELAY_CYCLES (INIT_DELAY_CYCLES)
     ) init_fsm (
-        .clk         (iClk),
-        .reset       (reset_h),
-        .i2c_ena     (i2c_ena),
-        .i2c_addr    (i2c_addr),
-        .i2c_rw      (i2c_rw),
-        .i2c_data_wr (i2c_data_wr),
-        .i2c_busy    (i2c_busy),
-        .i2c_ack_err (i2c_ack_err),
-        .init_done   (oInitDone)
+        .clk       (iClk),
+        .reset     (reset_h),
+        .cmd_valid (cmd_valid),
+        .cmd_start (cmd_start),
+        .cmd_stop  (cmd_stop),
+        .cmd_wdata (cmd_wdata),
+        .cmd_ready (cmd_ready),
+        .i2c_busy  (i2c_busy),
+        .init_done (oInitDone)
     );
 
-    i2c_master_for_diagram #(
-        .input_clk (SYS_CLK_FREQ),
-        .bus_clk   (I2C_BUS_FREQ)
+    // The master counts in quarters of an SCL period. The boot
+    // sequence only writes, and it does not look at the acknowledge
+    // bits, so the read flags are tied off and the response is left
+    // unconnected.
+    i2c_master #(
+        .CLKS_PER_QUARTER (SYS_CLK_FREQ / (4 * I2C_BUS_FREQ))
     ) i2c_master_inst (
         .clk       (iClk),
-        .reset_n   (iNoReset),
-        .ena       (i2c_ena),
-        .addr      (i2c_addr),
-        .rw        (i2c_rw),
-        .data_wr   (i2c_data_wr),
+        .rst       (reset_h),
+        .cmd_valid (cmd_valid),
+        .cmd_start (cmd_start),
+        .cmd_stop  (cmd_stop),
+        .cmd_read  (1'b0),
+        .cmd_nack  (1'b0),
+        .cmd_wdata (cmd_wdata),
+        .cmd_ready (cmd_ready),
+        .rsp_valid (),
+        .rsp_rdata (),
+        .rsp_nack  (),
         .busy      (i2c_busy),
-        .data_rd   (i2c_data_rd),
-        .ack_error (i2c_ack_err),
-        .sda_oe    (oI2cSdaOe),
-        .sda_i     (iI2cSdaIn),
         .scl_oe    (oI2cSclOe),
-        .scl_i     (iI2cSclIn)
+        .scl_i     (iI2cSclIn),
+        .sda_oe    (oI2cSdaOe),
+        .sda_i     (iI2cSdaIn)
     );
 
     i2s_master #(

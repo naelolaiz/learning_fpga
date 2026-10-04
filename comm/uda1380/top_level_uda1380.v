@@ -1,8 +1,20 @@
 // top_level_uda1380.v - Verilog mirror of top_level_uda1380.vhd.
 //
-// Same architecture: init_fsm + i2c_master + i2s_master + tone_gen,
-// open-drain SCL/SDA, active-low reset on the entity port (inverted
-// internally to active-high for every sub-block).
+// Board top: top_level_uda1380_core plus the two open-drain I2C pins.
+// Each (oe, i) pair of the core becomes one inout: drive 0 when the
+// enable is high, otherwise let go (z) and let the bus pull-up
+// resistor raise the line. The pin itself is the read-back.
+//
+// Guarded with `ifndef YOSYS` (yosys-specific macro) rather than
+// the more generic `SYNTHESIS`. Quartus / Vivado also define
+// `SYNTHESIS` when compiling for the board, but we WANT them to see
+// this wrapper — tri-state is the real I/O behaviour on the chip. We
+// only want to hide it from yosys, where tri-state has limited
+// support and the diagram flow renders the core instead. yosys
+// auto-defines `YOSYS`; iverilog and the FPGA synth tools don't, so
+// simulation and board synthesis both pick up the module normally.
+
+`ifndef YOSYS
 
 module top_level_uda1380 #(
     parameter integer SYS_CLK_FREQ      = 50_000_000,
@@ -21,73 +33,31 @@ module top_level_uda1380 #(
     output wire oInitDone
 );
 
-    wire reset_h = ~iNoReset;
+    wire scl_oe;
+    wire sda_oe;
 
-    wire        i2c_ena;
-    wire [6:0]  i2c_addr;
-    wire        i2c_rw;
-    wire [7:0]  i2c_data_wr;
-    wire        i2c_busy;
-    wire        i2c_ack_err;
-    wire [7:0]  i2c_data_rd;
-
-    wire [23:0] sample_24;
-    wire        lrclk_int;
-
-    uda1380_init_fsm #(
-        .INIT_DELAY_CYCLES (INIT_DELAY_CYCLES)
-    ) init_fsm (
-        .clk         (iClk),
-        .reset       (reset_h),
-        .i2c_ena     (i2c_ena),
-        .i2c_addr    (i2c_addr),
-        .i2c_rw      (i2c_rw),
-        .i2c_data_wr (i2c_data_wr),
-        .i2c_busy    (i2c_busy),
-        .i2c_ack_err (i2c_ack_err),
-        .init_done   (oInitDone)
+    top_level_uda1380_core #(
+        .SYS_CLK_FREQ      (SYS_CLK_FREQ),
+        .I2C_BUS_FREQ      (I2C_BUS_FREQ),
+        .INIT_DELAY_CYCLES (INIT_DELAY_CYCLES),
+        .TONE_HALF_CYCLES  (TONE_HALF_CYCLES)
+    ) core (
+        .iClk               (iClk),
+        .iNoReset           (iNoReset),
+        .oI2cSclOe          (scl_oe),
+        .iI2cSclIn          (i2cIOScl),
+        .oI2cSdaOe          (sda_oe),
+        .iI2cSdaIn          (i2cIOSda),
+        .oTxMasterClock     (oTxMasterClock),
+        .oTxWordSelectClock (oTxWordSelectClock),
+        .oTxBitClock        (oTxBitClock),
+        .oTxSerialData      (oTxSerialData),
+        .oInitDone          (oInitDone)
     );
 
-    i2c_master #(
-        .input_clk (SYS_CLK_FREQ),
-        .bus_clk   (I2C_BUS_FREQ)
-    ) i2c_master_inst (
-        .clk       (iClk),
-        .reset_n   (iNoReset),
-        .ena       (i2c_ena),
-        .addr      (i2c_addr),
-        .rw        (i2c_rw),
-        .data_wr   (i2c_data_wr),
-        .busy      (i2c_busy),
-        .data_rd   (i2c_data_rd),
-        .ack_error (i2c_ack_err),
-        .sda       (i2cIOSda),
-        .scl       (i2cIOScl)
-    );
-
-    i2s_master #(
-        .CLK_FREQ      (SYS_CLK_FREQ),
-        .MCLK_FREQ     (24_576_000),
-        .I2S_BIT_WIDTH (24)
-    ) i2s_master_inst (
-        .reset  (reset_h),
-        .clk    (iClk),
-        .mclk   (oTxMasterClock),
-        .lrclk  (lrclk_int),
-        .sclk   (oTxBitClock),
-        .sdata  (oTxSerialData),
-        .data_l (sample_24),
-        .data_r (sample_24)
-    );
-
-    assign oTxWordSelectClock = lrclk_int;
-
-    tone_gen #(
-        .TOGGLE_HALF_CYCLES (TONE_HALF_CYCLES)
-    ) tone (
-        .clk    (lrclk_int),
-        .reset  (reset_h),
-        .sample (sample_24)
-    );
+    assign i2cIOScl = scl_oe ? 1'b0 : 1'bz;
+    assign i2cIOSda = sda_oe ? 1'b0 : 1'bz;
 
 endmodule
+
+`endif  // YOSYS

@@ -1,15 +1,15 @@
 -- uda1380_init_fsm.vhd
 --
 -- Walks a hard-coded boot sequence of UDA1380 register writes through
--- the Digi-Key i2c_master interface (ena / addr / rw / data_wr,
--- busy / ack_error). Each entry in INIT_TABLE is a 3-byte transaction:
+-- the command interface of comm/i2c_master. Each entry in INIT_TABLE
+-- becomes one transaction of four bytes on the bus:
 --
---   start | DEVICE_ADDR<<1 | reg_address | data_high | data_low | stop
+--   START | DEVICE_ADDR & '0' | reg_address | data_high | data_low | STOP
 --
--- The FSM watches busy rising edges to step through the three data
--- bytes (the i2c_master latches the next data_wr on every busy^=1
--- while ena stays high), then drops ena and waits for busy to fall
--- before moving to the next table entry.
+-- The master takes one command per byte, so the FSM is a small
+-- valid/ready source: it offers the current byte (with cmd_start on
+-- the first and cmd_stop on the last) and steps to the next one on
+-- every clock where the master is ready to accept it.
 --
 -- INIT_DELAY_CYCLES gates the first register write behind a power-up
 -- delay so the codec has time to come out of reset. It is a generic
@@ -30,14 +30,14 @@ entity uda1380_init_fsm is
   port (
     clk         : in  std_logic;
     reset       : in  std_logic;                          -- active-high
-    -- To i2c_master
-    i2c_ena     : out std_logic;
-    i2c_addr    : out std_logic_vector(6 downto 0);
-    i2c_rw      : out std_logic;
-    i2c_data_wr : out std_logic_vector(7 downto 0);
+    -- To i2c_master (write-only, so cmd_read / cmd_nack stay '0').
+    cmd_valid   : out std_logic;
+    cmd_start   : out std_logic;
+    cmd_stop    : out std_logic;
+    cmd_wdata   : out std_logic_vector(7 downto 0);
     -- From i2c_master
+    cmd_ready   : in  std_logic;
     i2c_busy    : in  std_logic;
-    i2c_ack_err : in  std_logic;
     -- Status
     init_done   : out std_logic
   );
@@ -67,38 +67,42 @@ architecture rtl of uda1380_init_fsm is
     INIT_AGC_SETTINGS
   );
 
-  type fsm_state_type is (st_power_up_wait, st_send_register, st_done);
+  type fsm_state_type is (st_power_up_wait, st_send_register,
+                          st_wait_bus_free, st_done);
   signal state : fsm_state_type := st_power_up_wait;
 
   -- Index into INIT_TABLE.
   signal table_idx : integer range 0 to INIT_TABLE'length-1 := 0;
 
-  -- Counts the busy rising edges within a single 3-byte transaction.
-  -- 0 = waiting to assert first byte, 1 = first latched (drive 2nd
-  -- byte), 2 = second latched (drive 3rd byte), 3 = third latched
-  -- (deassert ena and wait for busy to fall).
-  signal busy_cnt  : integer range 0 to 3 := 0;
-  signal busy_prev : std_logic := '0';
+  -- Which byte of the current transaction is on offer:
+  -- 0 = device address, 1 = register, 2 = data high, 3 = data low.
+  signal byte_idx  : integer range 0 to 3 := 0;
 
   signal delay_counter : integer range 0 to INIT_DELAY_CYCLES-1 := 0;
 begin
+
+  -- The command is a pure function of where we are in the table, so
+  -- the byte on offer always matches the index that advances when it
+  -- is accepted.
+  cmd_valid <= '1' when state = st_send_register else '0';
+  cmd_start <= '1' when byte_idx = 0 else '0';
+  cmd_stop  <= '1' when byte_idx = 3 else '0';
+
+  with byte_idx select cmd_wdata <=
+    DEVICE_ADDR & '0'                          when 0,   -- address, write
+    '0' & INIT_TABLE(table_idx).reg_address    when 1,   -- 7 bits, padded to 8
+    INIT_TABLE(table_idx).command_first_byte   when 2,
+    INIT_TABLE(table_idx).command_second_byte  when others;
 
   process (clk, reset)
   begin
     if reset = '1' then
       state         <= st_power_up_wait;
       table_idx     <= 0;
-      busy_cnt      <= 0;
-      busy_prev     <= '0';
+      byte_idx      <= 0;
       delay_counter <= 0;
-      i2c_ena       <= '0';
-      i2c_addr      <= (others => '0');
-      i2c_rw        <= '0';
-      i2c_data_wr   <= (others => '0');
       init_done     <= '0';
     elsif rising_edge(clk) then
-      busy_prev <= i2c_busy;
-
       case state is
 
         when st_power_up_wait =>
@@ -110,42 +114,28 @@ begin
           end if;
 
         when st_send_register =>
-          -- Detect each 0->1 transition on busy.
-          if busy_prev = '0' and i2c_busy = '1' then
-            busy_cnt <= busy_cnt + 1;
+          -- cmd_valid is high throughout this state, so a ready
+          -- master means the byte on offer was accepted on this edge.
+          if cmd_ready = '1' then
+            if byte_idx = 3 then
+              byte_idx <= 0;
+              if table_idx = INIT_TABLE'length - 1 then
+                state <= st_wait_bus_free;
+              else
+                table_idx <= table_idx + 1;
+              end if;
+            else
+              byte_idx <= byte_idx + 1;
+            end if;
           end if;
 
-          case busy_cnt is
-            when 0 =>
-              -- First byte: register address (7 bits, padded MSB to 8).
-              i2c_ena     <= '1';
-              i2c_addr    <= DEVICE_ADDR;
-              i2c_rw      <= '0';
-              i2c_data_wr <= '0' & INIT_TABLE(table_idx).reg_address;
-
-            when 1 =>
-              -- Second byte: high data byte.
-              i2c_data_wr <= INIT_TABLE(table_idx).command_first_byte;
-
-            when 2 =>
-              -- Third byte: low data byte.
-              i2c_data_wr <= INIT_TABLE(table_idx).command_second_byte;
-
-            when 3 =>
-              -- Drop ena and wait for the master to finish (busy=0).
-              i2c_ena <= '0';
-              if i2c_busy = '0' then
-                busy_cnt <= 0;
-                if table_idx = INIT_TABLE'length - 1 then
-                  state <= st_done;
-                else
-                  table_idx <= table_idx + 1;
-                end if;
-              end if;
-          end case;
+        when st_wait_bus_free =>
+          -- The last byte and its STOP are still on the wire.
+          if i2c_busy = '0' then
+            state <= st_done;
+          end if;
 
         when st_done =>
-          i2c_ena   <= '0';
           init_done <= '1';
       end case;
     end if;

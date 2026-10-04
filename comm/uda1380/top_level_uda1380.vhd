@@ -1,39 +1,23 @@
 -- top_level_uda1380.vhd
 --
--- Wires together everything needed to make the Waveshare UDA1380
--- board produce sound from the dev-board's 50 MHz clock alone:
+-- Board top: top_level_uda1380_core plus the two open-drain I2C pins.
 --
---   * uda1380_init_fsm — drives the boot register-write sequence
---     over I2C using the constants in uda1380_control_definitions.
---   * i2c_master — Digi-Key generic I2C master that the FSM talks
---     to (open-drain SCL/SDA, internal pull-ups expected on the
---     board).
---   * i2s_master — generates MCLK / LRCLK / BCK and serialises the
---     24-bit two-channel sample stream MSB-first (same source as
---     i2s_test_1).
---   * tone_gen — minimal half-scale square-wave audio source so
---     the codec actually has something to play once initialised.
+-- The core exposes each I2C line as a drive-low enable and a
+-- read-back. A real pin is one wire, so here each pair becomes an
+-- `inout`: drive '0' when the enable is high, otherwise let go ('Z')
+-- and let the bus pull-up resistor raise the line. The pin itself is
+-- the read-back.
 --
--- Reset polarity: the entity's iNoReset is active-low (matches the
--- original port name); it is inverted internally to active-high
--- for every sub-block.
---
--- The Rx (ADC capture) path is intentionally not wired here. To
--- record from the codec the ADC clock outputs would mirror the Tx
--- clocks and a serial-data input (DOUT pin) would feed an i2s_slave
--- block — out of scope for this initial revival.
+-- All of the logic lives in the core; see that file for the blocks
+-- and the reset polarity.
 
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-library work;
-use work.uda1380_control_definitions.all;
 
 entity top_level_uda1380 is
   generic (
     SYS_CLK_FREQ      : integer := 50_000_000;
-    I2C_BUS_FREQ      : integer := 100_000;          -- 100 kHz fast-mode-friendly
+    I2C_BUS_FREQ      : integer := 100_000;          -- standard-mode I2C
     INIT_DELAY_CYCLES : integer := 5_000_000;        -- 100 ms power-up wait
     TONE_HALF_CYCLES  : integer := 96                -- ~500 Hz at 96 kHz Fs
   );
@@ -51,83 +35,39 @@ entity top_level_uda1380 is
 end entity top_level_uda1380;
 
 architecture rtl of top_level_uda1380 is
-  signal reset_h : std_logic;                         -- active-high
-
-  signal i2c_ena     : std_logic;
-  signal i2c_addr    : std_logic_vector(6 downto 0);
-  signal i2c_rw      : std_logic;
-  signal i2c_data_wr : std_logic_vector(7 downto 0);
-  signal i2c_busy    : std_logic;
-  signal i2c_ack_err : std_logic;
-  signal i2c_data_rd : std_logic_vector(7 downto 0);
-
-  signal sample_24   : std_logic_vector(23 downto 0);
-  signal lrclk_int   : std_logic;
+  signal scl_oe : std_logic;
+  signal sda_oe : std_logic;
+  signal scl_in : std_logic;
+  signal sda_in : std_logic;
 begin
 
-  reset_h <= not iNoReset;
-
-  init_fsm : entity work.uda1380_init_fsm
+  core : entity work.top_level_uda1380_core
     generic map (
-      INIT_DELAY_CYCLES => INIT_DELAY_CYCLES
+      SYS_CLK_FREQ      => SYS_CLK_FREQ,
+      I2C_BUS_FREQ      => I2C_BUS_FREQ,
+      INIT_DELAY_CYCLES => INIT_DELAY_CYCLES,
+      TONE_HALF_CYCLES  => TONE_HALF_CYCLES
     )
     port map (
-      clk         => iClk,
-      reset       => reset_h,
-      i2c_ena     => i2c_ena,
-      i2c_addr    => i2c_addr,
-      i2c_rw      => i2c_rw,
-      i2c_data_wr => i2c_data_wr,
-      i2c_busy    => i2c_busy,
-      i2c_ack_err => i2c_ack_err,
-      init_done   => oInitDone
+      iClk               => iClk,
+      iNoReset           => iNoReset,
+      oI2cSclOe          => scl_oe,
+      iI2cSclIn          => scl_in,
+      oI2cSdaOe          => sda_oe,
+      iI2cSdaIn          => sda_in,
+      oTxMasterClock     => oTxMasterClock,
+      oTxWordSelectClock => oTxWordSelectClock,
+      oTxBitClock        => oTxBitClock,
+      oTxSerialData      => oTxSerialData,
+      oInitDone          => oInitDone
     );
 
-  -- Digi-Key i2c_master uses active-low reset on its own port.
-  i2c_master_inst : entity work.i2c_master
-    generic map (
-      input_clk => SYS_CLK_FREQ,
-      bus_clk   => I2C_BUS_FREQ
-    )
-    port map (
-      clk       => iClk,
-      reset_n   => iNoReset,
-      ena       => i2c_ena,
-      addr      => i2c_addr,
-      rw        => i2c_rw,
-      data_wr   => i2c_data_wr,
-      busy      => i2c_busy,
-      data_rd   => i2c_data_rd,
-      ack_error => i2c_ack_err,
-      sda       => i2cIOSda,
-      scl       => i2cIOScl
-    );
+  i2cIOScl <= '0' when scl_oe = '1' else 'Z';
+  i2cIOSda <= '0' when sda_oe = '1' else 'Z';
 
-  i2s_master_inst : entity work.i2s_master
-    generic map (
-      CLK_FREQ => SYS_CLK_FREQ
-    )
-    port map (
-      reset  => reset_h,
-      clk    => iClk,
-      mclk   => oTxMasterClock,
-      lrclk  => lrclk_int,
-      sclk   => oTxBitClock,
-      sdata  => oTxSerialData,
-      data_l => sample_24,
-      data_r => sample_24
-    );
-
-  oTxWordSelectClock <= lrclk_int;
-
-  tone : entity work.tone_gen
-    generic map (
-      TOGGLE_HALF_CYCLES => TONE_HALF_CYCLES
-    )
-    port map (
-      clk    => lrclk_int,
-      reset  => reset_h,
-      sample => sample_24
-    );
+  -- to_X01 turns the weak 'H' a simulated pull-up produces into '1';
+  -- in hardware it is just a wire.
+  scl_in <= to_X01(i2cIOScl);
+  sda_in <= to_X01(i2cIOSda);
 
 end architecture rtl;
