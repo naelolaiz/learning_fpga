@@ -85,6 +85,7 @@ set_global_assignment -name VHDL_FILE fixed_pkg/fixed_float_types_c.vhdl -hdl_ve
 set_global_assignment -name VHDL_FILE ../vga_driver/VgaUtils.vhd
 set_global_assignment -name VHDL_FILE ../vga_driver/VgaController.vhd
 set_global_assignment -name VHDL_FILE top_level_vga_test.vhd -hdl_version VHDL_2008
+set_global_assignment -name VHDL_FILE sprite_rotator.vhd -hdl_version VHDL_2008
 set_global_assignment -name VHDL_FILE sprite.vhd -hdl_version VHDL_2008
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE AREA
 set_global_assignment -name ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP ON

@@ -65,9 +65,49 @@ Thisall_multipliers_used is how the demo looks now:
 
 ![rotating smileys](doc/rotating_with_lut_trigonometric.gif)
 
+## Rotation pipeline
+
+For every pixel a sprite has to answer "is this pixel part of me?". That
+means rotating the cursor position back into the sprite's own grid:
+four LUT multiplies and two sums. Originally the `rotate` function did
+all of it, together with the bounding-box test and the content lookup,
+between two clock edges.
+
+[`sprite_rotator.{vhd,v}`](sprite_rotator.vhd) splits the rotation over
+two registers — the four products, then the two sums — and `sprite`
+instantiates it:
+
+| Clock edge | What gets registered |
+| --- | --- |
+| 1 | `sprite_rotator`: the four products `cos·x`, `sin·y`, `sin·x`, `cos·y` of the centre-relative cursor position |
+| 2 | `sprite_rotator`: the rotated position |
+| 3 | `sprite`: the content lookup, `outShouldDraw` |
+
+So `outShouldDraw` now lags `inCursorPos` by three clocks instead of
+one. All sprites lag equally and stay aligned with each other;
+[`top_level_vga_test.vhd`](top_level_vga_test.vhd) shows them the
+cursor two pixels ahead so the picture stays where it was.
+
+`rotate` is still in the package: it is the reference the testbenches
+compare the pipeline against.
+
+What this buys is a shorter longest path, and a rotation block that can
+be tested on its own. It does **not** make a sprite smaller: each one
+still owns a rotator, with the same multiplies plus the pipeline
+registers. The rotator takes centre-relative positions and knows
+nothing about sprite size or screen position, so the next step — one
+rotator shared by several sprites — needs an arbiter around it, not a
+different rotator.
+
+Not measured here: the logic-element count and Fmax after this change.
+Neither the pipeline nor the two-pixel look-ahead has been through
+Quartus or onto the board.
+
 ## TODO :
 * optimize code
   * [x] try implementing my own multiplier with LUT
+  * [x] pipeline the rotation (`sprite_rotator`)
+  * share one rotator between sprites
   * improve rotation (better resolution, fix something?)
 * [x] remove hardcoded values on boundaries for bouncing. Use sprites constants instead
 * integrate input buttons with debouncers
@@ -75,11 +115,15 @@ Thisall_multipliers_used is how the demo looks now:
 * [x] animate sprites — sprites rotate (`rotateSprite` process), bounce off the
   screen edges, and optionally fall under gravity (`tb_sprite_gravity` covers
   the fall-and-bounce path).
-* [x] add testbench — `test/` now has four:
+* [x] add testbench — `test/` now has six:
   * `tb_trigonometric`       — algebraic property checks on the rotate() function and LUT.
   * `tb_multiply_by_sin_lut` — unit tests for the multiplyBySinLUT primitive.
+  * `tb_sprite_rotator`      — the pipelined rotator against rotate(), for all 32
+    rotation steps and every position of an 11x11 sprite, including the two-clock lag.
+  * `tb_sprite_raster`       — scans a whole small screen past a rotated "F" and compares
+    every pixel, three clocks later, with a one-step reference: picture and latency.
   * `tb_sprite_gravity`      — sprite entity with gravity on, fall/bounce cause-effect.
   * `tb_sprite`              — basic sprite-entity smoke test (not CI-wired).
-* [x] mirror the design + the three CI-wired testbenches in Verilog. Source files:
-  `sprite.v`, `trigonometric_functions.vh`, `test/tb_*.v`. Wired through `V_TOP`
-  / `V_TB_TOPS` / `V_SRC_FILES` / `V_TB_FILES` / `V_INCDIRS` in the Makefile.
+* [x] mirror the design + the five CI-wired testbenches in Verilog. Source files:
+  `sprite.v`, `sprite_rotator.v`, `trigonometric_functions.vh`, `test/tb_*.v`. Wired
+  through `V_TOP` / `V_TB_TOPS` / `V_SRC_FILES` / `V_TB_FILES` / `V_INCDIRS` in the Makefile.

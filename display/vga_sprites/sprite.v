@@ -42,8 +42,12 @@ module sprite #(
     localparam integer C_HALF_SCALED_WIDTH    = SPRITE_WIDTH  * SCALE / 2;
     localparam integer C_HALF_SCALED_HEIGHT   = SPRITE_HEIGHT * SCALE / 2;
 
-    // Unpack SPRITE_CONTENT into a 2D-indexable rom. Row `r`, column `c`
-    // of the VHDL sSpriteContent maps to SPRITE_CONTENT[r*SPRITE_WIDTH + c].
+    // Unpack SPRITE_CONTENT into a 2D-indexable rom. The VHDL generic
+    // is a string literal whose index 0 is its FIRST character, so row
+    // `r`, column `c` of sSpriteContent is character r*SPRITE_WIDTH + c
+    // counted from the left. A Verilog literal numbers its bits from
+    // the right, hence the mirrored index: the literal reads the same
+    // in both languages, top row first, leftmost pixel first.
     // Kept as a packed array of rows so the read in ProcessPosition is
     // a plain index, not a full vector slice.
     reg [SPRITE_WIDTH-1:0] sSpriteContent [0:SPRITE_HEIGHT-1];
@@ -52,7 +56,8 @@ module sprite #(
         for (initI = 0; initI < SPRITE_HEIGHT; initI = initI + 1) begin
             for (initJ = 0; initJ < SPRITE_WIDTH; initJ = initJ + 1) begin
                 sSpriteContent[initI][initJ] =
-                    SPRITE_CONTENT[initI * SPRITE_WIDTH + initJ];
+                    SPRITE_CONTENT[SPRITE_CONTENT_LEN - 1
+                                   - (initI * SPRITE_WIDTH + initJ)];
             end
         end
     end
@@ -72,7 +77,7 @@ module sprite #(
 
     // --- rotateSprite process ---------------------------------------------
     reg [31:0] counterForSpriteRotationUpdate = 0;
-    reg [4:0]  indexForSpriteRotation         = 0;
+    reg [4:0]  indexForSpriteRotation         = INITIAL_ROTATION[4:0];
     always @(posedge inClock) begin
         if (counterForSpriteRotationUpdate == INITIAL_ROTATION_UPDATE_PERIOD) begin
             counterForSpriteRotationUpdate <= 0;
@@ -147,10 +152,62 @@ module sprite #(
         sCurrentSpeedY <= workingSpeedY;
     end
 
+    // --- Should the pixel under the cursor be drawn? ----------------------
+    // Answered over three clock edges, so outShouldDraw lags the cursor
+    // by three clocks:
+    //
+    //   edge 1   CursorToSprite (combinational) feeds sprite_rotator,
+    //            which registers the four LUT products
+    //   edge 2   sprite_rotator registers the rotated position
+    //   edge 3   ProcessPosition looks the rotated position up in the
+    //            sprite content and registers sShouldDraw
+    //
+    // Every sprite has the same lag, so sprites stay aligned with each
+    // other; whoever drives the cursor compensates for it once.
+
+    // --- CursorToSprite process -------------------------------------------
+    // Is the cursor inside the sprite's (unrotated, scaled) bounding
+    // box, and where is it in sprite pixels with the origin at the
+    // sprite's centre?
+    // always_comb (not always @*) so the outputs are computed at time 0,
+    // before any input has changed.
+    reg               sCursorInBox;
+    reg signed [31:0] sCursorLocalX;
+    reg signed [31:0] sCursorLocalY;
+    always_comb begin
+        if ((inCursorX < (sCenterPosX - C_HALF_SCALED_WIDTH))  ||
+            (inCursorX > (sCenterPosX + C_HALF_SCALED_WIDTH))  ||
+            (inCursorY < (sCenterPosY - C_HALF_SCALED_HEIGHT)) ||
+            (inCursorY > (sCenterPosY + C_HALF_SCALED_HEIGHT))) begin
+            sCursorInBox  = 1'b0;
+            sCursorLocalX = 32'sd0;
+            sCursorLocalY = 32'sd0;
+        end else begin
+            sCursorInBox  = inEnabled;
+            sCursorLocalX = translateOriginToCenterOfSprite_x(SPRITE_WIDTH,
+                                (inCursorX - (sCenterPosX - C_HALF_SCALED_WIDTH))  / SCALE);
+            sCursorLocalY = translateOriginToCenterOfSprite_y(SPRITE_HEIGHT,
+                                (inCursorY - (sCenterPosY - C_HALF_SCALED_HEIGHT)) / SCALE);
+        end
+    end
+
+    wire               sRotatedValid;
+    wire signed [31:0] sRotatedPosX;
+    wire signed [31:0] sRotatedPosY;
+
+    sprite_rotator rotator (
+        .inClock      (inClock),
+        .inValid      (sCursorInBox),
+        .inPositionX  (sCursorLocalX),
+        .inPositionY  (sCursorLocalY),
+        .inRotation   (sRotation),
+        .outValid     (sRotatedValid),
+        .outPositionX (sRotatedPosX),
+        .outPositionY (sRotatedPosY)
+    );
+
     // --- ProcessPosition process ------------------------------------------
-    // Cursor miss / hit check + rotation-aware lookup into sSpriteContent.
-    reg signed [31:0] vCursorX;
-    reg signed [31:0] vCursorY;
+    // Rotation-aware lookup into sSpriteContent.
     reg signed [31:0] vTransX;
     reg signed [31:0] vTransY;
     always @(posedge inClock) begin
@@ -160,33 +217,11 @@ module sprite #(
             sCenterPosX <= sSpritePosX;
             sCenterPosY <= sSpritePosY;
 
-            vCursorX = inCursorX;
-            vCursorY = inCursorY;
-
-            if ((vCursorX < (sCenterPosX - C_HALF_SCALED_WIDTH))  ||
-                (vCursorX > (sCenterPosX + C_HALF_SCALED_WIDTH))  ||
-                (vCursorY < (sCenterPosY - C_HALF_SCALED_HEIGHT)) ||
-                (vCursorY > (sCenterPosY + C_HALF_SCALED_HEIGHT))) begin
+            if (!sRotatedValid) begin
                 sShouldDraw <= 1'b0;
             end else begin
-                vTransX = (vCursorX - (sCenterPosX - C_HALF_SCALED_WIDTH))  / SCALE;
-                vTransY = (vCursorY - (sCenterPosY - C_HALF_SCALED_HEIGHT)) / SCALE;
-                vTransX = translateOriginToCenterOfSprite_x(SPRITE_WIDTH,  vTransX);
-                vTransY = translateOriginToCenterOfSprite_y(SPRITE_HEIGHT, vTransY);
-                // rotate() takes the two axes together; in Verilog we
-                // materialise one axis at a time through the two helper
-                // functions. Each uses the ORIGINAL vTransX/vTransY —
-                // same as the VHDL, which reads position.x/position.y
-                // of the pre-rotation variable.
-                begin : rotate_block
-                    reg signed [31:0] preX, preY;
-                    preX = vTransX;
-                    preY = vTransY;
-                    vTransX = rotate_x(SPRITE_WIDTH, SPRITE_HEIGHT, preX, preY, sRotation);
-                    vTransY = rotate_y(SPRITE_WIDTH, SPRITE_HEIGHT, preX, preY, sRotation);
-                end
-                vTransX = translateOriginBackToFirstBitCorner_x(SPRITE_WIDTH,  vTransX);
-                vTransY = translateOriginBackToFirstBitCorner_y(SPRITE_HEIGHT, vTransY);
+                vTransX = translateOriginBackToFirstBitCorner_x(SPRITE_WIDTH,  sRotatedPosX);
+                vTransY = translateOriginBackToFirstBitCorner_y(SPRITE_HEIGHT, sRotatedPosY);
 
                 if ((vTransX < 0) || (vTransX > SPRITE_WIDTH  - 1) ||
                     (vTransY < 0) || (vTransY > SPRITE_HEIGHT - 1)) begin
