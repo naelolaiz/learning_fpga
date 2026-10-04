@@ -41,6 +41,10 @@ begin
   driver : process
   begin
 
+    -- Compute from known startup inputs before any stimulus transition.
+    wait for 1 ns;
+    check("stable zero startup", result, x"00000000", flags, "0000");
+
     -- ===========================================================
     -- 4 × 8-bit lanes (width_sel = '0')
     -- ===========================================================
