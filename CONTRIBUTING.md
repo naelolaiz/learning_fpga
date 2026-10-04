@@ -10,6 +10,7 @@
    ├── my_top.vhd
    ├── test/
    │   └── tb_my_top.vhd
+   ├── README.md
    └── Makefile
    ```
 
@@ -57,13 +58,37 @@
    emits FST natively — no testbench-side change needed beyond the
    filename extension.
 
-3. Build locally:
+3. Write a lesson README. Use the checklist below and link to related
+   lessons so the new project has a place in the learning route.
+
+4. Build locally:
 
    ```bash
-   make -C basics/my_new_project
+   make -C basics/my_new_project all
+   make -C basics/my_new_project test
    ```
 
-4. Push. CI auto-discovers the new directory at any depth — no workflow edit needed.
+5. Push. CI auto-discovers the new directory at any depth — no workflow edit needed.
+
+## Lesson checklist
+
+Use [PWM](basics/pwm_led/README.md) or
+[FIFO](building_blocks/fifo_sync/README.md) as a short template:
+
+- State the learning objective and link the prerequisites.
+- Describe parameters, clock/reset polarity, and the interface contract,
+  including latency, priority, and behaviour at boundary conditions.
+- Give a command runnable from the repo root. Point learners to the
+  [container quickstart](README.md#start-here) if they need the tools.
+- Explain what to look for in the generated waveform and what the
+  testbench actually asserts. Name limitations of its coverage.
+- Include a guided change with a predicted result and an extension
+  exercise with an assertion or other checkable success condition.
+- For hardware demos, name the board top and constraints, explain
+  active-low pins, and link the [timing walkthrough](docs/timing.md).
+
+Before submitting, run both language testbenches when a mirror exists,
+regenerate the diagrams/waveforms with `make all`, and check local links.
 
 ## Layout rules
 
@@ -81,14 +106,17 @@
 
 ## Running CI locally
 
-The CI workflow runs every project through `make simulate`, `make diagram`
-and `make waveform`. You can reproduce any of those verbatim on your
-laptop:
+The CI workflow runs each available HDL language through simulation,
+diagram, and waveform targets. On your laptop, `simulate` / `diagram` /
+`waveform` select VHDL, the `_v` targets select Verilog, and `all` runs
+both flows. `test` runs both simulations without rendering:
 
 ```bash
 make -C basics/blink_led simulate
 make -C basics/blink_led diagram
 make -C basics/blink_led waveform
+make -C basics/blink_led test       # checks both HDL languages
+make test                          # all HDL tests + Python assembler tests
 ```
 
 Or, the same container CI uses:

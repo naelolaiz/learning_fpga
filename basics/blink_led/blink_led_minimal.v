@@ -2,15 +2,16 @@
 // blink_led_minimal.vhd. See that file for the side-by-side
 // commentary against `blink_led.v`. Summary:
 //
-//   * `blink_led` has TWO flip-flops (counter + separate `pulse`
-//     register) so the period is exactly `CLOCKS_TO_OVERFLOW` cycles.
-//   * `blink_led_minimal` (this file) has ONE flip-flop -- the
+//   * `blink_led` has two register cells (counter + separate `pulse`
+//     register): full period = 2 * CLOCKS_TO_OVERFLOW clock cycles.
+//   * `blink_led_minimal` (this file) has one vector register -- the
 //     counter -- and the LED is the counter's top bit. Period is
 //     fixed at 2^WIDTH / f_clk (a power of two, not arbitrary).
 //
 // The diagram for this module (build/blink_led_minimal.svg) shows
 // a single register cell vs. two for the sibling. Use this whenever
 // the exact blink rate isn't required.
+// A WIDTH-bit register still uses WIDTH physical flip-flops.
 
 module blink_led_minimal #(
     // Counter width. LED period = 2^WIDTH cycles of clk

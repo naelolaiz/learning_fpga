@@ -5,12 +5,17 @@ having both is to show what each line of HDL costs in *cells* — the
 two designs do almost the same thing but synthesise to clearly
 different netlists.
 
-| Module               | Flip-flops | Period                                  | When to use                              |
+| Module               | Register cells in the diagram | Full on/off period in clock cycles | When to use                              |
 | -------------------- | :--------: | --------------------------------------- | ---------------------------------------- |
-| `blink_led`          | **2**      | exactly `CLOCKS_TO_OVERFLOW` cycles     | when the blink rate must be a specific number (e.g. exactly 1 Hz) |
-| `blink_led_minimal`  | **1**      | exactly `2^WIDTH` cycles (a power of 2) | "hello world" — any rate "near 1 Hz" is fine |
+| `blink_led`          | **2**      | exactly `2 * CLOCKS_TO_OVERFLOW` | when the blink frequency must be specific |
+| `blink_led_minimal`  | **1**      | exactly `2^WIDTH` (a power of 2) | "hello world" — a nearby visible rate is fine |
 
-## `blink_led_minimal` — one flip-flop
+A `$dff` diagram cell can hold a whole vector register. A `WIDTH`-bit
+counter needs `WIDTH` physical flip-flops; it is not a single flip-flop.
+The precise variant adds a separate one-bit `pulse` register. These are
+generic netlists before FPGA technology mapping, not resource reports.
+
+## `blink_led_minimal` — one vector register
 
 The smallest possible design: a free-running counter, and the LED
 is its top bit.
@@ -41,7 +46,7 @@ no exact rate.
 > all, you have to infer it from the slice (highest index referenced
 > = `WIDTH - 1`).
 
-## `blink_led` — two flip-flops, exact period
+## `blink_led` — two register cells, exact period
 
 Add a 1-bit `pulse` register that toggles every time the counter
 hits `CLOCKS_TO_OVERFLOW - 1`, and drive the LED from `pulse`. The
@@ -67,8 +72,16 @@ led <= pulse;
 The cost is a comparator (`count = CLOCKS_TO_OVERFLOW - 1`), a mux
 on the counter (`count + 1` vs. `0`) and the extra `pulse`
 flip-flop. With the default `CLOCKS_TO_OVERFLOW = 50_000_000` the
-LED toggles once per second on a 50 MHz clock — exactly 1 Hz, by
-construction.
+LED toggles once per second on a 50 MHz clock. A full on/off cycle
+takes two seconds, so its frequency is **0.5 Hz**:
+
+```text
+toggle interval = CLOCKS_TO_OVERFLOW / f_clk
+full period     = 2 * CLOCKS_TO_OVERFLOW / f_clk
+blink frequency = f_clk / (2 * CLOCKS_TO_OVERFLOW)
+```
+
+For a full 1 Hz cycle at 50 MHz, use `CLOCKS_TO_OVERFLOW=25_000_000`.
 
 ![logic diagram (precise)](doc/blink_led_diagram.svg)
 
@@ -93,13 +106,31 @@ toggles in tens of nanoseconds instead of seconds. They check that
 the LED starts at 0, transitions to 1 after the expected number of
 clocks, and wraps back.
 
-`tb_blink_led_minimal` (1-FF, WIDTH=4, MSB toggles every 8 cycles):
+`tb_blink_led_minimal` (WIDTH=4, MSB toggles every 8 cycles, full period 16):
 
 ![tb_blink_led_minimal](doc/tb_blink_led_minimal.png)
 
-`tb_blink_led` (2-FF, CLOCKS_TO_OVERFLOW=10, exact 10-cycle toggle):
+`tb_blink_led` (CLOCKS_TO_OVERFLOW=10, toggles every 10 cycles, full period 20):
 
 ![tb_blink_led](doc/tb_blink_led.png)
+
+From the repo root, with the [tools or container](../../README.md#start-here),
+run `make -C basics/blink_led all`. The current tests check the initial
+zero, a high transition, and the return low. Open the PNGs under `build/`
+to compare the counter wrap and LED transition in each implementation.
+
+## Try it
+
+**Guided change:** set the testbench's `CLOCKS_TO_OVERFLOW` to 5 in both
+languages and update its timing waits accordingly. Predict an LED toggle
+every five clocks and full cycle every ten. Run
+`make -C basics/blink_led test`.
+
+**Challenge:** assert the interval between several consecutive LED
+transitions instead of checking only selected times. Check both the
+precise variant (`N` clocks per toggle) and minimal variant
+(`2^(WIDTH-1)` clocks per toggle). Then follow
+[clocking and timing](../../docs/timing.md) to understand the hardware build.
 
 ## Going further
 

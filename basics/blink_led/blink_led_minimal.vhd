@@ -3,11 +3,11 @@
 -- One register (the counter), one adder, one wire. The LED is
 -- driven directly from the counter's most-significant bit, which
 -- toggles every 2^(WIDTH-1) clock cycles -- so for a 50 MHz clock
--- and WIDTH = 25 the LED flips at ~1.5 Hz (period ~1.34 s).
+-- and WIDTH = 25 the full LED cycle is ~1.49 Hz (period ~0.671 s).
 --
 -- Compare with the sibling `blink_led.vhd`:
 --
---   * `blink_led` has TWO flip-flops -- a counter AND a separate
+--   * `blink_led` has two register cells -- a counter AND a separate
 --     1-bit `pulse` register that toggles each time the counter
 --     wraps. That extra register exists to support an *exactly*
 --     tunable period via the `CLOCKS_TO_OVERFLOW` generic. Cost:
@@ -18,6 +18,7 @@
 --     Period is fixed at 2^WIDTH / f_clk -- a power of two, not
 --     arbitrary. The synthesised diagram (`build/blink_led_minimal.svg`)
 --     therefore shows ONE register cell instead of two.
+--     A WIDTH-bit register still needs WIDTH physical flip-flops.
 --
 -- Use this whenever an exact blink rate isn't required (which, for
 -- a "hello world" sanity check, is essentially always). For a

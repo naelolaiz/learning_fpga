@@ -1,7 +1,7 @@
 PROJECT_NAME := blink_led
 
-# Diagram TOP for `make diagram` is the precise-period (2-FF) variant.
-# The minimal (1-FF) variant is rendered alongside via the extra
+# Diagram TOP for `make diagram` is the precise-period (two-register) variant.
+# The minimal (one-vector-register) variant is rendered alongside via the extra
 # rules at the bottom of this file -- both diagrams end up under
 # build/ and the README references both.
 TOP     := blink_led
@@ -21,7 +21,7 @@ V_TB_FILES  := test/tb_blink_led.v test/tb_blink_led_minimal.v
 include ../../mk/common.mk
 
 # ---- Extra diagram: blink_led_minimal --------------------------------
-# Render the minimal (1-FF) variant alongside the precise-period one
+# Render the minimal (one-vector-register) variant alongside the precise-period one
 # so the README can show the cell-count contrast directly. Same
 # pattern as basics/glossary's logic_styles diagram extension.
 diagram: $(BUILD_DIR)/blink_led_minimal.svg

@@ -6,10 +6,12 @@ as a power of two so it maps cleanly to a Cyclone IV block RAM, and the
 init path uses the same `$readmemh` / VHDL `textio` convention that
 [`rom_lut/`](../rom_lut/) established for read-only data.
 
-This is the memory primitive the upcoming RV32I CPU will use as both
-its instruction memory (initialised from a hex file produced by the
-assembler) and its data memory (left zero-initialised, written at
-runtime).
+This lesson introduces the storage and hex-loading conventions used in
+the [CPU tutorial](../../cpu/README.md). The current CPUs use their own
+internal asynchronous-read instruction and data memories; the SoC
+provides its own asynchronous-read DMEM on the external bus. They do
+not instantiate this clocked-read primitive. Replacing their memories
+with BRAM requires changes to handle read latency.
 
 | File | Purpose |
 | ---- | ------- |
@@ -64,6 +66,8 @@ waveform stays readable. The testbench:
 4. Reads address 5 the next cycle and asserts `rdata == 3` (new value
    committed).
 
-The init-from-file path is exercised implicitly later in the project,
-when the CPU's IMEM is loaded from a hex file produced by the
-assembler.
+These RAM testbenches use zero-initialisation, so they do not test
+`INIT_FILE`. The CPU tests load hex files using their separate internal
+memory implementations; that does not cover this primitive's file loader.
+An exercise is to initialise four known words from a small hex file and
+assert those read values before performing any writes.

@@ -4,8 +4,10 @@
 // CLOCKS_TO_OVERFLOW cycles, and on each wrap a 1-bit `pulse`
 // register toggles. `led` follows `pulse`.
 //
-// Cost: TWO flip-flops (counter + pulse) plus a comparator and a
-// mux. For a strictly simpler ONE-flip-flop version that fixes the
+// Full on/off period: 2 * CLOCKS_TO_OVERFLOW / f_clk.
+// Cost: two register cells (multi-bit counter + one-bit pulse),
+// plus a comparator and a mux. Each counter bit is a flip-flop.
+// For a simpler single-vector-register version that fixes the
 // period to a power of two, see `blink_led_minimal.v`.
 
 module blink_led #(
