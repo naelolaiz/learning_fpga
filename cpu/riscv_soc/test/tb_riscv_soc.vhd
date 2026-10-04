@@ -75,12 +75,11 @@ begin
 
   sClk <= not sClk after CLK_PERIOD/2 when sSimulationActive;
 
-  -- Halt detector (snoops debug bus). Falling edge to match the
-  -- CPU's regfile commit timing — same idiom as the single-cycle
-  -- testbench.
+  -- Halt detector samples the current instruction at the rising
+  -- commit edge, before the CPU advances PC and registers.
   halt_watcher : process (sClk) is
   begin
-    if falling_edge(sClk) then
+    if rising_edge(sClk) then
       if sInstr = HALT_INSTR then
         halted <= '1';
       end if;

@@ -48,8 +48,8 @@ module tb_riscv_singlecycle_addi;
 
     always #(CLK_PERIOD/2.0) if (sim_active) clk = ~clk;
 
-    // Falling-edge sample — same rationale as the VHDL twin.
-    always @(negedge clk) begin
+    // Rising-edge sample, before the CPU advances PC and registers.
+    always @(posedge clk) begin
         if (dbg_reg_we && dbg_reg_waddr != 5'd0)
             shadow_regs[dbg_reg_waddr] <= dbg_reg_wdata;
         if (dbg_instr == HALT_INSTR)

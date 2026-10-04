@@ -82,6 +82,15 @@ def main() -> int:
         if width >= args.min_width:
             count += 1
     if count == 0:
+        # A local rebuild can clear an earlier warning without running clean.
+        # Keep the marker in sync with this scan so consumers do not report
+        # a warning from an obsolete waveform.
+        try:
+            os.unlink(args.svg_path + '.warnings')
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            print(f'check_waveform_xbands: marker removal failed: {e}', file=sys.stderr)
         return 0
 
     # GitHub Actions annotation format. Recognised lines are surfaced

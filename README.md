@@ -7,12 +7,12 @@
 A personal, progressive **FPGA / VHDL (and now Verilog) tutorial** — a
 collection of small self-contained examples that build up from a blinking
 LED to richer designs (PWM, UART, FIFO, shift registers, 7-segment mux,
-mini-game, VGA & I²S sketches, plus a tutorial-grade **RV32I RISC-V
+VGA & I²S sketches, plus a tutorial-grade **RV32I RISC-V
 computer**: single-cycle + pipelined CPUs, a small SoC with memory-mapped
 UART and SIMD/DSP accelerators, and a tiny Python assembler — see
 [cpu/README.md](cpu/README.md)).
 
-Every project simulates, renders its **netlist diagram** (`*.svg`), and
+Every HDL project simulates, renders its **netlist diagram** (`*.svg`), and
 renders a **waveform diagram** (`*.svg` + `*.png`) of a testbench
 simulation automatically in CI. The examples below embed the
 **latest diagrams and waveforms** rendered from `main` — they update
@@ -27,14 +27,60 @@ whenever the source changes.
 - 🤝 **Easy to extend** — drop a `Makefile` in a new directory and CI
   picks it up (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
-Every `main` CI run publishes its netlist SVGs and waveform SVG/PNGs
-inline in every job summary, on the run-summary page, and on PR comments
+Successful builds on `main` and trusted pull requests publish netlist
+SVGs and waveform SVG/PNGs inline in job summaries, on the run-summary
+page, and on comments for those pull requests
 — see the
 [latest successful `main` run](https://github.com/naelolaiz/learning_fpga/actions/workflows/ci.yml?query=branch%3Amain+is%3Asuccess).
 The same images are mirrored on the
 [`ci-gallery/latest/`](https://github.com/naelolaiz/learning_fpga/tree/ci-gallery/latest)
 branch and embedded in the [Gallery](#gallery) below, refreshed on every
 `main` push.
+
+---
+
+## Start here
+
+You can complete the simulation lessons without an FPGA board. Install
+[Podman](https://podman.io/) or Docker and Git, clone this repo, then run
+the first lesson from its root:
+
+```bash
+git clone https://github.com/naelolaiz/learning_fpga.git
+cd learning_fpga
+podman run --rm -v "$PWD":/work:rw -w /work \
+    ghcr.io/naelolaiz/hdltools@sha256:a661d7b9a126fbb44e64d542a19edb9cf1ff7cf70dcf714150a5b03edd2ae312 \
+    make -C basics/blink_led all
+```
+
+Use `docker` in place of `podman` if that is your runtime. The first run
+downloads the tool image. A successful run exits with status 0 and writes
+FST simulations, SVG netlists, and SVG/PNG waveforms to
+`basics/blink_led/build/`, with `_v` suffixes for Verilog. Open
+`tb_blink_led_minimal.png` and compare it with the
+[lesson's timing explanation](basics/blink_led/README.md).
+For later lessons, replace the final `make -C ... all` command above
+with the command in that lesson; the same container provides all tools.
+
+### Suggested learning route
+
+Choose VHDL or Verilog for the first pass; compare the other version
+after you can explain the waveform. Read a lesson, predict its outputs,
+run the testbench, then try its exercise.
+
+| Step | Lessons | What to learn |
+| --- | --- | --- |
+| 1 | [Glossary](basics/glossary/) → [Blink LED](basics/blink_led/) → [Logic styles](basics/logic_styles/) | Gates, vector registers, clock edges, and inferred latches |
+| 2 | [Clock enable](basics/clock_enable/) → [PWM](basics/pwm_led/) | Keep logic on one clock; relate counters to output timing |
+| 3 | [Shift register](building_blocks/shift_register/) → [Debounce](building_blocks/debounce/) → [FIFO](building_blocks/fifo_sync/) | State, input filtering, and ordered buffering |
+| 4 | [UART TX](comm/uart_tx/) → [UART RX](comm/uart_rx/) | State machines, serial framing, and asynchronous inputs |
+| 5 | [7-segment counter](display/7segments/counter/) → [Clock](display/7segments/clock/) → [VGA](display/vga/) | Compose blocks and multiplex displays |
+| 6 | [CPU tutorial](cpu/README.md) | Datapaths, instructions, pipelines, and memory-mapped peripherals |
+
+Before moving a design to a board, read
+[clocking and timing](docs/timing.md). Each lesson identifies what its
+testbench checks; simulation and diagram generation are distinct from
+Quartus fitting and timing analysis.
 
 ---
 
@@ -152,16 +198,31 @@ A small companion to `glossary` that focuses on **how the cell got there** rathe
 </details>
 
 <details>
-<summary><b><code>blink_led</code></b> — the "hello world", in two variants: 1-FF minimal vs. 2-FF exact-period</summary>
+<summary><b><code>blink_led</code></b> — the "hello world", in two variants: one vs. two register cells</summary>
 
-Two designs that do almost the same thing but synthesise to clearly different netlists. `blink_led_minimal` is the absolute minimum (counter + wire to its top bit, period fixed to a power of two); `blink_led` adds a second flip-flop that toggles on counter wrap so the period is exactly `CLOCKS_TO_OVERFLOW` cycles. Read the source side by side to see what each line costs in cells.
+Two designs that do almost the same thing but synthesise to clearly different netlists. `blink_led_minimal` uses a counter and its top bit (full period `2^WIDTH` clocks); `blink_led` adds a one-bit register that toggles on counter wrap (full period `2 * CLOCKS_TO_OVERFLOW` clocks). A vector register cell contains one flip-flop per bit; the diagrams count register cells, not physical flip-flops. Read the source side by side to see what each line adds.
 
 | | VHDL | Verilog |
 | --- | :---: | :---: |
-| `blink_led_minimal` (netlist, 1 FF) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_minimal.svg" alt="blink_led_minimal netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_minimal_v.svg" alt="blink_led_minimal netlist (Verilog)" width="480"> |
-| `blink_led` (netlist, 2 FF, exact period) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led.svg" alt="blink_led netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_v.svg" alt="blink_led netlist (Verilog)" width="480"> |
+| `blink_led_minimal` (netlist, one register cell) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_minimal.svg" alt="blink_led_minimal netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_minimal_v.svg" alt="blink_led_minimal netlist (Verilog)" width="480"> |
+| `blink_led` (netlist, two register cells) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led.svg" alt="blink_led netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/blink_led_v.svg" alt="blink_led netlist (Verilog)" width="480"> |
 | `tb_blink_led` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led.png" alt="blink_led waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led_v.png" alt="blink_led waveform (Verilog)" width="480"> |
 | `tb_blink_led_minimal` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led_minimal.png" alt="blink_led_minimal waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-blink_led/tb_blink_led_minimal_v.png" alt="blink_led_minimal waveform (Verilog)" width="480"> |
+
+</details>
+
+<details>
+<summary><b><code>clock_enable</code></b> — one clock, tick-based updates, and a two-stage input synchronizer</summary>
+
+| | VHDL | Verilog |
+| --- | :---: | :---: |
+| `clock_enable` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-clock_enable/clock_enable.svg" alt="clock_enable netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-clock_enable/clock_enable_v.svg" alt="clock_enable netlist (Verilog)" width="480"> |
+| `tb_clock_enable` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-clock_enable/tb_clock_enable.png" alt="clock_enable waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/basics-clock_enable/tb_clock_enable_v.png" alt="clock_enable waveform (Verilog)" width="480"> |
+
+The [lesson](basics/clock_enable/) keeps every register on the same clock,
+uses a tick to gate counting, and synchronizes a slow asynchronous enable.
+Tests cover synchronization latency, tick cadence, wrap, hold, reset and
+the smallest valid divider/width settings.
 
 </details>
 
@@ -208,7 +269,7 @@ Two testbenches each side: `tb_fifo_sync` covers full-fill/drain/ordering, `tb_f
 | `ram_sync` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/ram_sync.svg" alt="ram_sync netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/ram_sync_v.svg" alt="ram_sync netlist (Verilog)" width="480"> |
 | `tb_ram_sync` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/tb_ram_sync.png" alt="ram_sync waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/building_blocks-ram_sync/tb_ram_sync_v.png" alt="ram_sync waveform (Verilog)" width="480"> |
 
-Parameterised width / depth; the address-width generic with `DEPTH = 2**ADDR_W` derived inside the architecture (avoids `ieee.math_real`/`$clog2` in the port list for cross-tool portability — same idiom as `fifo_sync`). The VHDL twin uses the `signal`-not-`constant` BRAM-inference quirk so Quartus actually maps it to a block RAM (see `ROM_LUT.vhd` for the original example). Used as IMEM and DMEM in the RV32I CPU + SoC.
+Parameterised width / depth; the address-width generic with `DEPTH = 2**ADDR_W` derived inside the architecture (avoids `ieee.math_real`/`$clog2` in the port list for cross-tool portability — same idiom as `fifo_sync`). The VHDL twin uses the `signal`-not-`constant` BRAM-inference quirk so Quartus actually maps it to a block RAM (see `ROM_LUT.vhd` for the original example). Teaches clocked memory; the CPUs use internal asynchronous-read memories.
 
 </details>
 
@@ -296,9 +357,8 @@ A second testbench `tb_counter_long` (150 ms) runs in CI asserting the internal 
 | --- | :---: | :---: |
 | `top_level_7segments_clock` (netlist) | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-clock/top_level_7segments_clock.svg" alt="clock netlist (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-clock/top_level_7segments_clock_v.svg" alt="clock netlist (Verilog)" width="480"> |
 | `tb_clock_dot_blink` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-clock/tb_clock_dot_blink.png" alt="dot-blink waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-clock/tb_clock_dot_blink_v.png" alt="dot-blink waveform (Verilog)" width="480"> |
-| `tb_clock_alarm` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-clock/tb_clock_alarm.png" alt="alarm waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/display-7segments-clock/tb_clock_alarm_v.png" alt="alarm waveform (Verilog)" width="480"> |
 
-The two testbenches target the salvaged-from-2022 features as standalone entities: `tb_clock_dot_blink` asserts the 2:1 toggle ratio between MMSS and HHMM views (cause-effect on `isHHMMMode`); `tb_clock_alarm` covers the four match/mismatch × tone/gate combinations and the immediate-low transition when the match breaks. Both flows ship a complete top-to-bottom mirror — every VHDL leaf has a matching Verilog file, the two top-level netlist diagrams render side by side, and the testbenches assert identical properties on each language.
+`tb_clock_dot_blink` exercises the shared `mode_blink` leaf, asserting the 2:1 toggle ratio between MMSS and HHMM views in both languages. The diagrams show the full top; the current CI test does not cover its scanning, controls, digit carries, or alarm. See the [lesson and integration exercise](display/7segments/clock/README.md).
 
 </details>
 
@@ -367,7 +427,7 @@ Same `CLKS_PER_BIT` generic as `uart_tx` (default 5208 for 50 MHz / 9600 baud). 
 | `tb_riscv_singlecycle_loop` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_loop.png" alt="loop waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_loop_v.png" alt="loop waveform (Verilog)" width="480"> |
 | `tb_riscv_singlecycle_branches` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_branches.png" alt="branches waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_singlecycle/tb_riscv_singlecycle_branches_v.png" alt="branches waveform (Verilog)" width="480"> |
 
-Composes structurally from the RV32 building blocks (`alu_rv32`, `regfile_rv32`, `immgen_rv32`, `decoder_rv32`, `ram_sync`). Internal IMEM (init from `IMEM_INIT` hex) + DMEM (sync write / async read). Three programs from [`tools/rv32_asm/programs/`](tools/rv32_asm/programs/) run end-to-end: `prog_addi` (basic R/I-type), `prog_loop` (counted decrement loop with back-edge branch), `prog_branches` (every branch flavour taken AND not-taken).
+Composes structurally from the RV32 building blocks (`alu_rv32`, `regfile_rv32`, `immgen_rv32`, `decoder_rv32`). Internal IMEM (init from `IMEM_INIT` hex) + DMEM (sync write / async read); `ram_sync` is a separate lesson about clocked-read memories. Programs from [`tools/rv32_asm/programs/`](tools/rv32_asm/programs/) run end-to-end, including `prog_addi` (basic R/I-type), `prog_loop` (counted decrement loop), and `prog_branches` (every branch flavour taken AND not-taken).
 
 </details>
 
@@ -382,7 +442,7 @@ Composes structurally from the RV32 building blocks (`alu_rv32`, `regfile_rv32`,
 | `tb_riscv_pipelined_branches` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_branches.png" alt="branches waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_branches_v.png" alt="branches waveform (Verilog)" width="480"> |
 | `tb_riscv_pipelined_load_use` | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_load_use.png" alt="load-use waveform (VHDL)" width="480"> | <img src="https://raw.githubusercontent.com/naelolaiz/learning_fpga/ci-gallery/latest/cpu-riscv_pipelined/tb_riscv_pipelined_load_use_v.png" alt="load-use waveform (Verilog)" width="480"> |
 
-Same external port shape as `riscv_singlecycle`, same hex programs run unchanged — reading the two diagrams side by side shows exactly what pipelining adds: 4 pipeline-register stages, the [`forwarding_unit`](cpu/building_blocks/forwarding_unit/) muxes at the EX-stage ALU operands, and the [`hazard_detector`](cpu/building_blocks/hazard_detector/) driving stall + flush. Adds a fourth TB (`tb_riscv_pipelined_load_use`) that specifically validates the one-cycle bubble inserted on a load-use hazard.
+The same standalone hex programs run unchanged — reading the two diagrams side by side shows what pipelining adds: four pipeline-register stages, the [`forwarding_unit`](cpu/building_blocks/forwarding_unit/) muxes at the EX-stage ALU operands, and the [`hazard_detector`](cpu/building_blocks/hazard_detector/) driving stall + flush. The load-use test validates the one-cycle bubble; the shared JAL/JALR test checks links, returns, and wrong-path effects. The SoC uses a separate single-cycle variant with external DMEM ports, so pipeline integration needs a bus adaptation.
 
 </details>
 
@@ -423,7 +483,7 @@ A few demos running on the board itself:
 | :-------------------------------: | :--------------------------------: |
 | ![VGA demo](doc/vga_testing_2.gif) | ![Scrolling text on 7-segment display](display/7segments/text/doc/scrolling_long_text.gif) |
 
-### [Rotating sprite with a trigonometric LUT](vga_sprites)
+### [Rotating sprite with a trigonometric LUT](display/vga_sprites/)
 
 ![Rotating sprite driven by a precomputed sin/cos LUT](display/vga_sprites/doc/rotating_with_lut_trigonometric.gif)
 
@@ -432,8 +492,8 @@ A few demos running on the board itself:
 ## Build & CI
 
 Every project in this repo builds through one small set of `make` rules.
-Adding a project is **two files, zero workflow edits** — CI auto-discovers
-any `Makefile` that includes `mk/common.mk`.
+Add a design, testbench, lesson README and `Makefile` — **zero workflow
+edits**. CI auto-discovers any `Makefile` that includes `mk/common.mk`.
 
 ### What CI produces, per project
 
@@ -448,21 +508,30 @@ Each matrix job:
 1. **Simulates** the VHDL testbench — and the Verilog mirror if present.
 2. **Renders** the netlist diagram (both languages).
 3. **Renders** the waveform via waveview (SVG + PNG).
-4. **Publishes** the `.svg` / `.png` to the orphan
-   [`ci-gallery`](https://github.com/naelolaiz/learning_fpga/tree/ci-gallery)
-   branch (one directory per run, `run-<id>/<project>/`, plus a
-   [`latest/`](https://github.com/naelolaiz/learning_fpga/tree/ci-gallery/latest)
-   pointer refreshed on every `main` push). Those images show up
-   inline in (a) per-job step summaries, (b) the run-summary page, and
-   (c) the auto-upserted PR comment on pull requests.
+4. **Verifies** additional project contracts, such as Timer's shared-stimulus
+   comparison, and uploads visuals, waveforms and logs even on failure.
+
+A separate publication job copies the `.svg` / `.png` to the orphan
+[`ci-gallery`](https://github.com/naelolaiz/learning_fpga/tree/ci-gallery)
+branch (one directory per run, `run-<id>/<project>/`, plus a
+[`latest/`](https://github.com/naelolaiz/learning_fpga/tree/ci-gallery/latest)
+pointer refreshed on every `main` push). Those images show up
+inline in (a) per-job step summaries, (b) the run-summary page, and
+(c) the auto-upserted PR comment on pull requests.
+
+Fork pull requests run the checks and upload artifacts; publication is
+skipped because their tokens have read-only permissions. The required
+`CI status` depends on the HDL checks, the assembler tests and, whenever
+it runs, gallery publication.
 
 ### Running locally
 
 ```bash
-make                                  # build every project
+make                                  # simulate + render every project
 make -C basics/blink_led simulate     # one project, one stage
+make test                             # both HDL languages + assembler tests
 make list                             # what CI would discover
-make clean                      # nuke every build/
+make clean                      # remove generated build/ directories
 ```
 
 …or through the same container CI uses (ships GHDL, yosys +
@@ -470,7 +539,7 @@ ghdl-plugin, iverilog, netlistsvg, waveview):
 
 ```bash
 podman run --rm -it -v "$PWD":/work -w /work \
-    ghcr.io/naelolaiz/hdltools:release \
+    ghcr.io/naelolaiz/hdltools@sha256:a661d7b9a126fbb44e64d542a19edb9cf1ff7cf70dcf714150a5b03edd2ae312 \
     make
 ```
 
@@ -517,7 +586,8 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | --- | :-: | --- | --- |
 | [glossary](basics/glossary/)         | ✅ | VHDL + Verilog | Symbol legend: every primitive on one diagram (gates, muxes, arith, registers) with truth tables and a custom labelled-gate `netlistsvg` skin. Board top wires `a`,`b` to two buttons and shows AND / OR / XOR / XNOR on the four LEDs. |
 | [logic_styles](basics/logic_styles/) | ✅ | VHDL + Verilog | Coding-style tutorial: combinational vs. sequential vs. latch with annotated good/bad examples, three register-init strategies side-by-side, the classic incomplete-process latch trap, plus a board top that surfaces the latch holding behaviour onto an LED. |
-| [blink_led](basics/blink_led/)       | ✅ | VHDL + Verilog | Hello-world LED toggler in two flavours: `blink_led_minimal` (1 FF, MSB-of-counter, power-of-two period) and `blink_led` (2 FF, exactly tunable period via `CLOCKS_TO_OVERFLOW`). Side-by-side netlist contrast. |
+| [blink_led](basics/blink_led/)       | ✅ | VHDL + Verilog | Hello-world LED toggler in two flavours: `blink_led_minimal` (one vector register, full period `2^WIDTH` clocks) and `blink_led` (counter + one-bit register, full period `2 * CLOCKS_TO_OVERFLOW` clocks). Side-by-side netlist contrast. |
+| [clock_enable](basics/clock_enable/) | ✅ | VHDL + Verilog | Single-clock counting with tick enables and a two-stage synchronizer for a slow asynchronous input; reset, hold, wrap and boundary tests. |
 | [pwm_led](basics/pwm_led/)           | ✅ | VHDL + Verilog | Brightness via duty-cycle modulation. |
 
 ### Building blocks
@@ -526,7 +596,7 @@ Projects are grouped by intent. Legend: ✅ built in CI · ⏳ pending adoption 
 | --- | :-: | --- | --- |
 | [shift_register](building_blocks/shift_register/)         | ✅ | VHDL + Verilog | Parameterised shift register. |
 | [fifo_sync](building_blocks/fifo_sync/)                   | ✅ | VHDL + Verilog | Synchronous FIFO. |
-| [ram_sync](building_blocks/ram_sync/)                     | ✅ | VHDL + Verilog | Generic synchronous BRAM (single-port, parameterised width / depth). Used as IMEM and DMEM in the RV32I CPU + SoC. |
+| [ram_sync](building_blocks/ram_sync/)                     | ✅ | VHDL + Verilog | Generic synchronous BRAM (single-port, parameterised width / depth). Teaches clocked memory; the CPUs use internal asynchronous-read memories. |
 | [random_generator](building_blocks/random_generator/)     | ✅ | VHDL + Verilog | On-chip RNG (neoTRNG VHDL, LFSR Verilog) shown on a 4-digit 7-segment; button[0] freezes value. |
 | [serial_to_parallel](building_blocks/serial_to_parallel/) | ✅ | VHDL + Verilog | SIPO shift + snapshot register; thin wrapper around `shift_register`. |
 | [debounce](building_blocks/debounce/)                     | ✅ | VHDL + Verilog | Switch / button debouncer (from nandland.com), with `DEBOUNCE_LIMIT` generic so testbenches can compress sim time. |
@@ -557,9 +627,9 @@ A tutorial-grade 32-bit RISC-V (RV32I subset) computer built bottom-up from the 
 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
-| [cpu/riscv_singlecycle](cpu/riscv_singlecycle/) | ✅ | VHDL + Verilog | Textbook single-cycle RV32I CPU: one instruction per clock, no pipeline. Three test programs (addi / loop / branches) run end-to-end. |
+| [cpu/riscv_singlecycle](cpu/riscv_singlecycle/) | ✅ | VHDL + Verilog | Textbook single-cycle RV32I CPU: one instruction per clock, no pipeline. End-to-end programs cover arithmetic, loops, branches, loads, and JAL/JALR. |
 | [cpu/riscv_soc](cpu/riscv_soc/)                 | ✅ | VHDL + Verilog | Small SoC around the single-cycle CPU: 4 KB DMEM + memory-mapped UART (TX/RX) + SIMD ALU + 4-tap FIR. `prog_hello` prints over UART; `prog_simd` drives the SIMD accelerator end-to-end. |
-| [cpu/riscv_pipelined](cpu/riscv_pipelined/)     | ✅ | VHDL + Verilog | 5-stage IF/ID/EX/MEM/WB pipeline with full forwarding + load-use stall + branch flush. Drop-in replacement for the single-cycle CPU. |
+| [cpu/riscv_pipelined](cpu/riscv_pipelined/)     | ✅ | VHDL + Verilog | 5-stage IF/ID/EX/MEM/WB pipeline with full forwarding + load-use stall + branch flush. Runs the same standalone test programs; SoC integration needs a memory-bus interface. |
 
 #### CPU building blocks
 
@@ -567,7 +637,7 @@ RV32-specific sub-entities that compose into the CPUs above. (Generic blocks lik
 
 | Project | CI | Languages | Notes |
 | --- | :-: | --- | --- |
-| [cpu/building_blocks/regfile_rv32](cpu/building_blocks/regfile_rv32/)       | ✅ | VHDL + Verilog | 32 × 32 register file; x0 hardwired to 0; falling-edge writes so a same-cycle WB-then-ID read picks up the new value. |
+| [cpu/building_blocks/regfile_rv32](cpu/building_blocks/regfile_rv32/)       | ✅ | VHDL + Verilog | 32 × 32 register file; x0 hardwired to 0; falling-edge writes by default for the pipeline, rising-edge option used by single-cycle cores. |
 | [cpu/building_blocks/alu_rv32](cpu/building_blocks/alu_rv32/)               | ✅ | VHDL + Verilog | 10-op ALU (add/sub/and/or/xor/sll/srl/sra/slt/sltu) — covers every R-/I-type RV32I arithmetic case. |
 | [cpu/building_blocks/immgen_rv32](cpu/building_blocks/immgen_rv32/)         | ✅ | VHDL + Verilog | Immediate generator for the 5 RV32I encoding formats (I/S/B/U/J), sign-extended. |
 | [cpu/building_blocks/decoder_rv32](cpu/building_blocks/decoder_rv32/)       | ✅ | VHDL + Verilog | Combinational decoder driving every control signal: rs1/rs2/rd, alu_op, alu_src_a/b, reg_write, mem_read, mem_write, wb_src, is_branch, is_jal, is_jalr, illegal. |
@@ -614,13 +684,13 @@ A bottom-up 32-bit RISC-V (RV32I subset) computer, composed from the project's b
 - **CPU building blocks**: regfile_rv32, alu_rv32, immgen_rv32, decoder_rv32, forwarding_unit, hazard_detector, simd_alu (packed SIMD), fir4tap (streaming FIR) — all paired VHDL + Verilog with assertion-driven testbenches.
 - **Tiny assembler** ([tools/rv32_asm](tools/rv32_asm/)): Python script converting `.S` (the subset implemented) into `.hex` for `$readmemh` / textio load.
 - **Single-cycle CPU** ([cpu/riscv_singlecycle](cpu/riscv_singlecycle/)): classic textbook flat datapath, one instruction per clock.
-- **Pipelined CPU** ([cpu/riscv_pipelined](cpu/riscv_pipelined/)): 5-stage IF/ID/EX/MEM/WB with full forwarding, load-use stall, branch flush — drop-in replacement for the single-cycle CPU.
+- **Pipelined CPU** ([cpu/riscv_pipelined](cpu/riscv_pipelined/)): 5-stage IF/ID/EX/MEM/WB with full forwarding, load-use stall, branch flush — runs the same standalone programs; SoC integration requires a memory-bus interface.
 - **SoC** ([cpu/riscv_soc](cpu/riscv_soc/)): single-cycle CPU + 4 KB DMEM + memory-mapped UART (TX + RX) + simd_alu + fir4tap. A demo program (`prog_simd.S`) drives the SIMD ALU through the bus and streams the 4-byte result over UART, end-to-end.
 - **Documentation**: per-block READMEs, plus [cpu/README.md](cpu/README.md) with reading order, ISA reference card, SoC MMIO address map, and a "write+assemble+run your own program" walkthrough.
 
 Out of scope by design (deferrable): byte/halfword memory ops, CSRs, interrupts, M-extension, cache, branch prediction.
 
-### Test coverage — done ✅
+### Verification infrastructure
 
 - Per-project multi-testbench support in `mk/common.mk` (`TB_TOPS` /
   `V_TB_TOPS` lists): each testbench produces its own waveform in CI
@@ -647,27 +717,25 @@ Out of scope by design (deferrable): byte/halfword memory ops, CSRs, interrupts,
     [nandland](https://nandland.com/project-4-debounce-a-switch/);
     replace with own version).
   - [x] Set time with +/- buttons; speed scales with the view mode.
-  - [x] Blink the middle dot — `DotBlinker` entity, 1 Hz in MMSS,
+  - [x] Blink the middle dot — shared `mode_blink` entity, 1 Hz in MMSS,
     half-rate in HHMM. Cause-effect TB asserts the 2:1 ratio.
-  - [x] Alarm — second `Digit` cascade for the alarm time, view-toggle
-    button on `inputButtons(1)`, intermittent ~400 Hz buzzer through
-    the new `AlarmTrigger` entity. TB covers all four match/mismatch
-    × tone/gate combinations and the immediate transition to '0' when
-    the match breaks.
+  - [x] Alarm — second digit cascade for the alarm time, view-toggle
+    button on `inputButtons(1)`, and an inlined comparator/gate for
+    the intermittent ~400 Hz buzzer. This path needs a full-top test.
   - [x] Project is CI-compatible: `Makefile` discovered by the
     top-level orchestrator, ghdl `--std=08` fixes applied
     (`'HIGH` on integers, slicing of type-conversions), both VHDL and
     Verilog netlists synthesise (no `SKIP_DIAGRAM`), waveforms
-    rendered for all four testbenches.
-  - [x] Full Verilog mirror — every leaf entity (`Timer`,
-    `VariableTimer`, `CounterTimer`, `Debounce`, `Digit`,
-    `DotBlinker`, `AlarmTrigger`) plus the top-level
-    `top_level_7segments_clock` ships a Verilog twin with identical-
-    shape testbenches.
+    rendered for the dot-blink testbench in each language.
+  - [x] Verilog mirror — shared timer/counter/debounce blocks and
+    `top_level_7segments_clock` ship Verilog twins. The dot-blink
+    test checks the same frequency ratio in both languages.
 - Remaining:
   - [ ] Milliseconds view.
   - [ ] Dynamic speed for set-time UX.
   - [ ] Drop redundant timers; general cleanup.
+  - [ ] Full-top tests for display scanning, controls, carries, and alarm.
+  - [ ] Correct the 24-hour digit sequence and migrate divided/button clocks to enables.
 
 ### Next up 🎯
 

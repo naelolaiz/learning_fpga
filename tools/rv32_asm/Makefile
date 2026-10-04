@@ -14,6 +14,7 @@
 # programs is caught here.
 
 PROJECT_NAME := rv32_asm
+.DEFAULT_GOAL := test
 
 PROGRAMS := $(wildcard programs/*.S)
 BUILD    := build

@@ -1,8 +1,8 @@
 -- pwm_led.vhd
 --
 -- Pulse-width-modulated LED driver. The 8-bit `duty` input picks the
--- on-fraction of every 256-tick window, so the perceived brightness of
--- the LED tracks `duty` linearly (0 = off, 255 = full bright).
+-- on-fraction of every 256-tick window: 0 = off, 255 = 255/256 high.
+-- Electrical duty is linear; perceived brightness need not be.
 --
 -- Comes in handy as the building block for any analog-feel output (LED
 -- dimming, motor speed, simple DACs).

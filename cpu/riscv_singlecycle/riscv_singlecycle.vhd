@@ -2,9 +2,9 @@
 --
 -- Single-cycle RV32I CPU — the textbook flat-datapath organisation
 -- from Patterson & Hennessy, composed structurally from the RV32
--- building blocks (alu_rv32, regfile_rv32, immgen_rv32, decoder_rv32,
--- ram_sync). One instruction completes every clock; no FSM, no
--- pipeline registers.
+-- building blocks (alu_rv32, regfile_rv32, immgen_rv32, decoder_rv32).
+-- Memories are internal async-read arrays. One instruction completes
+-- every clock; no FSM, no pipeline registers.
 --
 -- Datapath outline:
 --
@@ -29,14 +29,14 @@
 -- from a hex file via the IMEM_INIT generic. This is what makes the
 -- design *truly* single-cycle: a synchronous-read BRAM for IMEM would
 -- delay the fetch by one cycle and turn the design into something
--- closer to a 2-stage pipeline. With a small tutorial program (≤ a
--- few hundred instructions) the combinational ROM costs negligible
--- area.
+-- closer to a 2-stage pipeline. Async memories can consume many logic
+-- elements; fitted resource reports determine whether a board has room.
 --
 -- DMEM is also internal — sync write, async read — so loads land in
 -- the same cycle as the address compute. For real BRAM-friendly
 -- behaviour the SoC top variant (cpu/riscv_soc/) replaces the internal DMEM with
--- an external memory bus.
+-- an external memory bus. That bus still assumes combinational reads;
+-- synchronous BRAM needs a separate read-latency refactor.
 --
 -- Both memories are sized via ADDR_W generics; depth = 2**ADDR_W
 -- words (each word is 32 bits). PC[1:0] is always zero
@@ -45,7 +45,7 @@
 -- Debug bus
 -- ---------
 -- The dbg_* outputs make it easy for a testbench to watch PC, the
--- current instruction, and every regfile commit without having to
+-- current instruction, and every rising-edge regfile commit without having to
 -- reach into the entity via hierarchical references. The CPU works
 -- the same way whether they're connected or left dangling.
 
@@ -116,10 +116,9 @@ architecture rtl of riscv_singlecycle is
   -- and never change. Using a signal would trip GHDL's
   -- `-Wnowrite` ("signal never assigned") since there's no process
   -- driver. The ROM_LUT BRAM-inference idiom uses `signal`
-  -- deliberately to coax Quartus to a block RAM, but the
-  -- single-cycle CPU's IMEM (a few hundred 32-bit words) fits in
-  -- LEs comfortably on the Cyclone IV, so the constant form is
-  -- the cleaner expression of intent.
+  -- deliberately to coax Quartus to a block RAM. This CPU instead
+  -- uses async reads; the constant form expresses the ROM's intent.
+  -- Its physical cost must be checked in a fitted resource report.
   constant imem : imem_t := init_imem(IMEM_INIT);
 
   -- ------------------------------------------------------------------
@@ -223,9 +222,13 @@ begin
     );
 
   regfile : entity work.regfile_rv32
+    -- PC, register writes, and memory writes use the same old source
+    -- values at the rising edge. JALR rd=rs1 must not overwrite its
+    -- base register before the PC captures the target.
+    generic map (WRITE_FALLING_EDGE => false)
     port map (
       clk    => clk,
-      we     => d_reg_write,
+      we     => d_reg_write and not rst,
       waddr  => d_rd,
       wdata  => wb_data,
       raddr1 => d_rs1, rdata1 => rs1_data,
@@ -285,7 +288,7 @@ begin
   process (clk) is
   begin
     if rising_edge(clk) then
-      if d_mem_write = '1' then
+      if d_mem_write = '1' and rst = '0' then
         dmem(to_integer(unsigned(alu_result(DMEM_ADDR_W+1 downto 2)))) <= rs2_data;
       end if;
     end if;
@@ -308,7 +311,7 @@ begin
   -- ------------------------------------------------------------------
   dbg_pc        <= pc;
   dbg_instr     <= instr;
-  dbg_reg_we    <= d_reg_write;
+  dbg_reg_we    <= d_reg_write and not rst;
   dbg_reg_waddr <= d_rd;
   dbg_reg_wdata <= wb_data;
 

@@ -6,9 +6,9 @@ centres, checks the stop bit, and pulses `rx_valid` for one clock
 with the captured byte on `rx_data`. The line idles high; bytes are
 silently dropped if the stop bit is low (framing error).
 
-This is the receive half of the UART that the upcoming RV32I SoC will
-expose as a memory-mapped peripheral, alongside the transmit half
-that already exists in `uart_tx/`.
+This is the receive half of the UART exposed by the
+[RV32I SoC](../../cpu/riscv_soc/) as a memory-mapped peripheral,
+alongside the transmit half in `uart_tx/`.
 
 | File | Purpose |
 | ---- | ------- |

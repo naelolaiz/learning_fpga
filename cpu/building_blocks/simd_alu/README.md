@@ -44,7 +44,10 @@ plain; the workload-specific block hangs off the bus.
 
 ### Test coverage
 
-`tb_simd_alu` walks twelve golden vectors: every (width × op) pair,
+`tb_simd_alu` first checks that stable zero inputs produce zero result
+and flags before any stimulus changes. The Verilog combinational block
+uses `always_comb` so it evaluates at simulation startup. It then
+walks twelve golden vectors: every (width × op) pair,
 plus the saturation boundary cases (`0x7F + 0x01 → 0x7F sat`,
 `-128 + -128 → -128 sat`, …). Same vectors run on both the VHDL and
 Verilog twins.

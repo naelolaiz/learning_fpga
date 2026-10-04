@@ -57,12 +57,12 @@ begin
 
   sClk <= not sClk after CLK_PERIOD/2 when sSimulationActive;
 
-  -- See tb_riscv_singlecycle_addi for why this samples on falling
-  -- edge (matches the regfile's commit timing; rising-edge samples
-  -- would catch a stale combinational re-evaluation of wb_data).
+  -- See tb_riscv_singlecycle_addi for why this samples on the rising
+  -- edge (the commit edge: the debug bus still describes the
+  -- instruction being committed, before PC and registers advance).
   shadow : process (sClk) is
   begin
-    if falling_edge(sClk) then
+    if rising_edge(sClk) then
       if sRegWe = '1' and unsigned(sRegWaddr) /= 0 then
         shadow_regs(to_integer(unsigned(sRegWaddr))) <= sRegWdata;
       end if;

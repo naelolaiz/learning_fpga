@@ -2,7 +2,7 @@
 
 A 32-bit ALU covering every integer operation the RV32I base ISA
 needs: ten arithmetic / logic / shift / compare ops plus a `zero`
-flag for branch resolution. Pure combinational. The upcoming
+flag for branch resolution. Pure combinational. The
 single-cycle CPU drives this directly between the regfile read ports
 and the writeback mux; the pipelined CPU places it in the EX stage
 and feeds it via the forwarding muxes.
@@ -34,18 +34,16 @@ spreading 4-bit literals across the codebase:
 | `1001` | `ALU_SLTU` | `result = (a < b) ? 1 : 0` (unsigned) |
 | other  | (illegal)  | `result = 0` |
 
-The `zero` flag mirrors `result == 0`. The branch unit consults it
-directly for `BEQ`/`BNE`; for `BLT`/`BGE`/`BLTU`/`BGEU` the decoder
-issues `SLT`/`SLTU` and reads `result(0)`.
+The `zero` flag mirrors `result == 0`. The CPU examples use a dedicated
+operand comparator for branches, allowing the ALU to compute the target
+address at the same time.
 
 ## Design notes
 
-**No `abs()`.** The repo's [toolchain-quirks
-note](../../mk/) flags an `abs(to_integer(signed(...)))` interaction
-that trips `yosys+ghdl-plugin`. We never use `abs()` here — `SRA`
-shifts the operand as `signed`, `shift_right(signed(a), shamt)` does
-the sign extension natively, and the result casts back to
-`std_logic_vector`. Both flows synthesise without complaint.
+**Arithmetic shifts.** `SRA` shifts the operand as `signed`:
+`shift_right(signed(a), shamt)` performs sign extension, and the result
+casts back to `std_logic_vector`. The Verilog twin uses a signed
+arithmetic right shift. Both flows synthesise without complaint.
 
 **Symmetric VHDL/Verilog.** The two implementations match bit-for-bit
 on the same vectors. The testbench's golden table covers boundary

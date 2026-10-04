@@ -5,11 +5,11 @@
 -- That gives an arbitrary period (`led` flips every CLOCKS_TO_OVERFLOW
 -- cycles, so the full on/off period is `2 * CLOCKS_TO_OVERFLOW / f_clk`).
 --
--- Cost: TWO flip-flops -- the counter AND the toggling `pulse`
--- register -- plus a comparator and a mux. The synthesised diagram
--- (`build/blink_led.svg`) shows both registers.
+-- Cost: two register cells -- a multi-bit counter AND the one-bit
+-- toggling `pulse` -- plus a comparator and a mux. Each bit of the
+-- counter uses a flip-flop; diagram cells are not physical FF counts.
 --
--- For a strictly simpler version that uses ONE flip-flop (the LED
+-- For a simpler version that uses one vector register (the LED
 -- is just the counter's top bit) at the cost of fixing the period
 -- to a power of two, see the sibling `blink_led_minimal.vhd`.
 

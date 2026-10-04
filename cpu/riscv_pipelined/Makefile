@@ -4,7 +4,8 @@ TOP     := riscv_pipelined
 TB_TOPS := tb_riscv_pipelined_addi \
            tb_riscv_pipelined_loop \
            tb_riscv_pipelined_branches \
-           tb_riscv_pipelined_load_use
+           tb_riscv_pipelined_load_use \
+           tb_riscv_pipelined_jalr
 
 # Building blocks the CPU composes. Generic blocks live under the
 # top-level building_blocks/; RV32-specific blocks live under
@@ -22,7 +23,8 @@ SRC_FILES := ../../building_blocks/ram_sync/ram_sync.vhd \
 TB_FILES  := test/tb_riscv_pipelined_addi.vhd \
              test/tb_riscv_pipelined_loop.vhd \
              test/tb_riscv_pipelined_branches.vhd \
-             test/tb_riscv_pipelined_load_use.vhd
+             test/tb_riscv_pipelined_load_use.vhd \
+             test/tb_riscv_pipelined_jalr.vhd
 
 VHDL_STANDARD := 08
 
@@ -40,7 +42,8 @@ V_TOP       := riscv_pipelined
 V_TB_TOPS   := tb_riscv_pipelined_addi \
                tb_riscv_pipelined_loop \
                tb_riscv_pipelined_branches \
-               tb_riscv_pipelined_load_use
+               tb_riscv_pipelined_load_use \
+               tb_riscv_pipelined_jalr
 V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
                ../building_blocks/regfile_rv32/regfile_rv32.v \
                ../building_blocks/alu_rv32/alu_rv32.v \
@@ -52,6 +55,7 @@ V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
 V_TB_FILES  := test/tb_riscv_pipelined_addi.v \
                test/tb_riscv_pipelined_loop.v \
                test/tb_riscv_pipelined_branches.v \
-               test/tb_riscv_pipelined_load_use.v
+               test/tb_riscv_pipelined_load_use.v \
+               test/tb_riscv_pipelined_jalr.v
 
 include ../../mk/common.mk

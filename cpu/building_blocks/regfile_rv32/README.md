@@ -3,7 +3,7 @@
 The 32-register integer file mandated by the RV32I base ISA: registers
 `x0..x31`, each 32 bits wide, two combinational read ports feeding the
 ALU operands, one synchronous write port driven by the writeback
-stage. Used by both the upcoming single-cycle and pipelined CPUs.
+stage. Used by both the single-cycle and pipelined CPUs.
 
 | File | Purpose |
 | ---- | ------- |
@@ -15,7 +15,7 @@ stage. Used by both the upcoming single-cycle and pipelined CPUs.
 
 | Direction | Name | Width | Purpose |
 | --------- | ---- | ----- | ------- |
-| in  | `clk`    | 1  | Rising-edge write clock |
+| in  | `clk`    | 1  | Write clock; edge selected by `WRITE_FALLING_EDGE` |
 | in  | `we`     | 1  | Write-enable |
 | in  | `waddr`  | 5  | Write address (`x0..x31`) |
 | in  | `wdata`  | 32 | Write data |
@@ -32,25 +32,22 @@ assembler relies on this to encode `nop` (`addi x0,x0,0`), `mv`
 (`addi rd,rs,0`), `not` (`xori rd,rs,-1`), and a handful of other
 synthetic instructions.
 
-**Falling-edge writes, no combinational bypass.** Writes happen on
-the **falling edge** of `clk`. Reads are combinational and return
-the **stored** value — there's no write-then-read bypass mux on the
-read port. Two consequences worth knowing:
+**Selectable write edge, no combinational bypass.**
+`WRITE_FALLING_EDGE` defaults to `true` in VHDL / `1` in Verilog.
+Reads return stored data until the selected clock edge commits a
+write. The single-cycle CPU overrides this generic/parameter to
+`false` / `0`; the pipeline uses the default.
 
-- A combinational ALU that reads register `R` and writes register
-  `R` in the same cycle (e.g. `addi t0, t0, 2`) does NOT close a
-  combinational loop. A bypass mux on `rdata` would have:
-  `rdata1 → ALU → wdata → rdata1 (when raddr1 = waddr ∧ we=1)`
-  — an infinite delta-cycle loop. The textbook single-cycle
-  organisation avoids this by writing on the falling edge: within
-  the same cycle the read returns the OLD stored value, and the
-  new value commits at the falling edge so the *next* rising edge
-  sees it.
-- The same trick scales to the pipelined CPU: the forwarding unit
-  handles the tighter EX→EX and MEM→EX hazards, and WB→ID falls
-  out for free from the falling-edge write timing (the new value
-  is already in storage by the time the next instruction's ID
-  stage reads it).
+- In the single-cycle CPU, PC, registers, and memory all commit on
+  the rising edge using old source values. `jalr t0,t0,0` must use
+  the old `t0` as its destination before overwriting it with `PC+4`.
+- In the pipeline, falling-edge writes let WB update storage before
+  the next rising-edge ID capture. The forwarding unit handles
+  EX→EX and MEM→EX dependencies.
+
+A write bypass from `wdata` to a matching read port would form a
+combinational loop in a flat single-cycle ALU (`rdata → ALU → wdata
+→ rdata`). Returning stored data avoids that loop with either edge.
 
 ## Test strategy
 
@@ -69,7 +66,11 @@ points at the exact line:
    combinational bypass. After the falling edge commits the write,
    a follow-up read returns the new value (0xCAFE).
 
-The testbench re-aligns to a falling clock edge between phases —
+The block testbench exercises the default falling-edge mode. The
+single-cycle and SoC integration tests exercise rising-edge mode,
+including JALR with `rd=rs1` and dependent arithmetic/load results.
+
+The block testbench re-aligns to a falling clock edge between phases —
 the 32 iterations of `wait for 1 ns` in the read-everything loop
 leave the simulation mid-cycle, and re-aligning before each write
 makes the falling-edge write timing unambiguous in the assertion

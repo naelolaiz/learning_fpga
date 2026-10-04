@@ -56,6 +56,9 @@ simulation/
 *.sof
 *.pof
 
+# --- Local scratch (ad-hoc renders, tool history) -------------------------
+.local/
+
 # --- Editors / OS ----------------------------------------------------------
 .vscode/
 .idea/

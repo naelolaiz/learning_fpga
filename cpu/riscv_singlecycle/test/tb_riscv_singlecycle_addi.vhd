@@ -76,20 +76,12 @@ begin
   -- Snoop the debug bus and shadow every commit. x0 writes are
   -- dropped (matches the regfile's own behaviour).
   --
-  -- Sample on the FALLING edge — the same edge the regfile commits
-  -- on. Sampling on the rising edge would catch wb_data AFTER the
-  -- regfile already updated, when the combinational chain has
-  -- re-evaluated with the new register state and `wb_data` no
-  -- longer reflects what was actually written. (`addi t0, t0, 2`
-  -- writes 3 at the falling edge, then the combinational chain
-  -- recomputes with the new t0=3 and shows wb_data=5 — a stale
-  -- "what-if" value, not what hit storage.)
-  --
-  -- Halt detection is independent of the write timing, but we keep
-  -- it on the same edge so the testbench has a single sampling clock.
+  -- Sample on the rising edge before signal updates: PC, registers,
+  -- and memory commit together using the current instruction values.
+  -- Halt detection uses the same instruction-commit edge.
   shadow : process (sClk) is
   begin
-    if falling_edge(sClk) then
+    if rising_edge(sClk) then
       if sRegWe = '1' and unsigned(sRegWaddr) /= 0 then
         shadow_regs(to_integer(unsigned(sRegWaddr))) <= sRegWdata;
       end if;

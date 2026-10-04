@@ -3,7 +3,8 @@ PROJECT_NAME := riscv_singlecycle
 TOP     := riscv_singlecycle
 TB_TOPS := tb_riscv_singlecycle_addi \
            tb_riscv_singlecycle_loop \
-           tb_riscv_singlecycle_branches
+           tb_riscv_singlecycle_branches \
+           tb_riscv_singlecycle_jalr
 
 # Building blocks the CPU composes. Generic blocks live under the
 # top-level building_blocks/; RV32-specific blocks live under
@@ -18,7 +19,8 @@ SRC_FILES := ../../building_blocks/ram_sync/ram_sync.vhd \
 
 TB_FILES  := test/tb_riscv_singlecycle_addi.vhd \
              test/tb_riscv_singlecycle_loop.vhd \
-             test/tb_riscv_singlecycle_branches.vhd
+             test/tb_riscv_singlecycle_branches.vhd \
+             test/tb_riscv_singlecycle_jalr.vhd
 
 VHDL_STANDARD := 08
 
@@ -35,7 +37,8 @@ NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 V_TOP       := riscv_singlecycle
 V_TB_TOPS   := tb_riscv_singlecycle_addi \
                tb_riscv_singlecycle_loop \
-               tb_riscv_singlecycle_branches
+               tb_riscv_singlecycle_branches \
+               tb_riscv_singlecycle_jalr
 V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
                ../building_blocks/regfile_rv32/regfile_rv32.v \
                ../building_blocks/alu_rv32/alu_rv32.v \
@@ -44,6 +47,7 @@ V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
                riscv_singlecycle.v
 V_TB_FILES  := test/tb_riscv_singlecycle_addi.v \
                test/tb_riscv_singlecycle_loop.v \
-               test/tb_riscv_singlecycle_branches.v
+               test/tb_riscv_singlecycle_branches.v \
+               test/tb_riscv_singlecycle_jalr.v
 
 include ../../mk/common.mk

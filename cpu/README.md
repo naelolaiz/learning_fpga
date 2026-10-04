@@ -10,7 +10,9 @@ program drives the SIMD ALU end-to-end through the bus.
 ### Reading order
 
 1. **[cpu/building_blocks/regfile_rv32](building_blocks/regfile_rv32/)** —
-   32 × 32 register file, x0 hardwired to zero, falling-edge writes.
+   32 × 32 register file, x0 hardwired to zero. Its selectable write
+   edge is falling by default for the pipeline and rising in the
+   single-cycle cores so their architectural state commits together.
 2. **[cpu/building_blocks/alu_rv32](building_blocks/alu_rv32/)** —
    10-op ALU (R-/I-type arithmetic + signed/unsigned compare).
 3. **[cpu/building_blocks/immgen_rv32](building_blocks/immgen_rv32/)** —
@@ -19,7 +21,9 @@ program drives the SIMD ALU end-to-end through the bus.
    combinational decoder that drives every control-signal in the
    datapath.
 5. **[`../building_blocks/ram_sync`](../building_blocks/ram_sync/)** —
-   generic synchronous BRAM (used for IMEM/DMEM in the CPU and SoC).
+   generic synchronous BRAM. Study its read latency before the CPU's
+   internal asynchronous-read IMEM/DMEM models; it is a learning
+   precursor rather than a directly instantiated CPU memory.
 6. **[`../tools/rv32_asm`](../tools/rv32_asm/)** — tiny Python
    assembler that converts a `.S` source to a `.hex` file the CPUs
    load at elaboration.
@@ -99,7 +103,7 @@ same 4 KB).
 2. Assemble it with the project's Python assembler:
    ```
    podman run --rm -v "$(pwd):/work:rw" -w /work \
-       ghcr.io/naelolaiz/hdltools:release \
+       ghcr.io/naelolaiz/hdltools@sha256:a661d7b9a126fbb44e64d542a19edb9cf1ff7cf70dcf714150a5b03edd2ae312 \
        python3 tools/rv32_asm/rv32_asm.py path/to/prog.S \
            -o path/to/prog.hex
    ```
@@ -109,29 +113,29 @@ same 4 KB).
    ```
    podman run --rm -v "$(pwd):/work:rw" \
        -w /work/cpu/riscv_singlecycle \
-       ghcr.io/naelolaiz/hdltools:release make simulate
+       ghcr.io/naelolaiz/hdltools@sha256:a661d7b9a126fbb44e64d542a19edb9cf1ff7cf70dcf714150a5b03edd2ae312 make simulate
    ```
 
 The testbench's halt detector fires when your `halt` instruction
 retires; the shadow-regfile snoop captures every commit so you can
 assert final architectural state.
 
-### Single-cycle vs pipelined: drop-in swap
+### Single-cycle vs pipelined: compare standalone execution
 
-Both CPUs expose the same port shape (`clk`, `rst`, `dbg_*`). To run
-the pipelined CPU inside the SoC instead of the single-cycle one,
-change one line in [`cpu/riscv_soc/riscv_soc.vhd`](riscv_soc/riscv_soc.vhd):
+The standalone CPUs execute the same hex programs and report commits
+through `dbg_*`. Compare their waveforms to see forwarding, stalls,
+and branch flushes change the cycle count while preserving final state.
+A higher clock-frequency claim also needs synthesis and timing results.
 
-```vhdl
-cpu : entity work.riscv_pipelined  -- was: work.riscv_singlecycle
-```
-
-Update `cpu/riscv_soc/Makefile`'s `SRC_FILES` to point at the
-pipelined CPU (and its sub-entities `forwarding_unit`,
-`hazard_detector`). Programs run identically; the only observable
-difference is clock speed (higher, since the longest combinational
-path is shorter) or cycle count (more on a load-use, fewer on
-average).
+The SoC instantiates its own
+[`riscv_singlecycle` variant](riscv_soc/riscv_singlecycle.vhd), which
+exposes an external data-memory/MMIO bus. It shares the entity name
+with the standalone core but is a separate source file with extra
+ports. `riscv_pipelined` has internal DMEM and no matching
+bus ports, so changing an entity name cannot connect it to the SoC.
+Integration requires a pipelined bus variant, a defined memory response
+contract, stall handling for that contract, and tests for UART/MMIO
+side effects. This remains a future integration exercise.
 
 ### What's still out of scope
 
@@ -146,5 +150,6 @@ The following are intentionally deferred:
 - Cache, branch prediction.
 - Full RVV vector extension (the SIMD ALU + FIR accelerators cover
   the SIMD teaching goal at a fraction of the cost).
-- Pipelined CPU in the SoC (drop-in swap is documented above but
-  the SoC's prog_simd demo uses the single-cycle CPU today).
+- Pipelined CPU in the SoC (requires the bus adaptation described
+  above; the current demos use the SoC's external-DMEM `riscv_singlecycle`
+  variant).

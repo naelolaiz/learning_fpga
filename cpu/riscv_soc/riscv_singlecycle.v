@@ -121,9 +121,11 @@ module riscv_singlecycle #(
         .instr(instr), .fmt(d_imm_fmt), .imm(imm)
     );
 
-    regfile_rv32 regfile (
+    // Commit PC, registers, and external-bus side effects together.
+    // This preserves the old rs1 when JALR writes its own base register.
+    regfile_rv32 #(.WRITE_FALLING_EDGE(0)) regfile (
         .clk(clk),
-        .we(d_reg_write),
+        .we(d_reg_write && !rst),
         .waddr(d_rd),
         .wdata(wb_data),
         .raddr1(d_rs1), .rdata1(rs1_data),
@@ -155,8 +157,8 @@ module riscv_singlecycle #(
     // External DMEM bus.
     assign dmem_addr  = alu_result;
     assign dmem_wdata = rs2_data;
-    assign dmem_we    = d_mem_write;
-    assign dmem_re    = d_mem_read;
+    assign dmem_we    = d_mem_write && !rst;
+    assign dmem_re    = d_mem_read && !rst;
 
     always @(*) begin
         case (d_wb_src)
@@ -170,7 +172,7 @@ module riscv_singlecycle #(
 
     assign dbg_pc        = pc;
     assign dbg_instr     = instr;
-    assign dbg_reg_we    = d_reg_write;
+    assign dbg_reg_we    = d_reg_write && !rst;
     assign dbg_reg_waddr = d_rd;
     assign dbg_reg_wdata = wb_data;
 

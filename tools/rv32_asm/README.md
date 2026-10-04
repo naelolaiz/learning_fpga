@@ -1,7 +1,7 @@
 # rv32_asm — tiny Python assembler for the tutorial RV32I subset
 
 A from-scratch assembler that turns the integer/branch/jump subset of
-RV32I — exactly what the upcoming tutorial CPU implements — into hex
+RV32I — the subset the tutorial CPUs implement — into hex
 words ready for `$readmemh` (Verilog) or VHDL `textio` `hread`. Plain
 Python 3, no dependencies.
 
@@ -60,7 +60,7 @@ mnemonic the assembler accepts, the CPU executes, and vice versa.
 
 ## Supported instructions
 
-The RV32I subset the upcoming CPU implements:
+The RV32I subset the tutorial CPUs implement:
 
 | Class      | Mnemonics                                                       |
 | ---------- | --------------------------------------------------------------- |

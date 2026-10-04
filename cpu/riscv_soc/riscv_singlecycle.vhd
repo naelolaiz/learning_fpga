@@ -160,9 +160,12 @@ begin
     port map (instr => instr, fmt => d_imm_fmt, imm => imm);
 
   regfile : entity work.regfile_rv32
+    -- PC, registers, and bus side effects commit together using the
+    -- old source values, including JALR when rd equals its base rs1.
+    generic map (WRITE_FALLING_EDGE => false)
     port map (
       clk    => clk,
-      we     => d_reg_write,
+      we     => d_reg_write and not rst,
       waddr  => d_rd,
       wdata  => wb_data,
       raddr1 => d_rs1, rdata1 => rs1_data,
@@ -204,8 +207,8 @@ begin
   -- External DMEM bus
   dmem_addr  <= alu_result;
   dmem_wdata <= rs2_data;
-  dmem_we    <= d_mem_write;
-  dmem_re    <= d_mem_read;
+  dmem_we    <= d_mem_write and not rst;
+  dmem_re    <= d_mem_read and not rst;
 
   with d_wb_src select
     wb_data <= alu_result when "00",
@@ -216,7 +219,7 @@ begin
 
   dbg_pc        <= pc;
   dbg_instr     <= instr;
-  dbg_reg_we    <= d_reg_write;
+  dbg_reg_we    <= d_reg_write and not rst;
   dbg_reg_waddr <= d_rd;
   dbg_reg_wdata <= wb_data;
 

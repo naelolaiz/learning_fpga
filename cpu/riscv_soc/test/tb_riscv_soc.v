@@ -65,8 +65,8 @@ module tb_riscv_soc;
 
     always #(CLK_PERIOD/2.0) if (sim_active) clk = ~clk;
 
-    // Halt detector — falling edge to match CPU regfile commit timing.
-    always @(negedge clk) begin
+    // Halt detector reads the current instruction on its rising commit edge.
+    always @(posedge clk) begin
         if (dbg_instr == HALT_INSTR) halted <= 1'b1;
     end
 

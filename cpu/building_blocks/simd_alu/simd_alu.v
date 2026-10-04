@@ -73,7 +73,7 @@ module simd_alu (
     // Lane working-regs — initialised so the waveform doesn't paint
     // visible X-bands before the first always-block re-evaluation
     // assigns them. The values themselves don't matter for synthesis;
-    // the always @(*) re-runs whenever any input changes.
+    // always_comb also evaluates at t=0, even when inputs are already stable.
     reg signed [7:0]   a8 = 8'sd0, b8 = 8'sd0;
     reg signed [15:0]  a16 = 16'sd0, b16 = 16'sd0;
     reg [8:0]          lane8_out = 9'd0;
@@ -81,9 +81,15 @@ module simd_alu (
     reg                is_sub_w = 1'b0;
     reg                do_sat_w = 1'b0;
 
-    always @(*) begin
+    always_comb begin
         result   = 32'b0;
         flags    = 4'b0;
+        // The unused lane width still needs combinational assignments;
+        // these work variables must not retain values between operations.
+        a8 = 8'sd0; b8 = 8'sd0;
+        a16 = 16'sd0; b16 = 16'sd0;
+        lane8_out = 9'd0;
+        lane16_out = 17'd0;
         is_sub_w = (op_sel == 2'b01);
         do_sat_w = (saturate == 1'b1);
 

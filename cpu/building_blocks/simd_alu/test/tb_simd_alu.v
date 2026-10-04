@@ -45,6 +45,12 @@ module tb_simd_alu;
 
     initial begin
 
+        // Known inputs exist at t=0; combinational outputs must settle
+        // without requiring a later operand or operation transition.
+        #1;
+        if (result !== 32'b0 || flags !== 4'b0)
+            $fatal(1, "Stable zero inputs must compute zero at startup");
+
         // ====== 4 × 8-bit lanes ======
 
         // ADD wrap

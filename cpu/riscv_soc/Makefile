@@ -1,7 +1,7 @@
 PROJECT_NAME := riscv_soc
 
 TOP     := riscv_soc
-TB_TOPS := tb_riscv_soc tb_riscv_soc_simd
+TB_TOPS := tb_riscv_soc tb_riscv_soc_simd tb_riscv_soc_jalr
 
 # Building blocks the SoC composes. Generic blocks live under the
 # top-level building_blocks/; RV32-specific blocks live under
@@ -21,7 +21,8 @@ SRC_FILES := ../../building_blocks/ram_sync/ram_sync.vhd \
              riscv_soc.vhd
 
 TB_FILES  := test/tb_riscv_soc.vhd \
-             test/tb_riscv_soc_simd.vhd
+             test/tb_riscv_soc_simd.vhd \
+             test/tb_riscv_soc_jalr.vhd
 
 VHDL_STANDARD := 08
 
@@ -35,7 +36,7 @@ NETLISTSVG_BIN := node --stack-size=8000 $$(command -v netlistsvg)
 # each building block. The two flows are bit-equivalent on the
 # Hello-RV32 demo program.
 V_TOP       := riscv_soc
-V_TB_TOPS   := tb_riscv_soc tb_riscv_soc_simd
+V_TB_TOPS   := tb_riscv_soc tb_riscv_soc_simd tb_riscv_soc_jalr
 V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
                ../building_blocks/regfile_rv32/regfile_rv32.v \
                ../building_blocks/alu_rv32/alu_rv32.v \
@@ -47,7 +48,7 @@ V_SRC_FILES := ../../building_blocks/ram_sync/ram_sync.v \
                ../../comm/uart_rx/uart_rx.v \
                riscv_singlecycle.v \
                riscv_soc.v
-V_TB_FILES  := test/tb_riscv_soc.v test/tb_riscv_soc_simd.v
+V_TB_FILES  := test/tb_riscv_soc.v test/tb_riscv_soc_simd.v test/tb_riscv_soc_jalr.v
 
 
 # `make golden` re-assembles programs/prog_hello.S into prog_hello.hex

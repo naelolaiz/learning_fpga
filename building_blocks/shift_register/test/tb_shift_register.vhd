@@ -45,9 +45,9 @@ begin
       severity error;
 
     -- start    = 10100101 (A5)
-    -- <<1, in=1: 01001011 (4B), serial_out = 1
-    -- <<1, in=0: 10010110 (96), serial_out = 0
-    -- <<1, in=1: 00101101 (2D), serial_out = 1
+    -- <<1, in=1: 01001011 (4B), current serial_out = 0
+    -- <<1, in=0: 10010110 (96), current serial_out = 1
+    -- <<1, in=1: 00101101 (2D), current serial_out = 0
     sIn <= '1';
     wait until falling_edge(sClk);
     sIn <= '0';

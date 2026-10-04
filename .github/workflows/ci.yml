@@ -33,7 +33,7 @@ jobs:
     outputs:
       projects: ${{ steps.enumerate.outputs.projects }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - id: enumerate
         name: Enumerate projects
@@ -52,25 +52,28 @@ jobs:
 
   # ------------------------------------------------------------------
   # build - per-project simulate + diagram + waveform. Runs inside
-  # the hdltools container so the toolchain is pinned by image tag.
+  # the hdltools container so the toolchain is pinned by image digest.
   # ------------------------------------------------------------------
   build:
     name: Build ${{ matrix.project }}
     needs: discover
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
         project: ${{ fromJson(needs.discover.outputs.projects) }}
     container:
-      image: ghcr.io/naelolaiz/hdltools:release
+      image: ghcr.io/naelolaiz/hdltools@sha256:a661d7b9a126fbb44e64d542a19edb9cf1ff7cf70dcf714150a5b03edd2ae312
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # The container already ships ghdl, yosys, ghdl-yosys-plugin,
       # iverilog, netlistsvg and waveview, so no extra setup is needed
@@ -89,9 +92,11 @@ jobs:
 
       # `tee` to build/sim.log so the "Build summary" step below can
       # extract any CPU debug-trace lines (DEBUG_TRACE=true on the DUT)
-      # and surface them in the run summary. The default GH-Actions
-      # shell is `bash -eo pipefail` so a failing `make` still fails
-      # the step. `mkdir -p build` guarantees the log directory exists
+      # and surface them in the run summary. Container jobs default to
+      # `sh`, which has no pipefail, so this job selects bash above:
+      # GitHub then runs steps with `bash -eo pipefail` and a failing
+      # `make` still fails the step through the `tee` pipe.
+      # `mkdir -p build` guarantees the log directory exists
       # even on the first run (before make has created build/).
       - name: Simulate
         working-directory: ${{ matrix.project }}
@@ -115,6 +120,10 @@ jobs:
         run: |
           mkdir -p build
           make simulate_v 2>&1 | tee build/sim_v.log
+
+      - name: Project verification
+        working-directory: ${{ matrix.project }}
+        run: make verify 2>&1 | tee build/test.log
 
       - name: Generate netlist diagram (Verilog)
         working-directory: ${{ matrix.project }}
@@ -226,6 +235,7 @@ jobs:
       # Normalise the artifact slash in the artifact name (GitHub
       # artifacts reject '/'); 7segments/counter -> 7segments-counter.
       - name: Normalise artifact name
+        if: always()
         id: artifact
         run: |
           echo "name=$(echo '${{ matrix.project }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
@@ -237,6 +247,7 @@ jobs:
       # have already failed the job if an artifact was missing for a
       # non-opted-out reason.
       - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.artifact.outputs.name }}-artifacts
@@ -245,6 +256,7 @@ jobs:
             ${{ matrix.project }}/build/*.svg
             ${{ matrix.project }}/build/*.json
             ${{ matrix.project }}/build/*.png
+            ${{ matrix.project }}/build/*.log
           if-no-files-found: warn
           retention-days: 30
 
@@ -259,6 +271,8 @@ jobs:
       - name: Build summary
         if: always()
         working-directory: ${{ matrix.project }}
+        env:
+          GALLERY_AVAILABLE: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           summary="$GITHUB_STEP_SUMMARY"
           base="https://raw.githubusercontent.com/${{ github.repository }}/ci-gallery/run-${{ github.run_id }}/${{ steps.artifact.outputs.name }}"
@@ -277,7 +291,9 @@ jobs:
           # matching the aggregate gallery layout exactly. See the
           # "Build consolidated gallery body" step below for the same
           # shape applied across all projects.
-          if ls build/*.svg >/dev/null 2>&1 || ls build/*.png >/dev/null 2>&1; then
+          if [ "$GALLERY_AVAILABLE" != "true" ]; then
+            echo "Visuals and logs are available in this run's artifacts. Gallery publication is skipped for fork pull requests." >> "$summary"
+          elif ls build/*.svg >/dev/null 2>&1 || ls build/*.png >/dev/null 2>&1; then
             echo "|  | VHDL | Verilog |" >> "$summary"
             echo "| --- | :---: | :---: |" >> "$summary"
             stems=""
@@ -356,6 +372,17 @@ jobs:
           done
 
   # ------------------------------------------------------------------
+  # tool-tests - check Python tooling even though it has no HDL Makefile.
+  # ------------------------------------------------------------------
+  tool-tests:
+    name: Python assembler tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Encodings and assembly source/hex agreement
+        run: make -C tools/rv32_asm test
+
+  # ------------------------------------------------------------------
   # gallery - collects every build's .svg / .png into the `ci-gallery`
   # orphan branch so the step-summary URLs above (and any PR comment)
   # resolve to real, inline-renderable raw.githubusercontent.com links.
@@ -363,7 +390,11 @@ jobs:
   gallery:
     name: Publish gallery
     needs: [build]
-    if: always() && needs.build.result == 'success'
+    # Fork PRs have read-only tokens; their tests and artifact uploads still run.
+    if: >-
+      always() && needs.build.result == 'success' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -568,7 +599,7 @@ jobs:
   status:
     name: CI status
     if: always()
-    needs: [build, gallery]
+    needs: [build, tool-tests, gallery]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if any required job failed
@@ -577,7 +608,13 @@ jobs:
             echo "build failed"
             exit 1
           fi
-          if [ "${{ needs.gallery.result }}" != "success" ]; then
+          if [ "${{ needs.tool-tests.result }}" != "success" ]; then
+            echo "assembler tests failed"
+            exit 1
+          fi
+          # `skipped` is fine: fork pull requests cannot publish.
+          if [ "${{ needs.gallery.result }}" != "success" ] && \
+             [ "${{ needs.gallery.result }}" != "skipped" ]; then
             echo "gallery failed"
             exit 1
           fi
