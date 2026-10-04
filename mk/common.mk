@@ -170,16 +170,26 @@ ifneq ($(strip $(SIM_TIME)),)
 endif
 
 # ---- Phony targets ---------------------------------------------------------
-.PHONY: all analyze elaborate simulate diagram waveform clean help \
+.DEFAULT_GOAL := all
+
+.PHONY: all test verify analyze elaborate simulate diagram waveform clean help \
         analyze_v simulate_v diagram_v waveform_v
 
 # `all` runs the VHDL flow plus the Verilog flow when V_SRC_FILES is set.
-ALL_TARGETS := simulate diagram waveform
+ALL_TARGETS := test diagram waveform
 ifneq ($(strip $(V_SRC_FILES)),)
-ALL_TARGETS += simulate_v diagram_v waveform_v
+ALL_TARGETS += diagram_v waveform_v
 endif
 
 all: $(ALL_TARGETS)
+
+# Each project can add prerequisites to verify for stronger checks, such as
+# comparing both language implementations under one shared stimulus.
+test: simulate simulate_v verify
+
+# CI calls this after its individual simulation stages, avoiding a second
+# run of long VHDL testbenches whose elaboration prerequisites are phony.
+verify:
 
 help:
 	@echo "Project: $(PROJECT_NAME)"
@@ -189,6 +199,8 @@ ifneq ($(strip $(V_SRC_FILES)),)
 endif
 	@echo ""
 	@echo "VHDL targets:"
+	@echo "  test        Run assertions in both HDLs and project-specific checks."
+	@echo "  verify      Run additional project checks after simulation."
 	@echo "  analyze     Parse and type-check the VHDL sources."
 	@echo "  elaborate   Elaborate every testbench in TB_TOPS."
 	@echo "  simulate    Run every testbench, emit one FST per TB."

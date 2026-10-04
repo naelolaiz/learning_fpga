@@ -21,14 +21,14 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/naelolaiz/hdltools:release
+      image: ghcr.io/naelolaiz/hdltools@sha256:a661d7b9a126fbb44e64d542a19edb9cf1ff7cf70dcf714150a5b03edd2ae312
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Tool versions
         run: |
