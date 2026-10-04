@@ -56,7 +56,7 @@ module tb_riscv_soc_simd;
 
     always #(CLK_PERIOD/2.0) if (sim_active) clk = ~clk;
 
-    always @(negedge clk) begin
+    always @(posedge clk) begin
         if (dbg_instr == HALT_INSTR) halted <= 1'b1;
     end
 

@@ -11,26 +11,18 @@
 --      0x00000000; writes to address 0 are silently dropped. The
 --      assembler relies on this to encode `nop`, `mv`, `not`, etc.
 --
---   2. Writes happen on the **falling edge** of the clock — the
---      textbook trick for single-cycle datapaths. A combinational
---      ALU that reads a register and writes back to the same
---      register in the same cycle (e.g. `addi t0, t0, 2`) would
---      otherwise need a write-then-read bypass mux on the read
---      port — and that mux closes a *combinational loop*
---      (rdata1 -> ALU -> wdata -> rdata1 when raddr1 = waddr and
---      we = 1). Falling-edge writes break the loop without needing
---      the mux: within the cycle, the read port returns the OLD
---      stored value; by the next rising edge the new value is
---      committed. Same trick scales to the pipelined CPU, where
---      the forwarding unit handles the tighter EX→EX and MEM→EX
---      hazards and WB→ID falls out for free from the falling-edge
---      write timing.
+--   2. WRITE_FALLING_EDGE defaults to true for the pipelined CPU:
+--      WB writes before the next rising-edge ID capture. Single-cycle
+--      CPUs select false so PC, regfile, and memory side effects
+--      commit on the same rising edge, using the old source values.
+--      Combinational reads return stored data with no write bypass.
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity regfile_rv32 is
+  generic (WRITE_FALLING_EDGE : boolean := true);
   port (
     clk    : in  std_logic;
     we     : in  std_logic;
@@ -48,20 +40,29 @@ architecture rtl of regfile_rv32 is
   signal regs : regs_t := (others => (others => '0'));
 begin
 
-  -- Write on the FALLING clock edge — see the entity header.
-  process (clk) is
-  begin
-    if falling_edge(clk) then
-      if we = '1' and unsigned(waddr) /= 0 then
-        regs(to_integer(unsigned(waddr))) <= wdata;
+  falling_write : if WRITE_FALLING_EDGE generate
+    process (clk) is
+    begin
+      if falling_edge(clk) then
+        if we = '1' and unsigned(waddr) /= 0 then
+          regs(to_integer(unsigned(waddr))) <= wdata;
+        end if;
       end if;
-    end if;
-  end process;
+    end process;
+  end generate;
+  rising_write : if not WRITE_FALLING_EDGE generate
+    process (clk) is
+    begin
+      if rising_edge(clk) then
+        if we = '1' and unsigned(waddr) /= 0 then
+          regs(to_integer(unsigned(waddr))) <= wdata;
+        end if;
+      end if;
+    end process;
+  end generate;
 
-  -- Combinational reads. x0 always reads as 0. No bypass mux: the
-  -- falling-edge write keeps same-cycle reads "stale", which is
-  -- exactly what the single-cycle datapath needs to avoid a
-  -- combinational loop on rd-equals-rs1 instructions.
+  -- Combinational reads. x0 always reads as 0. No bypass mux: a
+  -- source retains its old value until the selected write edge.
   rdata1 <= (others => '0') when unsigned(raddr1) = 0
        else regs(to_integer(unsigned(raddr1)));
 

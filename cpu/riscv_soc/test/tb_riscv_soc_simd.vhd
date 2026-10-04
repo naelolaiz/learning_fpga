@@ -65,7 +65,7 @@ begin
 
   halt_watcher : process (sClk) is
   begin
-    if falling_edge(sClk) then
+    if rising_edge(sClk) then
       if sInstr = HALT_INSTR then
         halted <= '1';
       end if;

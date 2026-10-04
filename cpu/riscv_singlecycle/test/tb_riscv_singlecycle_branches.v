@@ -43,7 +43,7 @@ module tb_riscv_singlecycle_branches;
 
     always #(CLK_PERIOD/2.0) if (sim_active) clk = ~clk;
 
-    always @(negedge clk) begin
+    always @(posedge clk) begin
         if (dbg_reg_we && dbg_reg_waddr != 5'd0)
             shadow_regs[dbg_reg_waddr] <= dbg_reg_wdata;
         if (dbg_instr == HALT_INSTR)

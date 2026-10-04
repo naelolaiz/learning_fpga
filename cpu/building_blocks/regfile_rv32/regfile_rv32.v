@@ -2,12 +2,13 @@
 //
 // RV32I register file. 32 architectural registers, x0 hardwired to
 // zero, two combinational read ports, one synchronous write port.
-// Writes happen on the FALLING clock edge — see the VHDL header for
-// why (textbook single-cycle-friendly timing; the read port returns
-// the OLD stored value within the same cycle, the new value lands
-// by the next rising edge).
+// WRITE_FALLING_EDGE defaults to 1 for the pipelined CPU's WB-to-ID
+// timing. Single-cycle CPUs select 0 so PC and register/memory writes
+// commit together on the rising edge. Reads always return stored data.
 
-module regfile_rv32 (
+module regfile_rv32 #(
+    parameter integer WRITE_FALLING_EDGE = 1
+) (
     input  wire        clk,
     input  wire        we,
     input  wire [4:0]  waddr,
@@ -23,10 +24,15 @@ module regfile_rv32 (
     integer i;
     initial for (i = 0; i < 32; i = i + 1) regs[i] = 32'h0;
 
-    // Falling edge — see the VHDL header.
-    always @(negedge clk) begin
-        if (we && (waddr != 5'd0)) regs[waddr] <= wdata;
-    end
+    generate
+        if (WRITE_FALLING_EDGE) begin : falling_write
+            always @(negedge clk)
+                if (we && (waddr != 5'd0)) regs[waddr] <= wdata;
+        end else begin : rising_write
+            always @(posedge clk)
+                if (we && (waddr != 5'd0)) regs[waddr] <= wdata;
+        end
+    endgenerate
 
     assign rdata1 = (raddr1 == 5'd0) ? 32'h0 : regs[raddr1];
     assign rdata2 = (raddr2 == 5'd0) ? 32'h0 : regs[raddr2];

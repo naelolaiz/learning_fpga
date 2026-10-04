@@ -80,6 +80,8 @@ module riscv_singlecycle #(
     // ---------------------------------------------------------------
     // Datapath
     // ---------------------------------------------------------------
+    // All instruction side effects commit together on the rising edge.
+    // In particular, JALR must use rs1 before its link write updates rd.
     reg  [31:0] pc = 32'b0;
     wire [31:0] pc_plus_4   = pc + 32'd4;
     wire [31:0] pc_plus_imm;
@@ -145,9 +147,9 @@ module riscv_singlecycle #(
         .imm(imm)
     );
 
-    regfile_rv32 regfile (
+    regfile_rv32 #(.WRITE_FALLING_EDGE(0)) regfile (
         .clk(clk),
-        .we(d_reg_write),
+        .we(d_reg_write && !rst),
         .waddr(d_rd),
         .wdata(wb_data),
         .raddr1(d_rs1), .rdata1(rs1_data),
@@ -188,7 +190,7 @@ module riscv_singlecycle #(
     // ---------------------------------------------------------------
     wire [DMEM_ADDR_W-1:0] dmem_addr = alu_result[DMEM_ADDR_W+1:2];
     always @(posedge clk) begin
-        if (d_mem_write) dmem[dmem_addr] <= rs2_data;
+        if (d_mem_write && !rst) dmem[dmem_addr] <= rs2_data;
     end
     assign dmem_rdata = dmem[dmem_addr];
 
@@ -210,7 +212,7 @@ module riscv_singlecycle #(
     // ---------------------------------------------------------------
     assign dbg_pc        = pc;
     assign dbg_instr     = instr;
-    assign dbg_reg_we    = d_reg_write;
+    assign dbg_reg_we    = d_reg_write && !rst;
     assign dbg_reg_waddr = d_rd;
     assign dbg_reg_wdata = wb_data;
 

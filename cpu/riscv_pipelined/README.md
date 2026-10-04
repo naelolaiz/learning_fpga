@@ -5,8 +5,7 @@ from the same building blocks the single-cycle CPU uses
 ([`alu_rv32`](../building_blocks/alu_rv32/),
 [`decoder_rv32`](../building_blocks/decoder_rv32/),
 [`immgen_rv32`](../building_blocks/immgen_rv32/),
-[`regfile_rv32`](../building_blocks/regfile_rv32/),
-[`ram_sync`](../../building_blocks/ram_sync/))
+[`regfile_rv32`](../building_blocks/regfile_rv32/))
 plus two pipeline-specific helpers
 ([`forwarding_unit`](../building_blocks/forwarding_unit/),
 [`hazard_detector`](../building_blocks/hazard_detector/)).
@@ -38,20 +37,22 @@ detect them and respond.
 | **Load-use RAW** | `hazard_detector` sees a load in EX whose `rd` matches the ID source registers | Freeze PC + IF/ID, insert NOP into ID/EX. One-cycle bubble; forwarding handles the RAW on the next cycle. |
 | **Taken branch / jump** | `hazard_detector` sees `branch_taken` or `is_jal/is_jalr` in EX | Force IF/ID + ID/EX to NOP on next clock. Two-instruction penalty per redirect — the cost of resolving in EX. |
 
-### Drop-in replacement for the single-cycle CPU
+### Compare with the single-cycle CPU
 
-Same entity port shape (clk, rst, dbg_*). To swap the pipelined CPU
-into the SoC, change one line in `cpu/riscv_soc/riscv_soc.vhd`:
+Both standalone implementations execute the same supported programs
+and expose a debug commit bus. Compare final register/memory state,
+then count cycles and inspect bubbles in the pipeline waveform. Whether
+the shorter combinational paths allow a higher clock frequency must be
+established with synthesis and timing analysis.
 
-```vhdl
-cpu : entity work.riscv_pipelined  -- was: work.riscv_singlecycle
-```
-
-…and update `SRC_FILES` in `cpu/riscv_soc/Makefile` to point at this
-file. Programs run identically; the only observable difference is
-clock speed (higher, since the longest combinational path is shorter
-now) or cycle count (fewer or more, depending on the program's
-branch + load-use density).
+The [SoC](../riscv_soc/) uses its own
+[`riscv_singlecycle` source](../riscv_soc/riscv_singlecycle.vhd), with
+external data-memory/MMIO ports. The SoC and standalone cores have the
+same entity name but different port lists. This pipeline retains internal DMEM and cannot
+replace that core by changing its entity name. A SoC integration needs
+an external bus variant, a defined response/stall contract, and
+integration tests proving that loads, stores, and MMIO side effects
+occur once per committed instruction.
 
 ### Memories
 
@@ -63,9 +64,12 @@ BRAM-friendly build would convert IMEM to sync-read which adds one
 more cycle of fetch latency — orthogonal to pipelining itself, a
 separate refactor.
 
+[`ram_sync`](../../building_blocks/ram_sync/) is a separate lesson in
+clocked BRAM semantics; it is not instantiated as these CPU memories.
+
 ### Tests
 
-Three testbenches reuse the same hex programs from
+Five testbenches reuse the same hex programs from
 [`tools/rv32_asm/programs/`](../../tools/rv32_asm/programs/) that
 the single-cycle CPU runs:
 
@@ -82,12 +86,17 @@ the single-cycle CPU runs:
   forwarding fills in the loaded value. The same source program runs
   unchanged on the single-cycle CPU (where no stall is needed) and
   reaches the same final architectural state.
+- `tb_riscv_pipelined_jalr` — JALR with overlapping source/destination,
+  distinct link registers, odd targets, and a negative immediate;
+  checks that wrong-path stores are flushed and a load-use dependency
+  reaches the same result as the single-cycle CPU and SoC.
 
-All four pass the same final-state assertion style the single-cycle
+All five pass the same final-state assertion style the single-cycle
 TBs use. The shadow-regfile scheme (snoop the debug bus, mirror
 commits, check at halt) is identical because both CPUs expose the
-same debug bus — the testbenches port across CPU implementations
-with just a `riscv_singlecycle` → `riscv_pipelined` rename.
+same debug bus. The pipeline monitors sample falling-edge WB commits;
+single-cycle monitors sample rising-edge commits. Preserve that sampling
+edge when adapting a testbench between implementations.
 
 ### Debug bus
 

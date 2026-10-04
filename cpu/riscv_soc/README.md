@@ -15,6 +15,7 @@ TX line and verifies the bytes match.
 | [`../../comm/uart_tx`](../../comm/uart_tx/), [`../../comm/uart_rx`](../../comm/uart_rx/) | UART pair pulled in via the Makefile's `SRC_FILES` |
 | [`programs/prog_hello.S`](programs/prog_hello.S), [`programs/prog_hello.hex`](programs/prog_hello.hex) | Demo program (assembly source + golden hex) |
 | [`test/tb_riscv_soc.vhd`](test/tb_riscv_soc.vhd) | Boot the SoC, sample UART_TX, verify the greeting |
+| [`test/tb_riscv_soc_jalr.vhd`](test/tb_riscv_soc_jalr.vhd) | JALR operand overlap, links, target masking, and DMEM commit regression |
 
 ## Address map
 
@@ -114,6 +115,14 @@ asserts the running prefix matches "Hello, RV32!\n". The
 `CLKS_PER_BIT` generic is overridden to 8 (vs. the board default
 5208 for 50 MHz / 9600 baud) so the simulation completes in ~22 µs
 instead of ~14 ms.
+
+[`tb_riscv_soc_jalr.vhd`](test/tb_riscv_soc_jalr.vhd) and its Verilog
+twin run the shared `prog_jalr.hex` from `tools/rv32_asm/programs/`.
+They check JALR when `rd=rs1`, negative immediates, odd-target masking,
+link values, and dependent DMEM stores/loads. Wrong-path stores must
+leave memory unchanged. CPU register writes, PC, and bus side effects
+commit together on the rising edge; the debug monitor samples before
+same-edge signal/nonblocking updates advance the instruction.
 
 A subtle gotcha caught during verification: the sampler must NOT
 exit when the CPU's HALT instruction is detected — halt fires
