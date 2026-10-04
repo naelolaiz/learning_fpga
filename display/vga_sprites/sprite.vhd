@@ -53,6 +53,15 @@ architecture logic of sprite is
    signal sCurrentSpeed : Speed2D := INITIAL_SPEED;
    signal sCurrentRotationSpeed : RotationSpeed := INITIAL_ROTATION_SPEED;
    signal sShouldDraw : boolean := false;
+
+   -- Rotation pipeline (see ProcessPosition below). The cursor is turned
+   -- into a sprite-local, centre-relative position, handed to
+   -- sprite_rotator, and comes back rotated two clocks later.
+   signal sCursorInBox  : boolean := false;
+   signal sCursorLocal  : Pos2D   := (0, 0);
+   signal sRotationBits : std_logic_vector(4 downto 0);
+   signal sRotatedValid : boolean;
+   signal sRotatedPos   : Pos2D;
 begin
 
  -- TODO: remove hardcoded 31
@@ -61,7 +70,7 @@ outShouldDraw <= sShouldDraw;
 
    rotateSprite : process  (inClock)
       variable counterForSpriteRotationUpdate : integer := 0;
-      variable indexForSpriteRotation : integer range 0 to 31 := 0;
+      variable indexForSpriteRotation : integer range 0 to 31 := INITIAL_ROTATION;
    begin
        if rising_edge(inClock) then
           if counterForSpriteRotationUpdate = sCurrentRotationSpeed.update_period then
@@ -172,11 +181,52 @@ outShouldDraw <= sShouldDraw;
     end loop;
   end process;
 
-  ProcessPosition : process(inClock,
-                            sSpritePos,
-                            inCursorPos,
-                            inEnabled)
-    variable vCursor : Pos2D := (0, 0);
+  -- Should the pixel under the cursor be drawn? Answered over three
+  -- clock edges, so outShouldDraw lags inCursorPos by three clocks:
+  --
+  --   edge 1   CursorToSprite (combinational) feeds sprite_rotator,
+  --            which registers the four LUT products
+  --   edge 2   sprite_rotator registers the rotated position
+  --   edge 3   ProcessPosition looks the rotated position up in the
+  --            sprite content and registers sShouldDraw
+  --
+  -- Every sprite has the same lag, so sprites stay aligned with each
+  -- other; whoever drives the cursor compensates for it once.
+
+  -- Is the cursor inside the sprite's (unrotated, scaled) bounding box,
+  -- and where is it in sprite pixels with the origin at the sprite's
+  -- centre?
+  CursorToSprite : process(inCursorPos, sCenterPos, inEnabled)
+    variable vLocal : Pos2D := (0, 0);
+  begin
+      if   inCursorPos.x < (sCenterPos.x - C_HALF_SCALED_WIDTH)
+        or inCursorPos.x > (sCenterPos.x + C_HALF_SCALED_WIDTH)
+        or inCursorPos.y < (sCenterPos.y - C_HALF_SCALED_HEIGHT)
+        or inCursorPos.y > (sCenterPos.y + C_HALF_SCALED_HEIGHT)
+        then
+          sCursorInBox <= false;
+          sCursorLocal <= (0, 0);
+      else
+          vLocal := (((inCursorPos.x - (sCenterPos.x - C_HALF_SCALED_WIDTH))  / SCALE),
+                     ((inCursorPos.y - (sCenterPos.y - C_HALF_SCALED_HEIGHT)) / SCALE));
+          -- for rotation, first we do a translation to have the origin in the center of the sprite
+          sCursorLocal <= translateOriginToCenterOfSprite(SPRITE_SIZE, vLocal);
+          sCursorInBox <= inEnabled;
+      end if;
+  end process;
+
+  sRotationBits <= std_logic_vector(to_unsigned(sRotation, 5));
+
+  -- then we apply the rotation
+  rotator : entity work.sprite_rotator
+    port map (inClock     => inClock,
+              inValid     => sCursorInBox,
+              inPosition  => sCursorLocal,
+              inRotation  => sRotationBits,
+              outValid    => sRotatedValid,
+              outPosition => sRotatedPos);
+
+  ProcessPosition : process(inClock, inEnabled)
     variable vTranslatedCursor: Pos2D := (0, 0);
   begin
       if not inEnabled then
@@ -184,23 +234,11 @@ outShouldDraw <= sShouldDraw;
       elsif rising_edge(inClock) then
           sCenterPos <= sSpritePos;
 
-          vCursor := inCursorPos;
-
-          if   vCursor.x < (sCenterPos.x - C_HALF_SCALED_WIDTH)
-            or vCursor.x > (sCenterPos.x + C_HALF_SCALED_WIDTH)
-            or vCursor.y < (sCenterPos.y - C_HALF_SCALED_HEIGHT)
-            or vCursor.y > (sCenterPos.y + C_HALF_SCALED_HEIGHT)
-            then
-              sShouldDraw <= false;
+          if not sRotatedValid then
+             sShouldDraw <= false;
           else
-             vTranslatedCursor := (((vCursor.x - (sCenterPos.x - C_HALF_SCALED_WIDTH))  / SCALE), 
-                                   ((vCursor.y - (sCenterPos.y - C_HALF_SCALED_HEIGHT)) / SCALE));
-             -- for rotation, first we do a translation to have the origin in the center of the sprite
-             vTranslatedCursor := translateOriginToCenterOfSprite(SPRITE_SIZE, vTranslatedCursor);
-             -- then we apply the rotation
-             vTranslatedCursor := rotate(SPRITE_SIZE, vTranslatedCursor, std_logic_vector(to_unsigned(sRotation, 5)));
-             -- and translate the origin back
-             vTranslatedCursor := translateOriginBackToFirstBitCorner(SPRITE_SIZE, vTranslatedCursor);
+             -- translate the origin back
+             vTranslatedCursor := translateOriginBackToFirstBitCorner(SPRITE_SIZE, sRotatedPos);
              -- now we check the sprite content with the transformed cursor
              if vTranslatedCursor.x < 0 or vTranslatedCursor.x > SPRITE_SIZE.width-1
                 or vTranslatedCursor.y <0 or vTranslatedCursor.y > SPRITE_SIZE.height-1 then

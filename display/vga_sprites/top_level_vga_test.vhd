@@ -23,9 +23,16 @@ architecture rtl of top_level_vga_test is
 constant SCREEN_SIZE    : Size2D := (640,480);
 constant SCREEN_MARGINS : Pos2D  := (155,30);
 
+-- A sprite answers three clocks after the cursor it is shown: two more
+-- than when the rotation was done in a single step. Showing the sprites
+-- the cursor two pixels ahead keeps the picture where it was.
+constant SPRITE_LOOKAHEAD : integer := 2;
+
 
   -- VGA Clock - 25 MHz clock derived from the 50MHz built-in clock
-  signal vga_clk : std_logic;
+  -- Initialised so the divider also starts in simulation (an
+  -- uninitialised signal would stay unknown under `not`).
+  signal vga_clk : std_logic := '0';
 
   signal rgb_input, rgb_output : std_logic_vector(2 downto 0);
   signal rgb_square_color : std_logic_vector (2 downto 0) := COLOR_YELLOW;
@@ -92,7 +99,7 @@ constant SCREEN_MARGINS : Pos2D  := (155,30);
 
 begin
 
-cursorPosition <= (hpos - SCREEN_MARGINS.x, vpos - SCREEN_MARGINS.y);
+cursorPosition <= (hpos - SCREEN_MARGINS.x + SPRITE_LOOKAHEAD, vpos - SCREEN_MARGINS.y);
 
 mySprite : sprite
 generic map(SCREEN_SIZE => SCREEN_SIZE,
