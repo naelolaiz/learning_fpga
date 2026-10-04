@@ -30,7 +30,9 @@ constant SPRITE_LOOKAHEAD : integer := 2;
 
 
   -- VGA Clock - 25 MHz clock derived from the 50MHz built-in clock
-  signal vga_clk : std_logic;
+  -- Initialised so the divider also starts in simulation (an
+  -- uninitialised signal would stay unknown under `not`).
+  signal vga_clk : std_logic := '0';
 
   signal rgb_input, rgb_output : std_logic_vector(2 downto 0);
   signal rgb_square_color : std_logic_vector (2 downto 0) := COLOR_YELLOW;
