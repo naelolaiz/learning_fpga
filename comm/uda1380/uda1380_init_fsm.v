@@ -4,24 +4,26 @@
 // instead of using the VHDL record types from
 // uda1380_control_definitions.vhd (Verilog has no equivalent for
 // VHDL records-with-named-fields, so the table is inlined here as
-// hex literals — bit-for-bit identical to what the VHDL FSM walks).
+// hex literals — the integration testbenches check both languages
+// against the same expected byte stream).
 //
-// Same handshake protocol: assert ena with the first byte; on each
-// busy 0->1 edge advance to the next byte; after the third byte
-// drop ena and wait for busy to fall before moving to the next
-// register write.
+// Same handshake as the VHDL: one command per byte towards
+// comm/i2c_master, cmd_start on the address byte, cmd_stop on the
+// last data byte, stepping on every clock where the master is ready.
 
 module uda1380_init_fsm #(
     parameter integer INIT_DELAY_CYCLES = 5_000_000   // 100 ms @ 50 MHz
 ) (
     input  wire        clk,
     input  wire        reset,                          // active-high
-    output reg         i2c_ena,
-    output reg  [6:0]  i2c_addr,
-    output reg         i2c_rw,
-    output reg  [7:0]  i2c_data_wr,
+    // To i2c_master (write-only, so cmd_read / cmd_nack stay 0).
+    output wire        cmd_valid,
+    output wire        cmd_start,
+    output wire        cmd_stop,
+    output reg  [7:0]  cmd_wdata,
+    // From i2c_master
+    input  wire        cmd_ready,
     input  wire        i2c_busy,
-    input  wire        i2c_ack_err,
     output reg         init_done
 );
 
@@ -51,34 +53,40 @@ module uda1380_init_fsm #(
 
     localparam [1:0] ST_POWER_UP_WAIT = 2'd0;
     localparam [1:0] ST_SEND_REGISTER = 2'd1;
-    localparam [1:0] ST_DONE          = 2'd2;
+    localparam [1:0] ST_WAIT_BUS_FREE = 2'd2;
+    localparam [1:0] ST_DONE          = 2'd3;
     reg [1:0] state = ST_POWER_UP_WAIT;
 
     reg [3:0]  table_idx     = 4'd0;
-    reg [1:0]  busy_cnt      = 2'd0;
-    reg        busy_prev     = 1'b0;
+    // Which byte of the current transaction is on offer:
+    // 0 = device address, 1 = register, 2 = data high, 3 = data low.
+    reg [1:0]  byte_idx      = 2'd0;
     reg [31:0] delay_counter = 32'd0;
 
-    // Selectors over the current table entry's three bytes.
-    wire [7:0] byte_reg = {1'b0, init_table[table_idx][23:17]};
-    wire [7:0] byte_hi  = init_table[table_idx][15:8];
-    wire [7:0] byte_lo  = init_table[table_idx][7:0];
+    // The command is a pure function of where we are in the table, so
+    // the byte on offer always matches the index that advances when
+    // it is accepted.
+    assign cmd_valid = (state == ST_SEND_REGISTER);
+    assign cmd_start = (byte_idx == 2'd0);
+    assign cmd_stop  = (byte_idx == 2'd3);
+
+    always @(*) begin
+        case (byte_idx)
+            2'd0:    cmd_wdata = {DEVICE_ADDR, 1'b0};                   // address, write
+            2'd1:    cmd_wdata = {1'b0, init_table[table_idx][22:16]};  // 7 bits, padded to 8
+            2'd2:    cmd_wdata = init_table[table_idx][15:8];
+            default: cmd_wdata = init_table[table_idx][7:0];
+        endcase
+    end
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             state         <= ST_POWER_UP_WAIT;
             table_idx     <= 4'd0;
-            busy_cnt      <= 2'd0;
-            busy_prev     <= 1'b0;
+            byte_idx      <= 2'd0;
             delay_counter <= 32'd0;
-            i2c_ena       <= 1'b0;
-            i2c_addr      <= 7'd0;
-            i2c_rw        <= 1'b0;
-            i2c_data_wr   <= 8'd0;
             init_done     <= 1'b0;
         end else begin
-            busy_prev <= i2c_busy;
-
             case (state)
                 ST_POWER_UP_WAIT: begin
                     if (delay_counter == INIT_DELAY_CYCLES - 1) begin
@@ -90,35 +98,29 @@ module uda1380_init_fsm #(
                 end
 
                 ST_SEND_REGISTER: begin
-                    if (!busy_prev && i2c_busy)
-                        busy_cnt <= busy_cnt + 2'd1;
-
-                    case (busy_cnt)
-                        2'd0: begin
-                            i2c_ena     <= 1'b1;
-                            i2c_addr    <= DEVICE_ADDR;
-                            i2c_rw      <= 1'b0;
-                            i2c_data_wr <= byte_reg;
+                    // cmd_valid is high throughout this state, so a
+                    // ready master means the byte on offer was
+                    // accepted on this edge.
+                    if (cmd_ready) begin
+                        if (byte_idx == 2'd3) begin
+                            byte_idx <= 2'd0;
+                            if (table_idx == N_INIT - 1)
+                                state <= ST_WAIT_BUS_FREE;
+                            else
+                                table_idx <= table_idx + 4'd1;
+                        end else begin
+                            byte_idx <= byte_idx + 2'd1;
                         end
-                        2'd1: i2c_data_wr <= byte_hi;
-                        2'd2: i2c_data_wr <= byte_lo;
-                        2'd3: begin
-                            i2c_ena <= 1'b0;
-                            if (!i2c_busy) begin
-                                busy_cnt <= 2'd0;
-                                if (table_idx == N_INIT - 1)
-                                    state <= ST_DONE;
-                                else
-                                    table_idx <= table_idx + 4'd1;
-                            end
-                        end
-                    endcase
+                    end
                 end
 
-                ST_DONE: begin
-                    i2c_ena   <= 1'b0;
-                    init_done <= 1'b1;
+                ST_WAIT_BUS_FREE: begin
+                    // The last byte and its STOP are still on the wire.
+                    if (!i2c_busy)
+                        state <= ST_DONE;
                 end
+
+                ST_DONE: init_done <= 1'b1;
             endcase
         end
     end
