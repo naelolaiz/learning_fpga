@@ -17,7 +17,7 @@ headphone jack.
 | [`tone_gen.{vhd,v}`](tone_gen.vhd) | Half-scale square-wave audio source so the codec actually has something to play once initialised. |
 | [`top_level_uda1380_core.{vhd,v}`](top_level_uda1380_core.vhd) | All of the logic: init-FSM + I2C master + I2S master + tone-gen. Active-low reset. The I2C bus is exposed as `(scl_oe, scl_i, sda_oe, sda_i)` — no `inout` anywhere, so it simulates with plain levels and `netlistsvg` accepts the netlist. |
 | [`top_level_uda1380.{vhd,v}`](top_level_uda1380.vhd) | Board top: wraps the core and turns each `(oe, i)` pair into one open-drain `i2cIO*` pin. |
-| [`test/`](test/) | Unit testbench for the init FSM (asserts how each write is framed) and integration testbench for the core (checks every byte the codec receives on the bus, plus MCLK / BCK / LRCLK activity). Both VHDL and Verilog mirrors. |
+| [`test/`](test/) | Unit testbench for the init FSM (asserts how each write is framed), integration testbench for the core (checks every byte the codec receives on the bus, plus MCLK / BCK / LRCLK activity) and a board-top testbench on a pulled-up `inout` bus. All in VHDL and Verilog. |
 
 ## The boot sequence
 
@@ -94,8 +94,8 @@ itself; nothing else from the FPGA goes to the codec.
 ## Building locally
 
 ```bash
-make simulate     # VHDL flow: tb_uda1380_init_fsm + tb_top_level_uda1380
-make simulate_v   # Verilog flow: same two TBs
+make simulate     # VHDL flow: FSM, core and board-top testbenches
+make simulate_v   # Verilog flow: same three TBs
 make all          # both flows + waveform PNGs
 ```
 
@@ -137,6 +137,21 @@ what ties the VHDL `INIT_*` records and the Verilog hex table to each
 other. The slave acknowledges every byte; what the design does when a
 byte is *not* acknowledged is not tested (see the caveats).
 
+[`test/tb_top_level_uda1380_board.{vhd,v}`](test/) runs the board top,
+`top_level_uda1380`, with SCL and SDA as single pulled-up `inout`
+wires shared with the same slave model. It covers the two open-drain
+pins the wrapper adds:
+
+- neither line ever shows contention (a device driving it high while
+  another pulls it low),
+- the boot completes and the codec receives all 45 bytes in 15 framed
+  writes,
+- both lines rest on the pull-ups before and after.
+
+It renders no waveform: a line resting on a pull-up is a weak level,
+which the waveform check would flag. The same traffic is drawn with
+plain levels by `tb_top_level_uda1380`.
+
 ## Caveats / what's not here
 
 - **Hardware verification** is the user's bench, not the simulator's.
@@ -160,12 +175,13 @@ byte is *not* acknowledged is not tested (see the caveats).
 - **Two top-levels by design.**
   [`top_level_uda1380_core`](top_level_uda1380_core.vhd) holds all of
   the logic and exposes the I2C bus as `(scl_oe, scl_i, sda_oe,
-  sda_i)`. It is the diagram top and what the testbenches drive:
-  `netlistsvg`'s JSON schema only accepts `input` / `output` port
-  directions, and a bus without `inout` simulates with plain `'0'` /
-  `'1'` levels. [`top_level_uda1380`](top_level_uda1380.vhd) is the
-  board top: a thin wrapper that turns each `(oe, i)` pair into one
-  open-drain pin. It is analysed in CI but not simulated. The Verilog
+  sda_i)`. It is the diagram top and what the byte-level testbench
+  drives: `netlistsvg`'s JSON schema only accepts `input` / `output`
+  port directions, and a bus without `inout` simulates with plain
+  `'0'` / `'1'` levels. [`top_level_uda1380`](top_level_uda1380.vhd) is
+  the board top: a thin wrapper that turns each `(oe, i)` pair into one
+  open-drain pin, simulated on a pulled-up bus by
+  `tb_top_level_uda1380_board`. The Verilog
   wrapper is hidden from yosys with `` `ifndef YOSYS ``, since yosys
   has limited tri-state support and the diagram only needs the core.
 - `i2c_master.{vhd,v}` is not copied into this project: the Makefile
